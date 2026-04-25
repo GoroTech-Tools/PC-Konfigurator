@@ -1,0 +1,4 @@
+customtkinter==5.2.2
+psutil==5.9.6
+pyinstaller==6.3.0
+pywin32==306

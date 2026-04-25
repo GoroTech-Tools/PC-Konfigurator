@@ -1,0 +1,1649 @@
+"""
+PC-Konfigurator - Haupt-GUI-Anwendung
+=====================================
+
+Moderne GUI-Anwendung zur PC-Konfiguration mit CustomTkinter
+"""
+
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import messagebox, filedialog
+import threading
+import sys
+import os
+
+# --- sys.path-Anpassung für PyInstaller-Build (_internal/_py_internal) ---
+if getattr(sys, 'frozen', False):
+    # Im EXE-Modus: _internal/_py_internal für dynamische Module
+    sys.path.insert(0, os.path.join(sys._MEIPASS, '_internal', '_py_internal'))
+from pathlib import Path
+import logging
+from datetime import datetime
+
+# Lokale Module importieren
+from system_checker import SystemChecker
+from office_configurator import OfficeConfigurator
+from pcconfig.office_template_manager import OfficeTemplateManager
+from safe_office_configurator import SafeOfficeConfigurator
+# from hybrid_template_manager import HybridTemplateManager
+from file_sync import FileSync
+from font_installer import FontInstaller
+from logger_config import setup_logging
+from registry_gui import RegistryExplanationWindow
+
+
+class PCKonfiguratorGUI:
+    def add_tools_menu(self):
+        # Menüleiste für CustomTkinter: immer direkt mit tk.Menu arbeiten
+        menubar = tk.Menu(self.root._get_tk() if hasattr(self.root, '_get_tk') else self.root)
+        self.root._get_tk().config(menu=menubar) if hasattr(self.root, '_get_tk') else self.root.config(menu=menubar)
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Tools', menu=tools_menu)
+        tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
+
+    def run_bitness_check(self):
+        import subprocess, sys, os
+        import logging
+        from tkinter import messagebox
+        log = logging.getLogger("bitness_check")
+        log.info("Starte Bitness- und COM-Check...")
+        # Immer python.exe verwenden, wenn als EXE gestartet
+        python_exe = sys.executable
+        if python_exe.lower().endswith(".exe") and "python" not in os.path.basename(python_exe).lower():
+            python_exe = "python"  # verlasse dich auf PATH
+        # Skript-Pfad bestimmen: im Build aus _internal, sonst aus src
+        import os
+        if getattr(sys, 'frozen', False):
+            exe_dir = os.path.dirname(sys.executable)
+            checker_path = os.path.join(exe_dir, "_internal", "com_bitness_checker.py")
+        else:
+            checker_path = os.path.join(os.path.dirname(__file__), "com_bitness_checker.py")
+        try:
+            result = subprocess.run([python_exe, checker_path], capture_output=True, text=True, timeout=120)
+            output = result.stdout + "\n" + result.stderr
+            log.info(output)
+            messagebox.showinfo("Bitness- und COM-Check", output[-2000:])
+        except Exception as e:
+            log.error(f"Fehler beim Bitness-Check: {e}")
+            messagebox.showerror("Fehler", str(e))
+    
+    def get_version_from_exe(self):
+        """Version aus EXE-Namen extrahieren"""
+        try:
+            if getattr(sys, 'frozen', False):
+                # Ausführung als EXE
+                exe_path = Path(sys.executable)
+                exe_name = exe_path.stem
+                # Extrahiere Version aus Namen wie "PC-Konfigurator-V9-Enhanced"
+                if '-V' in exe_name:
+                    version_part = exe_name.split('-V')[1]
+                    return f"V{version_part}"
+                elif 'V' in exe_name and exe_name.count('-') >= 2:
+                    parts = exe_name.split('-')
+                    for part in parts:
+                        if part.startswith('V') and any(c.isdigit() for c in part):
+                            return part
+            return "Development"
+        except:
+            return "v1.0"
+    
+    def __init__(self):
+        """Initialisierung der GUI"""
+        self.version = self.get_version_from_exe()
+        self.setup_appearance()
+        self.root = ctk.CTk()
+        self.setup_main_window()
+        
+        # Komponenten initialisieren
+        self.system_checker = SystemChecker()
+        self.office_configurator = OfficeConfigurator()
+        self.file_sync = FileSync()
+        self.font_installer = FontInstaller()
+        self.registry_gui = RegistryExplanationWindow(self.root)
+        
+        # App-Verzeichnis ermitteln
+        if getattr(sys, 'frozen', False):
+            self.app_dir = Path(sys.executable).parent
+        else:
+            self.app_dir = Path(__file__).parent.parent
+        
+        # Office Template Manager initialisieren
+        self.template_manager = OfficeTemplateManager(self.app_dir)
+        
+        # Sicherer Office-Konfigurator initialisieren
+        self.safe_office_config = SafeOfficeConfigurator(self.app_dir)
+        
+        # Hybrid Template-Manager initialisieren (PowerShell-Ansatz: Kopieren + COM-Anpassung)
+        # self.template_manager = HybridTemplateManager(self.app_dir)
+        
+        # Logging setup
+        self.logger = setup_logging()
+        
+        # Variablen für Konfiguration
+        self.target_drive = tk.StringVar(value="Z:")
+        self.use_documents = tk.BooleanVar(value=False)
+        self.font_name = tk.StringVar(value="Aptos")
+        self.font_size_word = tk.IntVar(value=11)
+        self.font_size_excel = tk.IntVar(value=10)
+        
+        self.create_widgets()
+        self.add_tools_menu()
+        
+    def setup_appearance(self):
+        """Erscheinungsbild der Anwendung festlegen"""
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("blue")
+        
+    def setup_main_window(self):
+        """Hauptfenster konfigurieren"""
+        self.root.title(f"PC-Konfigurator {self.version}")
+        self.root.geometry("1000x700")
+        self.root.resizable(True, True)
+        
+        # Icon setzen (falls vorhanden)
+        icon_path = Path(__file__).parent.parent / "assets" / "icon.ico"
+        if icon_path.exists():
+            self.root.iconbitmap(icon_path)
+            
+        # Hidden-Attribute für Ordner setzen
+        self.set_hidden_directories()
+            
+    def set_hidden_directories(self):
+        """Setzt Hidden-Attribute für _internal und logs Ordner"""
+        if getattr(sys, 'frozen', False):
+            # Ausführung als EXE
+            exe_dir = Path(sys.executable).parent
+            
+            # _internal Ordner verstecken
+            internal_dir = exe_dir / "_internal"
+            if internal_dir.exists():
+                try:
+                    import subprocess
+                    subprocess.run(["attrib", "+H", str(internal_dir)], check=False, capture_output=True)
+                except:
+                    pass
+            
+            # logs Ordner verstecken (falls vorhanden)
+            logs_dir = exe_dir / "logs"
+            if logs_dir.exists():
+                try:
+                    import subprocess
+                    subprocess.run(["attrib", "+H", str(logs_dir)], check=False, capture_output=True)
+                except:
+                    pass
+            
+    def create_widgets(self):
+        """GUI-Widgets erstellen"""
+        # Hauptframe
+        main_frame = ctk.CTkFrame(self.root)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Titel
+        title_label = ctk.CTkLabel(
+            main_frame, 
+            text="PC-Konfigurator", 
+            font=ctk.CTkFont(size=24, weight="bold")
+        )
+        title_label.pack(pady=(10, 20))
+        
+        # Tabs erstellen
+        self.tabview = ctk.CTkTabview(main_frame)
+        self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Tabs hinzufügen
+        self.tabview.add("Übersicht")
+        self.tabview.add("Konfiguration")
+        self.tabview.add("Registry-Info")
+        self.tabview.add("Ausführung")
+        self.tabview.add("Logs")
+        
+        self.create_overview_tab()
+        self.create_configuration_tab()
+        self.create_registry_info_tab()
+        self.create_execution_tab()
+        self.create_logs_tab()
+        
+    def create_overview_tab(self):
+        """Übersicht-Tab erstellen"""
+        overview_frame = self.tabview.tab("Übersicht")
+        
+        # Überschrift: Willkommen
+        welcome_title = ctk.CTkLabel(
+            overview_frame,
+            text="Willkommen beim PC-Konfigurator!",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        welcome_title.pack(anchor="w", padx=22, pady=(10, 0))
+
+        # Fließtext
+        welcome_text = ctk.CTkLabel(
+            overview_frame,
+            text="Diese Anwendung hilft Ihnen dabei, Ihren Windows-PC optimal für die Arbeit mit Office-Programmen zu konfigurieren.",
+            wraplength=900,
+            justify="left"
+        )
+        welcome_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Abschnitt: Verfügbare Funktionen
+        funktionen_label = ctk.CTkLabel(
+            overview_frame,
+            text="VERFÜGBARE FUNKTIONEN:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        funktionen_label.pack(anchor="w", padx=22, pady=(5, 0))
+        funktionen_text = ctk.CTkLabel(
+            overview_frame,
+            text="• Datei-Vorlagen automatisch synchronisieren\n"
+                 "• Office-Programme konfigurieren (Autokorrektur, Schriftarten, Pfade etc.)\n"
+                 "• Windows-Explorer-Einstellungen optimieren\n"
+                 "• Custom-Fonts installieren (Aptos, Montserrat, PT Sans etc.)",
+            wraplength=900,
+            justify="left"
+        )
+        funktionen_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Abschnitt: So starten Sie
+        starten_label = ctk.CTkLabel(
+            overview_frame,
+            text="SO STARTEN SIE:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        starten_label.pack(anchor="w", padx=22, pady=(5, 0))
+        starten_text = ctk.CTkLabel(
+            overview_frame,
+            text="1. Tab 'Konfiguration' → Einstellungen nach Ihren Wünschen anpassen\n"
+                 "2. Tab 'Registry-Info' → Geplante Änderungen einsehen (optional)\n"
+                 "3. Tab 'Ausführung' → Konfiguration starten",
+            wraplength=900,
+            justify="left"
+        )
+        starten_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Abschnitt: Vor der Ausführung
+        vor_label = ctk.CTkLabel(
+            overview_frame,
+            text="VOR DER AUSFÜHRUNG:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        vor_label.pack(anchor="w", padx=22, pady=(5, 0))
+        vor_text = ctk.CTkLabel(
+            overview_frame,
+            text="• Speichern Sie alle offenen Office-Dateien\n\nKlicken Sie auf den Reiter 'Konfiguration', um die Einstellungen anzupassen.",
+            wraplength=900,
+            justify="left"
+        )
+        vor_text.pack(anchor="w", padx=22, pady=(0, 8))
+        
+        # System-Status anzeigen
+        status_frame = ctk.CTkFrame(overview_frame)
+        status_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
+        ctk.CTkLabel(status_frame, text="System-Status:", 
+                    font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10, 5))
+        
+        self.status_label = ctk.CTkLabel(status_frame, 
+                                        text="Klicken Sie auf 'System prüfen' um Ihre Windows- und Office-Version zu ermitteln.",
+                                        justify="left")
+        self.status_label.pack(anchor="w", padx=20, pady=(0, 10))
+        
+        check_button = ctk.CTkButton(
+            status_frame, 
+            text="System prüfen", 
+            command=self.check_system_requirements
+        )
+        check_button.pack(pady=10)
+        
+    def create_configuration_tab(self):
+        """Konfiguration-Tab erstellen"""
+        config_frame = self.tabview.tab("Konfiguration")
+        
+        # Haupt-Frame für kompakte Darstellung
+        main_frame = ctk.CTkFrame(config_frame)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Hinweistext für Konfiguration (kompakter)
+        info_frame = ctk.CTkFrame(main_frame)
+        info_frame.pack(fill="x", padx=10, pady=(5, 10))
+        
+        info_label = ctk.CTkLabel(
+            info_frame,
+            text="Konfigurationshinweise",
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        info_label.pack(anchor="w", padx=10, pady=(8, 3))
+        
+        info_text = "Passen Sie die Einstellungen nach Ihren Bedürfnissen an. Alle Änderungen werden sicher in der Windows-Registry gespeichert."
+        info_desc = ctk.CTkLabel(info_frame, text=info_text, wraplength=900)
+        info_desc.pack(anchor="w", padx=10, pady=(0, 8))
+        
+        # Zielverzeichnis-Sektion
+        target_section = ctk.CTkFrame(main_frame)
+        target_section.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(target_section, text="Zielverzeichnis für Datei-Vorlagen:", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=10, pady=(10, 0))
+        
+        target_hint = ctk.CTkLabel(
+            target_section,
+            text="Wählen Sie, wo die Office-Vorlagen gespeichert werden sollen:",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        )
+        target_hint.pack(anchor="w", padx=10, pady=(0, 5))
+        
+        # Radio-Buttons für Zielverzeichnis
+        drive_radio = ctk.CTkRadioButton(
+            target_section, 
+            text="Laufwerk verwenden:", 
+            variable=self.use_documents,
+            value=False
+        )
+        drive_radio.pack(anchor="w", padx=20, pady=2)
+        
+        # Laufwerk-Eingabe
+        drive_frame = ctk.CTkFrame(target_section)
+        drive_frame.pack(fill="x", padx=30, pady=(5, 10))
+        
+        ctk.CTkLabel(drive_frame, text="Laufwerksbuchstabe:").pack(side="left", padx=5)
+        
+        # Dropdown für Laufwerksbuchstaben Z bis C (umgekehrte Reihenfolge)
+        drive_options = [f"{chr(i)}:" for i in range(ord('Z'), ord('C') - 1, -1)]
+        drive_menu = ctk.CTkOptionMenu(drive_frame, variable=self.target_drive, values=drive_options, width=80)
+        drive_menu.pack(side="left", padx=5)
+        
+        drive_hint = ctk.CTkLabel(drive_frame, text="(Im BFW bitte das Laufwerk Z wählen.)", 
+                     font=ctk.CTkFont(size=10), text_color="gray")
+        drive_hint.pack(side="left", padx=10)
+        
+        docs_radio = ctk.CTkRadioButton(
+            target_section,
+            text="Dokumente-Verzeichnis verwenden",
+            variable=self.use_documents,
+            value=True
+        )
+        docs_radio.pack(anchor="w", padx=20, pady=(5, 15))
+        
+        # Schriftart-Sektion
+        font_section = ctk.CTkFrame(main_frame)
+        font_section.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(font_section, text="Schriftart-Konfiguration:", 
+                    font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10, 5))
+        
+        font_hint = ctk.CTkLabel(
+            font_section,
+            text="Custom-Fonts werden automatisch installiert. Wählen Sie Ihre bevorzugte Schriftart:",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        )
+        font_hint.pack(anchor="w", padx=10, pady=(0, 5))
+        
+        # Schriftart-Auswahl
+        font_frame = ctk.CTkFrame(font_section)
+        font_frame.pack(fill="x", padx=20, pady=5)
+        
+        ctk.CTkLabel(font_frame, text="Schriftart:").pack(anchor="w", padx=5)
+        
+        # Verfügbare Fonts laden
+        try:
+            # Vollständige Liste der gewünschten Schriftarten (unabhängig von Installation)
+            priority_fonts = ["Aptos", "Aptos Narrow", "Arial", "Calibri", "Futura", "Montserrat", "PT Sans", "Raleway"]
+            
+            # Immer die komplette Liste anzeigen, damit Benutzer sehen können was verfügbar wird
+            font_options = priority_fonts
+            
+        except Exception:
+            # Fallback falls etwas schiefgeht
+            font_options = ["Aptos", "Aptos Narrow", "Arial", "Calibri", "Futura", "Montserrat", "PT Sans", "Raleway"]
+        
+        font_menu = ctk.CTkOptionMenu(font_frame, variable=self.font_name, 
+                                     values=font_options)
+        font_menu.pack(anchor="w", padx=5, pady=5)
+        
+        # Schriftgrößen
+        size_frame = ctk.CTkFrame(font_section)
+        size_frame.pack(fill="x", padx=20, pady=(0, 10))
+        
+        # Word/Outlook-Schriftgröße
+        word_size_frame = ctk.CTkFrame(size_frame)
+        word_size_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        
+        ctk.CTkLabel(word_size_frame, text="Word/Outlook-Schriftgröße:").pack(anchor="w", padx=5)
+        word_size_menu = ctk.CTkOptionMenu(word_size_frame, variable=self.font_size_word,
+                          values=["10", "11", "12"])
+        word_size_menu.pack(anchor="w", padx=5, pady=5)
+        
+        # Excel-Schriftgröße
+        excel_size_frame = ctk.CTkFrame(size_frame)
+        excel_size_frame.pack(side="right", fill="x", expand=True, padx=5, pady=5)
+        
+        ctk.CTkLabel(excel_size_frame, text="Excel-Schriftgröße:").pack(anchor="w", padx=5)
+        excel_size_menu = ctk.CTkOptionMenu(excel_size_frame, variable=self.font_size_excel,
+                           values=["10", "11", "12"])
+        excel_size_menu.pack(anchor="w", padx=5, pady=5)
+        
+        # Office-Template-Sektion
+        template_section = ctk.CTkFrame(main_frame)
+        template_section.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(template_section, text="Office-Templates Verwaltung:", 
+                    font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10, 5))
+        
+        template_hint = ctk.CTkLabel(
+            template_section,
+            text="Aktuelle Template-Status und Verwaltung für Normal.dotm (Word), Mappe.xltx (Excel) und E-Mail-Templates:",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        )
+        template_hint.pack(anchor="w", padx=10, pady=(0, 5))
+        
+        # Template-Status anzeigen
+        self.template_status_frame = ctk.CTkFrame(template_section)
+        self.template_status_frame.pack(fill="x", padx=20, pady=5)
+        
+        # Template-Buttons
+        template_buttons_frame = ctk.CTkFrame(template_section)
+        template_buttons_frame.pack(fill="x", padx=20, pady=(5, 10))
+        
+        self.update_templates_button = ctk.CTkButton(
+            template_buttons_frame,
+            text="Templates sicher wiederherstellen",
+            command=self.safe_restore_templates
+        )
+        self.update_templates_button.pack(side="left", padx=5, pady=5)
+        
+        self.check_templates_button = ctk.CTkButton(
+            template_buttons_frame,
+            text="Template-Status prüfen",
+            command=self.check_safe_template_status
+        )
+        self.check_templates_button.pack(side="left", padx=5, pady=5)
+        
+        # Initiale Template-Status-Anzeige
+        self.check_safe_template_status()
+        
+    def create_registry_info_tab(self):
+        """Registry-Info Tab erstellen"""
+        registry_frame = self.tabview.tab("Registry-Info")
+        
+        # Titel
+        title_label = ctk.CTkLabel(
+            registry_frame,
+            text="Registry-Einstellungen Übersicht",
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        title_label.pack(pady=10)
+        
+
+        # Abschnitt: Was passiert
+        was_passiert_label = ctk.CTkLabel(
+            registry_frame,
+            text="WAS PASSIERT:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        was_passiert_label.pack(anchor="w", padx=22, pady=(5, 0))
+        was_passiert_text = ctk.CTkLabel(
+            registry_frame,
+            text="Diese Anwendung nimmt verschiedene Registry-Einstellungen für Office-Programme und Windows-System vor. Alle Änderungen werden detailliert dokumentiert und sind vollständig transparent.",
+            wraplength=900,
+            justify="left"
+        )
+        was_passiert_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Abschnitt: Sicherheit
+        sicherheit_label = ctk.CTkLabel(
+            registry_frame,
+            text="SICHERHEIT:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        sicherheit_label.pack(anchor="w", padx=22, pady=(5, 0))
+        sicherheit_text = ctk.CTkLabel(
+            registry_frame,
+            text="• Alle Änderungen sind reversibel\n• Nur HKEY_CURRENT_USER wird modifiziert (sicher für Benutzer)\n• Keine Systemdateien werden verändert",
+            wraplength=900,
+            justify="left"
+        )
+        sicherheit_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Abschnitt: Übersicht der Einstellungskategorien
+        kategorie_label = ctk.CTkLabel(
+            registry_frame,
+            text="ÜBERSICHT DER EINSTELLUNGSKATEGORIEN:",
+            font=ctk.CTkFont(weight="bold")
+        )
+        kategorie_label.pack(anchor="w", padx=22, pady=(5, 0))
+        kategorie_text = ctk.CTkLabel(
+            registry_frame,
+            text="• Word - Benutzeroberfläche (Entwicklertools, Lineal)\n• Word - Formatierung (Formatierungszeichen, Tabellen)\n• Word - Dateipfade und Schriftarten\n• Word - Autokorrektur-Einstellungen\n• Excel - Dateipfade und Schriftarten\n• Office - Allgemeine Einstellungen\n• Windows - Taskleiste und Kontextmenü",
+            wraplength=900,
+            justify="left"
+        )
+        kategorie_text.pack(anchor="w", padx=22, pady=(0, 8))
+
+        # Hinweis
+        hinweis_text = ctk.CTkLabel(
+            registry_frame,
+            text="Klicken Sie auf 'Detaillierte Ansicht öffnen' um alle geplanten Einstellungen mit ausführlichen Beschreibungen zu sehen.",
+            wraplength=900,
+            justify="left"
+        )
+        hinweis_text.pack(anchor="w", padx=22, pady=(0, 8))
+        
+        # Button darunter
+        detail_button = ctk.CTkButton(
+            registry_frame,
+            text="Detaillierte Ansicht öffnen",
+            command=self.open_registry_details,
+            font=ctk.CTkFont(weight="bold")
+        )
+        detail_button.pack(pady=(10, 20))
+        """Ausführung-Tab erstellen"""
+        exec_frame = self.tabview.tab("Ausführung")
+        
+        # Fortschrittsanzeige
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ctk.CTkProgressBar(exec_frame)
+        self.progress_bar.pack(fill="x", padx=20, pady=20)
+        self.progress_bar.set(0)
+        
+        # Status-Text
+        self.status_text = ctk.CTkTextbox(exec_frame, height=300)
+        self.status_text.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(exec_frame)
+        button_frame.pack(fill="x", padx=20, pady=10)
+        
+        self.start_button = ctk.CTkButton(
+            button_frame, 
+            text="Konfiguration starten",
+            command=self.start_configuration,
+            font=ctk.CTkFont(weight="bold")
+        )
+        self.start_button.pack(side="left", padx=10)
+        
+        self.stop_button = ctk.CTkButton(
+            button_frame,
+            text="Abbrechen", 
+            command=self.stop_configuration,
+            state="disabled"
+        )
+        self.stop_button.pack(side="right", padx=10)
+        
+    def create_execution_tab(self):
+        """Ausführung-Tab erstellen"""
+        execution_frame = self.tabview.tab("Ausführung")
+        
+        # Überschrift
+        title_label = ctk.CTkLabel(
+            execution_frame, 
+            text="Konfiguration ausführen", 
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        title_label.pack(pady=(15, 5))
+
+        # Anweisungstext optisch abgesetzt
+        instruction_frame = ctk.CTkFrame(execution_frame)
+        instruction_frame.pack(fill="x", padx=20, pady=(0, 10))
+
+        instruction_text = """
+    • System und Dateien: Fonts installieren, Templates synchronisieren, Office-Optimierung (Pfade)
+    • Office konfigurieren: Schnelle Registry-Einstellungen für Office-Programme"""
+
+        instruction_textbox = ctk.CTkTextbox(instruction_frame, height=60)
+        instruction_textbox.pack(fill="x", padx=10, pady=8)
+        instruction_textbox.insert("0.0", instruction_text)
+        instruction_textbox.configure(state="disabled")
+
+        # Buttons nebeneinander
+        button_frame = ctk.CTkFrame(execution_frame)
+        button_frame.pack(pady=(0, 10), padx=20, fill="x")
+
+        execute_button = ctk.CTkButton(
+            button_frame,
+            text="Vollständige Konfiguration starten", 
+            command=self.execute_all_configurations,
+            width=220,
+            height=40,
+            font=ctk.CTkFont(weight="bold")
+        )
+        execute_button.grid(row=0, column=0, padx=(0, 10), pady=5, sticky="ew")
+
+        partial_button = ctk.CTkButton(
+            button_frame,
+            text="Nur Office konfigurieren", 
+            command=self.execute_office_only,
+            width=180,
+            height=40
+        )
+        partial_button.grid(row=0, column=1, padx=(10, 0), pady=5, sticky="ew")
+
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
+        # Status-Anzeige
+        status_label = ctk.CTkLabel(execution_frame, text="Status und Fortschritt:",
+                                   font=ctk.CTkFont(weight="bold"))
+        status_label.pack(anchor="w", padx=20, pady=(10, 5))
+
+        self.execution_status = ctk.CTkTextbox(
+            execution_frame, 
+            height=260,
+            font=ctk.CTkFont(family="Consolas", size=12)
+        )
+        self.execution_status.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+
+        # Initialer Text für Status-Anzeige
+        initial_status = """🚀 PC-KONFIGURATOR - BEREIT ZUR AUSFÜHRUNG
+==================================================
+
+ℹ️ Anweisungen:
+  • 'Vollständige Konfiguration starten' → Komplette Einrichtung
+  • 'Nur Office konfigurieren' → Schnelle Registry-Optimierungen
+
+📊 Der detaillierte Fortschritt wird hier live angezeigt.
+
+🔴 Warten auf Benutzeraktion...
+"""
+        self.execution_status.insert("0.0", initial_status)
+        
+    def execute_all_configurations(self):
+        """Alle Konfigurationen ausführen"""
+        try:
+            self.execution_status.delete("0.0", "end")
+            self.execution_status.insert("0.0", "🚀 VOLLSTÄNDIGE KONFIGURATION GESTARTET\\n" + "=" * 40 + "\\n\\n")
+            
+            # In separatem Thread ausführen
+            thread = threading.Thread(target=self._run_full_configuration)
+            thread.daemon = True
+            thread.start()
+            
+        except Exception as e:
+            self.execution_status.insert("end", f"FEHLER: {e}\\n")
+    
+    def execute_office_only(self):
+        """Nur Office-Konfiguration ausführen"""
+        try:
+            self.execution_status.delete("0.0", "end")
+            self.execution_status.insert("0.0", "📝 OFFICE-KONFIGURATION GESTARTET\\n" + "=" * 35 + "\\n\\n")
+            
+            # In separatem Thread ausführen
+            thread = threading.Thread(target=self._run_office_configuration)
+            thread.daemon = True
+            thread.start()
+            
+        except Exception as e:
+            self.execution_status.insert("end", f"FEHLER: {e}\\n")
+    
+    def _run_full_configuration(self):
+        """Vollständige Konfiguration in separatem Thread"""
+        try:
+            # System-Check
+            self.execution_status.insert("end", "1. System-Check...\\n")
+            self.root.update()
+            system_info = self.system_checker.get_system_info()
+            self.execution_status.insert("end", f"   Erfolg: {system_info['os']} erkannt\\n")
+            
+            # Office-Konfiguration
+            self.execution_status.insert("end", "2. Office-Konfiguration...\\n")
+            self.root.update()
+            
+            office_settings = self._get_office_settings_from_gui()
+            result = self.office_configurator.configure_all_settings(office_settings)
+            
+            if result['success']:
+                self.execution_status.insert("end", f"   Erfolg: {result['applied_count']} Einstellungen angewendet\\n")
+            else:
+                self.execution_status.insert("end", f"   Fehler: {result.get('error', 'Unbekannter Fehler')}\\n")
+            
+            # Office-Templates sicher wiederherstellen
+            self.execution_status.insert("end", "3. Office-Templates sicher konfigurieren...\\n")
+            self.root.update()
+            
+            try:
+                # Sichere Template-Wiederherstellung und Font-Konfiguration
+                safe_results = self.safe_office_config.safe_font_setup(
+                    font_name=self.font_name.get(),
+                    font_size_word=self.font_size_word.get(),
+                    font_size_excel=self.font_size_excel.get()
+                )
+                
+                if safe_results['success']:
+                    self.execution_status.insert("end", "   ✅ Templates sicher wiederhergestellt\\n")
+                    self.execution_status.insert("end", f"   ✅ Schriftart konfiguriert: {self.font_name.get()}\\n")
+                    self.execution_status.insert("end", f"   ✅ Word: {self.font_size_word.get()}pt, Excel: {self.font_size_excel.get()}pt\\n")
+                else:
+                    self.execution_status.insert("end", "   ⚠️ Templates teilweise wiederhergestellt\\n")
+                
+            except Exception as template_error:
+                self.execution_status.insert("end", f"   ❌ Template-Fehler: {template_error}\\n")
+            
+            # Datei-Synchronisation (optional)
+            # (Feature nicht aktiviert)
+                
+            self.execution_status.insert("end", "\\nKonfiguration abgeschlossen!\\n")
+            
+        except Exception as e:
+            self.execution_status.insert("end", f"\\nFEHLER: {e}\\n")
+        
+        self.root.update()
+    
+    def _run_office_configuration(self):
+        """Nur Office-Konfiguration in separatem Thread"""
+        try:
+            self.execution_status.insert("end", "Office-Konfiguration startet...\\n")
+            self.root.update()
+            
+            office_settings = self._get_office_settings_from_gui()
+            result = self.office_configurator.configure_all_settings(office_settings)
+            
+            if result['success']:
+                self.execution_status.insert("end", f"Erfolg: {result['applied_count']} Einstellungen angewendet\\n")
+                self.execution_status.insert("end", "Office-Konfiguration abgeschlossen!\\n")
+            else:
+                self.execution_status.insert("end", f"Fehler: {result.get('error', 'Unbekannter Fehler')}\\n")
+            
+        except Exception as e:
+            self.execution_status.insert("end", f"FEHLER: {e}\\n")
+        
+        self.root.update()
+    
+    def _get_office_settings_from_gui(self):
+        """Office-Einstellungen aus GUI-Eingaben extrahieren"""
+        return {
+            'font_name': self.font_name.get(),
+            'font_size_word': self.font_size_word.get(),
+            'font_size_excel': self.font_size_excel.get(),
+            'target_drive': self.target_drive.get(),
+            'use_documents_folder': self.use_documents.get()
+        }
+        
+    def create_logs_tab(self):
+        """Logs-Tab erstellen"""
+        logs_frame = self.tabview.tab("Logs")
+        
+        # Log-Textbereich
+        self.log_text = ctk.CTkTextbox(logs_frame, height=400)
+        self.log_text.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Button-Frame für Log-Aktionen
+        log_button_frame = ctk.CTkFrame(logs_frame)
+        log_button_frame.pack(fill="x", padx=10, pady=10)
+        
+        refresh_button = ctk.CTkButton(
+            log_button_frame,
+            text="Logs aktualisieren",
+            command=self.refresh_logs
+        )
+        refresh_button.pack(side="left", padx=5)
+        
+        clear_button = ctk.CTkButton(
+            log_button_frame,
+            text="Logs löschen",
+            command=self.clear_logs
+        )
+        clear_button.pack(side="left", padx=5)
+        
+        save_button = ctk.CTkButton(
+            log_button_frame,
+            text="Logs speichern",
+            command=self.save_logs
+        )
+        save_button.pack(side="right", padx=5)
+        
+    def check_system_requirements(self):
+        """System-Anforderungen in separatem Thread prüfen"""
+        def check():
+            try:
+                result = self.system_checker.check_all_requirements()
+                self.root.after(0, lambda: self.update_system_status(result))
+            except Exception as e:
+                self.logger.error(f"Fehler bei Systemprüfung: {e}")
+                self.root.after(0, lambda: self.update_system_status({"success": False, "error": str(e)}))
+        
+        thread = threading.Thread(target=check, daemon=True)
+        thread.start()
+        
+    def update_system_status(self, result):
+        """System-Status in der GUI aktualisieren"""
+        if result["success"]:
+            office_bitness = result.get('office', {}).get('bitness', '?')
+            status_text = (
+                f"[OK] System OK\n"
+                f"Windows: {result['windows_version']}\n"
+                f"Office: {result['office_version']} ({office_bitness})"
+            )
+            self.status_label.configure(text=status_text, text_color="green", justify="left")
+        else:
+            self.status_label.configure(text=f"[FEHLER] {result.get('error', 'Unbekannter Fehler')}", 
+                                      text_color="red", justify="left")
+    
+    def start_configuration(self):
+        """Konfiguration in separatem Thread starten"""
+        self.start_button.configure(state="disabled")
+        self.stop_button.configure(state="normal")
+        self.progress_bar.set(0)
+        self.clear_status_text()
+        
+        def configure():
+            try:
+                self.run_configuration_steps()
+            except Exception as e:
+                self.logger.error(f"Fehler bei Konfiguration: {e}")
+                self.root.after(0, lambda: self.add_status_text(f"Fehler: {e}"))
+            finally:
+                self.root.after(0, self.configuration_finished)
+                
+        thread = threading.Thread(target=configure, daemon=True)
+        thread.start()
+        
+    def run_configuration_steps(self):
+        """Alle Konfigurationsschritte ausführen"""
+        steps = [
+            ("Systemanforderungen pruefen", self.system_checker.check_all_requirements),
+            ("Benutzerdefinierte Fonts installieren", self.install_fonts_step),
+            ("Office-Programme initialisieren", self.office_configurator.initialize_office),
+            ("Datei-Vorlagen synchronisieren", self.sync_file_templates),
+            ("Office-Einstellungen konfigurieren", self.configure_office_settings),
+            ("Abschluss", self.finish_configuration)
+        ]
+        
+        total_steps = len(steps)
+        
+        for i, (step_name, step_func) in enumerate(steps):
+            self.root.after(0, lambda name=step_name: self.add_status_text(f"[AUSFUEHRUNG] {name}..."))
+            
+            try:
+                if step_name == "Datei-Vorlagen synchronisieren":
+                    target_path = self.get_target_path()
+                    result = step_func(target_path)
+                elif step_name == "Office-Einstellungen konfigurieren":
+                    config = {
+                        "font_name": self.font_name.get(),
+                        "font_size_word": self.font_size_word.get(),
+                        "font_size_excel": self.font_size_excel.get(),
+                        "target_path": self.get_target_path()
+                    }
+                    result = step_func(config)
+                else:
+                    result = step_func()
+                    
+                if result.get("success", True):
+                    self.root.after(0, lambda name=step_name: self.add_status_text(f"[OK] {name} abgeschlossen"))
+                else:
+                    self.root.after(0, lambda name=step_name, err=result.get("error", ""): 
+                                  self.add_status_text(f"[FEHLER] {name} fehlgeschlagen: {err}"))
+                    
+            except Exception as e:
+                self.root.after(0, lambda name=step_name, err=str(e): 
+                              self.add_status_text(f"[FEHLER] {name} fehlgeschlagen: {err}"))
+                
+            # Fortschritt aktualisieren
+            progress = (i + 1) / total_steps
+            self.root.after(0, lambda p=progress: self.progress_bar.set(p))
+    def get_target_path(self):
+        """Zielpfad basierend auf Benutzerauswahl ermitteln"""
+        if self.use_documents.get():
+            return Path.home() / "Documents" / "Datei-Vorlagen"
+        else:
+            drive = self.target_drive.get().upper()
+            if not drive.endswith(":"):
+                drive += ":"
+            return Path(drive) / "Datei-Vorlagen"
+            
+    def sync_file_templates(self, target_path):
+        """Datei-Vorlagen synchronisieren"""
+        # Datei-Vorlagen-Verzeichnis finden - unterschiedliche Pfade für EXE und Entwicklung
+        if getattr(sys, 'frozen', False):
+            # Läuft als PyInstaller-Bundle - Datei-Vorlagen neben EXE
+            source_path = Path(sys.executable).parent / "Datei-Vorlagen"
+        else:
+            # Läuft als Python-Skript in Entwicklung
+            source_path = Path(__file__).parent.parent / "Datei-Vorlagen"
+        
+        return self.file_sync.sync_directories(source_path, target_path)
+        
+    def configure_office_settings(self, config):
+        """Office-Einstellungen konfigurieren mit Hybrid Template-Manager"""
+        try:
+            # Schriftart und -größe aus Konfiguration extrahieren
+            font_name = config.get('font_name', 'Aptos')
+            font_size_word = config.get('font_size_word', 11)
+            font_size_excel = config.get('font_size_excel', 10)
+            self.add_status_text(f"🔧 Konfiguriere Office mit {font_name} (Word: {font_size_word}pt, Excel: {font_size_excel}pt)")
+
+            # 1. Standards-Templates mit Schriftart anpassen
+            self.add_status_text("📄 Standards-Templates werden angepasst...")
+            mod_success = 0
+            mod_total = 0
+            copy_success = 0
+            copy_total = 0
+            modification_phase = {}
+            copy_phase = {}
+            overall_success = False
+
+            # Schriftart in Templates anpassen
+            try:
+                mod_result = self.template_manager.update_font_in_templates(
+                    font_name=font_name,
+                    font_size_word=font_size_word,
+                    font_size_excel=font_size_excel
+                )
+                modification_phase = {k: {'success': v} for k, v in mod_result.items()}
+                mod_success = sum(1 for v in mod_result.values() if v)
+                mod_total = len(mod_result)
+            except Exception as e:
+                self.logger.error(f"Fehler bei Template-Anpassung: {e}")
+                self.add_status_text(f"❌ Fehler bei Template-Anpassung: {e}")
+
+            # Templates ins Benutzerprofil kopieren
+            self.add_status_text("📄 Standards-Templates werden kopiert...")
+            try:
+                copy_result = self.template_manager.copy_templates_to_user()
+                copy_phase = {k: {'success': v} for k, v in copy_result.items()}
+                copy_success = sum(1 for v in copy_result.values() if v)
+                copy_total = len(copy_result)
+            except Exception as e:
+                self.logger.error(f"Fehler beim Kopieren der Templates: {e}")
+                self.add_status_text(f"❌ Fehler beim Kopieren der Templates: {e}")
+
+            # Status-Updates
+            if mod_success == mod_total and mod_total > 0:
+                self.add_status_text(f"✅ Alle {mod_total} Standards-Templates angepasst ({font_name})")
+            elif mod_success > 0:
+                self.add_status_text(f"⚠️ {mod_success}/{mod_total} Templates angepasst")
+            else:
+                self.add_status_text("❌ Template-Anpassung fehlgeschlagen")
+
+            if copy_success == copy_total and copy_total > 0:
+                self.add_status_text(f"✅ Alle {copy_total} Templates in Benutzerverzeichnisse kopiert")
+            elif copy_success > 0:
+                self.add_status_text(f"⚠️ {copy_success}/{copy_total} Templates kopiert")
+            else:
+                self.add_status_text("❌ Template-Kopierung fehlgeschlagen")
+
+            overall_success = (mod_success == mod_total and copy_success == copy_total and mod_total > 0)
+            template_results = {
+                'modification_phase': modification_phase,
+                'copy_phase': copy_phase,
+                'overall_success': overall_success
+            }
+
+            # 2. Zusätzlich Registry-basierte Sicherheitskonfiguration
+            registry_results = self.safe_office_config.configure_safe_office_defaults(
+                font_name, font_size_word, font_size_excel
+            )
+            if registry_results['success']:
+                self.add_status_text("✅ Registry-Konfiguration erfolgreich")
+            else:
+                self.add_status_text("⚠️ Registry-Konfiguration teilweise fehlgeschlagen")
+
+            # 3. Alte Office-Konfiguration als Fallback
+            fallback_results = self.office_configurator.configure_all_settings(config)
+
+            # Gesamtergebnis bewerten
+            overall_success = (
+                template_results.get('overall_success', False) or 
+                registry_results.get('success', False) or 
+                fallback_results.get('success', False)
+            )
+
+            return {
+                'success': overall_success,
+                'template_results': template_results,
+                'template_success': template_results.get('overall_success', False),
+                'registry_results': registry_results,
+                'fallback_results': fallback_results
+            }
+
+        except Exception as e:
+            self.logger.error(f"Fehler bei Office-Konfiguration: {e}")
+            self.add_status_text(f"❌ Fehler bei Office-Konfiguration: {e}")
+            return {'success': False, 'error': str(e)}
+        
+    def finish_configuration(self):
+        """Konfiguration abschließen"""
+        return {"success": True, "message": "Konfiguration erfolgreich abgeschlossen!"}
+    
+    def install_custom_fonts(self):
+        """Benutzerdefinierte Fonts installieren - UI-Callback"""
+        def install():
+            try:
+                self.add_status_text("Installiere benutzerdefinierte Fonts...")
+                
+                # Fonts-Verzeichnis finden - unterschiedliche Pfade für EXE und Entwicklung
+                if getattr(sys, 'frozen', False):
+                    # Läuft als PyInstaller-Bundle - Fonts-Ordner neben EXE
+                    fonts_dir = Path(sys.executable).parent / "Fonts"
+                else:
+                    # Läuft als Python-Skript in Entwicklung
+                    fonts_dir = Path(__file__).parent.parent / "Fonts"
+                
+                self.logger.info(f"Suche Fonts in: {fonts_dir}")
+                
+                result = self.font_installer.install_fonts_from_directory(fonts_dir)
+                
+                if result["success"]:
+                    message = f"Fonts installiert: {len(result['installed_fonts'])}"
+                    if result['failed_fonts']:
+                        message += f", Fehlgeschlagen: {len(result['failed_fonts'])}"
+                    self.add_status_text(f"[OK] {message}")
+                    messagebox.showinfo("Erfolg", f"{message}\n\nDie Anwendung wird neugestartet, um die neuen Fonts zu laden.")
+                    
+                    # Font-Menü aktualisieren
+                    self._refresh_font_menu()
+                else:
+                    self.add_status_text(f"[FEHLER] Font-Installation fehlgeschlagen: {result.get('error', 'Unbekannter Fehler')}")
+                    messagebox.showerror("Fehler", f"Font-Installation fehlgeschlagen:\n{result.get('error', 'Unbekannter Fehler')}")
+                    
+            except Exception as e:
+                error_msg = f"Fehler bei Font-Installation: {e}"
+                self.add_status_text(f"[FEHLER] {error_msg}")
+                messagebox.showerror("Fehler", error_msg)
+        
+        # In separatem Thread ausführen
+        thread = threading.Thread(target=install, daemon=True)
+        thread.start()
+        
+    def install_fonts_step(self):
+        """Font-Installation als Konfigurations-Schritt"""
+        try:
+            # Fonts-Verzeichnis finden - unterschiedliche Pfade für EXE und Entwicklung
+            if getattr(sys, 'frozen', False):
+                # Läuft als PyInstaller-Bundle - Fonts-Ordner neben EXE
+                fonts_dir = Path(sys.executable).parent / "Fonts"
+            else:
+                # Läuft als Python-Skript in Entwicklung
+                fonts_dir = Path(__file__).parent.parent / "Fonts"
+            
+            if not fonts_dir.exists():
+                return {"success": True, "message": f"Keine benutzerdefinierten Fonts gefunden in: {fonts_dir}"}
+                
+            result = self.font_installer.install_fonts_from_directory(fonts_dir)
+            return result
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def _refresh_font_menu(self):
+        """Aktualisiert das Font-Auswahlmenü mit neuen Fonts"""
+        try:
+            # Immer die vollständige Liste anzeigen
+            priority_fonts = ["Aptos", "Aptos Narrow", "Arial", "Calibri", "Futura", "Montserrat", "PT Sans", "Raleway"]
+            font_options = priority_fonts
+            
+            self.logger.info(f"Verfügbare Fonts aktualisiert: {font_options}")
+            
+        except Exception as e:
+            self.logger.error(f"Fehler beim Aktualisieren des Font-Menüs: {e}")
+        
+    def stop_configuration(self):
+        """Konfiguration abbrechen (vereinfacht)"""
+        self.add_status_text("[WARNUNG] Abbruch angefordert...")
+        self.configuration_finished()
+        
+    def configuration_finished(self):
+        """Nach Konfigurationsabschluss aufräumen"""
+        self.start_button.configure(state="normal")
+        self.stop_button.configure(state="disabled")
+        self.progress_bar.set(1.0)
+        
+    def add_status_text(self, text):
+        """Text zur Status-Anzeige hinzufügen"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.status_text.insert("end", f"[{timestamp}] {text}\n")
+        self.status_text.see("end")
+        
+    def clear_status_text(self):
+        """Status-Text löschen"""
+        self.status_text.delete("0.0", "end")
+        
+    def refresh_logs(self):
+        """Log-Dateien neu laden und anzeigen"""
+        try:
+            log_dir = Path(__file__).parent.parent / "logs"
+            if not log_dir.exists():
+                self.log_text.delete("0.0", "end")
+                self.log_text.insert("0.0", "Keine Log-Dateien gefunden.")
+                return
+                
+            # Neueste Log-Datei finden
+            log_files = list(log_dir.glob("*.log"))
+            if not log_files:
+                self.log_text.delete("0.0", "end")
+                self.log_text.insert("0.0", "Keine Log-Dateien gefunden.")
+                return
+                
+            latest_log = max(log_files, key=lambda f: f.stat().st_mtime)
+            
+            # Log-Inhalt lesen und anzeigen
+            with open(latest_log, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            self.log_text.delete("0.0", "end")
+            self.log_text.insert("0.0", content)
+            self.log_text.see("end")
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Laden der Logs: {e}")
+            
+    def clear_logs(self):
+        """Log-Anzeige leeren"""
+        self.log_text.delete("0.0", "end")
+        
+    def save_logs(self):
+        """Logs in Datei speichern"""
+        try:
+            content = self.log_text.get("0.0", "end")
+            if not content.strip():
+                messagebox.showwarning("Warnung", "Keine Logs zum Speichern vorhanden.")
+                return
+                
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".log",
+                filetypes=[("Log-Dateien", "*.log"), ("Text-Dateien", "*.txt"), ("Alle Dateien", "*.*")]
+            )
+            
+            if filename:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                messagebox.showinfo("Erfolg", f"Logs gespeichert in: {filename}")
+                
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Speichern der Logs: {e}")
+    
+    def open_registry_details(self):
+        """Detaillierte Registry-Ansicht mit Tabs und dynamischen Einstellungen öffnen"""
+        self.registry_gui.show_window()
+    
+    def create_settings_section(self, parent, title, settings_list):
+        """Erstellt eine Sektion mit Checkboxen für Registry-Einstellungen"""
+        # Sektion-Frame
+        section_frame = ctk.CTkFrame(parent)
+        section_frame.pack(fill="x", pady=10, padx=5)
+        
+        # Titel
+        title_label = ctk.CTkLabel(section_frame, text=title, 
+                                  font=ctk.CTkFont(size=14, weight="bold"))
+        title_label.pack(anchor="w", padx=10, pady=(10, 5))
+        
+        # Checkboxen für Einstellungen
+        for setting_id, description, default_value in settings_list:
+            checkbox_frame = ctk.CTkFrame(section_frame)
+            checkbox_frame.pack(fill="x", padx=10, pady=2)
+            
+            # Checkbox-Variable
+            var = ctk.BooleanVar(value=default_value)
+            self.registry_settings[setting_id] = var
+            
+            # Checkbox
+            checkbox = ctk.CTkCheckBox(checkbox_frame, text=description, variable=var,
+                                      command=lambda: self.check_for_changes())
+            checkbox.pack(anchor="w", padx=10, pady=5)
+        
+        # Abstand nach Sektion
+        ctk.CTkLabel(section_frame, text="").pack(pady=5)
+    
+    def check_for_changes(self):
+        """Prüft, ob Änderungen an den empfohlenen Einstellungen vorgenommen wurden"""
+        # Empfohlene Standardwerte
+        recommended_settings = {
+            "word_developer_tab": True, "word_ruler_display": True, "word_navigation_pane": False,
+            "word_format_marks": True, "word_table_gridlines": True, "word_smart_quotes": True,
+            "word_default_path": True, "word_template_path": True, "word_startup_path": False,
+            "excel_developer_tab": True, "excel_formula_bar": True, "excel_gridlines": True,
+            "excel_default_path": True, "excel_template_path": True,
+            "office_default_font": True, "office_font_substitution": True
+        }
+        
+        # Prüfe auf Abweichungen
+        changes_made = False
+        for setting_id, var in self.registry_settings.items():
+            if var.get() != recommended_settings.get(setting_id, True):
+                changes_made = True
+                break
+        
+        # Warnung anzeigen/ausblenden
+        if hasattr(self, 'settings_window') and self.settings_window.winfo_exists():
+            if changes_made and not hasattr(self, 'warning_shown'):
+                self.show_change_warning()
+                self.warning_shown = True
+            elif not changes_made and hasattr(self, 'warning_shown'):
+                self.hide_change_warning()
+                delattr(self, 'warning_shown')
+    
+    def show_change_warning(self):
+        """Zeigt Warnung bei Änderungen an"""
+        if hasattr(self, 'settings_window') and self.settings_window.winfo_exists():
+            warning_frame = ctk.CTkFrame(self.settings_window, fg_color="orange")
+            warning_frame.pack(fill="x", padx=10, pady=5, before=self.settings_window.winfo_children()[-1])
+            
+            warning_text = ctk.CTkLabel(warning_frame, 
+                                       text="⚠️ Sie haben Änderungen an den empfohlenen Einstellungen vorgenommen. Die optimale Funktionalität kann nicht garantiert werden.",
+                                       font=ctk.CTkFont(size=11, weight="bold"), text_color="white")
+            warning_text.pack(pady=10)
+            
+            self.change_warning_frame = warning_frame
+    
+    def hide_change_warning(self):
+        """Versteckt Warnung bei Rückkehr zu Empfehlungen"""
+        if hasattr(self, 'change_warning_frame'):
+            self.change_warning_frame.destroy()
+            delattr(self, 'change_warning_frame')
+    
+    def apply_custom_settings(self):
+        """Wendet die benutzerdefinierten Einstellungen an"""
+        try:
+            # Sammle aktivierte Einstellungen
+            active_settings = {}
+            for setting_id, var in self.registry_settings.items():
+                active_settings[setting_id] = var.get()
+            
+            # Führe nur aktivierte Konfigurationen aus
+            self.office_configurator.apply_custom_registry_settings(active_settings)
+            
+            messagebox.showinfo("Erfolg", "Benutzerdefinierte Einstellungen wurden erfolgreich angewendet!")
+            self.settings_window.destroy()
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Anwenden der Einstellungen: {e}")
+    
+    def reset_to_recommended(self):
+        """Setzt alle Einstellungen auf empfohlene Werte zurück"""
+        recommended_settings = {
+            "word_developer_tab": True, "word_ruler_display": True, "word_navigation_pane": False,
+            "word_format_marks": True, "word_table_gridlines": True, "word_smart_quotes": True,
+            "word_default_path": True, "word_template_path": True, "word_startup_path": False,
+            "excel_developer_tab": True, "excel_formula_bar": True, "excel_gridlines": True,
+            "excel_default_path": True, "excel_template_path": True,
+            "office_default_font": True, "office_font_substitution": True
+        }
+        
+        for setting_id, var in self.registry_settings.items():
+            var.set(recommended_settings.get(setting_id, True))
+        
+        self.check_for_changes()
+    
+    def check_safe_template_status(self):
+        """Überprüft den Status der Office-Templates mit sicherer Methode"""
+        try:
+            # Template-Status mit sicherer Methode ermitteln
+            status = self.safe_office_config.check_template_status()
+            
+            # Bestehende Status-Widgets entfernen
+            for widget in self.template_status_frame.winfo_children():
+                widget.destroy()
+            
+            # Status-Anzeige erstellen
+            status_info = "Template-Status (Sicherheitscheck):\\n\\n"
+            
+            template_names = {
+                'normal_dotm': 'Word Standard-Template (Normal.dotm)',
+                'mappe_xltx': 'Excel Standard-Template (Mappe.xltx)',
+                'normal_email_dotm': 'Outlook E-Mail-Template (NormalEmail.dotm)'
+            }
+            
+            for template_key, template_name in template_names.items():
+                template_status = status[template_key]
+                
+                if template_status == "OK":
+                    status_emoji = "✅"
+                elif "Beschädigt" in template_status:
+                    status_emoji = "⚠️"
+                elif "Nicht vorhanden" in template_status:
+                    status_emoji = "❌"
+                else:
+                    status_emoji = "⚠️"
+                    
+                status_info += f"{status_emoji} {template_name}\\n"
+                status_info += f"   Status: {template_status}\\n\\n"
+            
+            status_label = ctk.CTkLabel(
+                self.template_status_frame,
+                text=status_info,
+                justify="left",
+                font=ctk.CTkFont(family="Courier New", size=11)
+            )
+            status_label.pack(anchor="w", padx=10, pady=5)
+            
+        except Exception as e:
+            error_label = ctk.CTkLabel(
+                self.template_status_frame,
+                text=f"Fehler beim Überprüfen der Templates: {str(e)}",
+                text_color="red"
+            )
+            error_label.pack(anchor="w", padx=10, pady=5)
+    
+    def safe_restore_templates(self):
+        """Sichere Template-Wiederherstellung und Schriftart-Konfiguration"""
+        try:
+            # Warnung und Bestätigung
+            result = messagebox.askyesno(
+                "Sichere Template-Wiederherstellung",
+                "SICHERE TEMPLATE-WIEDERHERSTELLUNG\\n\\n"
+                "Was passiert:\\n"
+                "✅ Beschädigte Templates werden durch Original-Versionen ersetzt\\n"
+                "✅ Schriftart-Einstellungen werden über Registry gesetzt (sicher!)\\n"
+                "✅ Keine direkte Template-Manipulation\\n\\n"
+                f"Gewählte Schriftart: {self.font_name.get()}\\n"
+                f"Word-Größe: {self.font_size_word.get()}pt\\n"
+                f"Excel-Größe: {self.font_size_excel.get()}pt\\n\\n"
+                "Fortfahren?",
+                icon="question"
+            )
+            
+            if not result:
+                return
+            
+            # Progress-Dialog
+            progress_window = ctk.CTkToplevel(self.root)
+            progress_window.title("Sichere Template-Wiederherstellung...")
+            progress_window.geometry("450x150")
+            progress_window.transient(self.root)
+            progress_window.grab_set()
+            
+            progress_label = ctk.CTkLabel(progress_window, text="Templates werden sicher wiederhergestellt...")
+            progress_label.pack(pady=20)
+            
+            progress_details = ctk.CTkLabel(progress_window, text="", justify="left")
+            progress_details.pack(pady=10)
+            
+            # Sichere Template-Konfiguration ausführen
+            progress_details.configure(text="Sichere Schriftart-Konfiguration...")
+            progress_window.update()
+            
+            results = self.safe_office_config.safe_font_setup(
+                font_name=self.font_name.get(),
+                font_size_word=self.font_size_word.get(),
+                font_size_excel=self.font_size_excel.get()
+            )
+            
+            progress_window.destroy()
+            
+            # Ergebnisse anzeigen
+            if results['success']:
+                recovered_templates = sum(results['template_recovery'].values())
+                total_templates = len(results['template_recovery'])
+                
+                messagebox.showinfo(
+                    "✅ Sichere Wiederherstellung erfolgreich!",
+                    f"Templates und Schriftarten erfolgreich konfiguriert!\\n\\n"
+                    f"📁 Templates wiederhergestellt: {recovered_templates}/{total_templates}\\n"
+                    f"📝 Schriftart-Konfiguration: Erfolgreich\\n\\n"
+                    f"🎯 Neue Einstellungen:\\n"
+                    f"• Schriftart: {self.font_name.get()}\\n"
+                    f"• Word: {self.font_size_word.get()}pt\\n"
+                    f"• Excel: {self.font_size_excel.get()}pt\\n\\n"
+                    f"➤ Starten Sie Office-Programme neu für beste Ergebnisse!"
+                )
+            else:
+                messagebox.showwarning(
+                    "⚠️ Teilweise erfolgreich",
+                    f"Wiederherstellung teilweise erfolgreich.\\n\\n"
+                    f"Template-Wiederherstellung: {results['template_recovery']}\\n"
+                    f"Font-Konfiguration: {results['font_configuration']}\\n\\n"
+                    f"Überprüfen Sie die Log-Dateien für Details."
+                )
+            
+            # Status neu laden
+            self.check_safe_template_status()
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler bei sicherer Template-Wiederherstellung: {str(e)}")
+    
+    def show_template_status(self):
+        """Überprüft den Status der Office-Templates"""
+        try:
+            # Template-Status ermitteln
+            status = self.template_manager.check_templates_exist()
+            current_fonts = self.template_manager.get_current_fonts_in_templates()
+            
+            # Bestehende Status-Widgets entfernen
+            for widget in self.template_status_frame.winfo_children():
+                widget.destroy()
+            
+            # Status-Anzeige erstellen
+            status_info = "Template-Status:\n\n"
+            
+            template_names = {
+                'normal_dotm': 'Word Standard-Template (Normal.dotm)',
+                'mappe_xltx': 'Excel Standard-Template (Mappe.xltx)',
+                'normal_email_dotm': 'Outlook E-Mail-Template (NormalEmail.dotm)'
+            }
+            
+            for template_key, template_name in template_names.items():
+                exists = status[template_key]
+                current_font = current_fonts[template_key]
+                
+                status_emoji = "✅" if exists else "❌"
+                status_info += f"{status_emoji} {template_name}\n"
+                status_info += f"   Aktuell: {current_font}\n\n"
+            
+            status_label = ctk.CTkLabel(
+                self.template_status_frame,
+                text=status_info,
+                justify="left",
+                font=ctk.CTkFont(family="Courier New", size=11)
+            )
+            status_label.pack(anchor="w", padx=10, pady=5)
+            
+        except Exception as e:
+            error_label = ctk.CTkLabel(
+                self.template_status_frame,
+                text=f"Fehler beim Überprüfen der Templates: {str(e)}",
+                text_color="red"
+            )
+            error_label.pack(anchor="w", padx=10, pady=5)
+    
+    def update_office_templates(self):
+        """Kopiert und aktualisiert Office-Templates"""
+        try:
+            # Office-Prozess-Warnung anzeigen
+            office_warning = messagebox.askyesno(
+                "Office-Programme schließen",
+                "WICHTIG: Für beste Ergebnisse sollten alle Office-Programme geschlossen sein.\n\n"
+                "Sind Word, Excel und Outlook geschlossen?\n\n"
+                "➤ JA: Fortfahren mit Template-Update\n"
+                "➤ NEIN: Zuerst Office-Programme schließen",
+                icon="question"
+            )
+            
+            if not office_warning:
+                messagebox.showinfo(
+                    "Template-Update abgebrochen",
+                    "Bitte schließen Sie alle Office-Programme und versuchen Sie es erneut.\n\n"
+                    "Office-Programme:\n• Microsoft Word\n• Microsoft Excel\n• Microsoft Outlook\n• Microsoft PowerPoint"
+                )
+                return
+            
+            # Bestätigung vom Benutzer
+            result = messagebox.askyesno(
+                "Templates aktualisieren",
+                "Möchten Sie die Office-Templates kopieren und mit der gewählten Schriftart aktualisieren?\n\n"
+                f"Gewählte Schriftart: {self.font_name.get()}\n\n"
+                "Was passiert:\n"
+                "• Normal.dotm → Word Standard-Template\n"
+                "• Mappe.xltx → Excel Standard-Template\n"
+                "• NormalEmail.dotm → Outlook E-Mail-Template\n\n"
+                "Bestehende Templates werden überschrieben!"
+            )
+            
+            if not result:
+                return
+            
+            # Progress-Dialog anzeigen (vereinfacht)
+            progress_window = ctk.CTkToplevel(self.root)
+            progress_window.title("Templates werden aktualisiert...")
+            progress_window.geometry("400x200")
+            progress_window.transient(self.root)
+            progress_window.grab_set()
+            
+            progress_label = ctk.CTkLabel(progress_window, text="Templates werden kopiert und aktualisiert...")
+            progress_label.pack(pady=20)
+            
+            progress_details = ctk.CTkLabel(progress_window, text="", justify="left")
+            progress_details.pack(pady=10)
+            
+            # Template-Operationen ausführen
+            progress_details.configure(text="Schritt 1/2: Templates kopieren...")
+            progress_window.update()
+            
+            # Templates kopieren
+            copy_results = self.template_manager.copy_templates_to_user()
+            
+            progress_details.configure(text="Schritt 2/2: Schriftarten aktualisieren...")
+            progress_window.update()
+            
+            # Schriftarten in Templates aktualisieren
+            font_results = self.template_manager.update_font_in_templates(
+                font_name=self.font_name.get(),
+                font_size_word=self.font_size_word.get(),
+                font_size_excel=self.font_size_excel.get()
+            )
+            
+            progress_window.destroy()
+            
+            # Ergebnisse anzeigen
+            success_count = sum(copy_results.values()) + sum(font_results.values())
+            total_operations = len(copy_results) + len(font_results)
+            
+            copy_success = sum(copy_results.values())
+            font_success = sum(font_results.values())
+            
+            # Detaillierte Ergebnis-Analyse
+            failed_templates = []
+            successful_templates = []
+            
+            for template_key in copy_results.keys():
+                copy_ok = copy_results[template_key]
+                font_ok = font_results[template_key]
+                
+                template_names = {
+                    'normal_dotm': 'Word Standard-Template',
+                    'mappe_xltx': 'Excel Standard-Template', 
+                    'normal_email_dotm': 'Outlook E-Mail-Template'
+                }
+                
+                template_name = template_names.get(template_key, template_key)
+                
+                if copy_ok and font_ok:
+                    successful_templates.append(f"✅ {template_name}")
+                elif copy_ok and not font_ok:
+                    failed_templates.append(f"⚠️ {template_name} (kopiert, aber Schriftart-Update fehlgeschlagen)")
+                elif not copy_ok and font_ok:
+                    failed_templates.append(f"⚠️ {template_name} (Schriftart aktualisiert, aber Kopieren fehlgeschlagen)")
+                else:
+                    failed_templates.append(f"❌ {template_name} (komplett fehlgeschlagen)")
+            
+            if success_count == total_operations:
+                messagebox.showinfo(
+                    "✅ Vollständig erfolgreich!",
+                    f"Alle Templates erfolgreich aktualisiert!\n\n"
+                    f"Erfolgreiche Templates:\n" +
+                    "\n".join(successful_templates) +
+                    f"\n\nNeue Standard-Schriftart: {self.font_name.get()}\n"
+                    f"Word-Größe: {self.font_size_word.get()}pt, Excel-Größe: {self.font_size_excel.get()}pt\n\n"
+                    f"➤ Neue Word-Dokumente verwenden jetzt {self.font_name.get()}!\n"
+                    f"➤ Neue Excel-Dokumente verwenden jetzt {self.font_name.get()}!\n"
+                    f"➤ Neue E-Mails verwenden jetzt {self.font_name.get()}!"
+                )
+            elif len(successful_templates) > 0:
+                message = f"Templates teilweise aktualisiert:\n\n"
+                
+                if successful_templates:
+                    message += "Erfolgreich:\n" + "\n".join(successful_templates) + "\n\n"
+                
+                if failed_templates:
+                    message += "Probleme:\n" + "\n".join(failed_templates) + "\n\n"
+                
+                message += f"Mögliche Ursachen für Probleme:\n"
+                message += f"• Office-Programme (Word/Excel/Outlook) sind noch geöffnet\n"
+                message += f"• Template-Dateien werden von anderen Programmen verwendet\n\n"
+                message += f"Empfehlung: Alle Office-Programme schließen und erneut versuchen."
+                
+                messagebox.showwarning("⚠️ Teilweise erfolgreich", message)
+            else:
+                messagebox.showerror(
+                    "❌ Fehler bei Template-Update",
+                    f"Leider konnten keine Templates aktualisiert werden.\n\n"
+                    f"Mögliche Ursachen:\n"
+                    f"• Office-Programme sind geöffnet (Word, Excel, Outlook)\n"
+                    f"• Template-Dateien sind gesperrt\n"
+                    f"• Keine Berechtigung für Template-Verzeichnisse\n\n"
+                    f"Lösungsvorschläge:\n"
+                    f"1. Alle Office-Programme schließen\n"
+                    f"2. Als Administrator ausführen\n"
+                    f"3. Überprüfen Sie die Log-Dateien für Details"
+                )
+            
+            # Status neu laden
+            self.check_safe_template_status()
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Fehler beim Aktualisieren der Templates: {str(e)}")
+    
+    def show_applied_settings(self):
+        """Angewandte Registry-Einstellungen anzeigen"""
+        try:
+            summary = self.office_configurator.get_applied_settings_summary()
+            
+            if summary["total_settings"] == 0:
+                messagebox.showinfo("Information", 
+                                  "Noch keine Einstellungen angewendet.\\n"
+                                  "Führen Sie zuerst eine Konfiguration aus.")
+                return
+                
+            # Zusammenfassung in neuem Fenster anzeigen
+            summary_window = ctk.CTkToplevel(self.root)
+            summary_window.title("Angewandte Registry-Einstellungen")
+            summary_window.geometry("600x500")
+            
+            # Zusammenfassung erstellen
+            summary_text = f"""Angewandte Registry-Einstellungen
+{'='*40}
+
+Gesamt: {summary['total_settings']} Einstellungen
+
+Nach Programmen:
+{chr(10).join(f"• {prog}: {count} Einstellungen" for prog, count in summary['by_program'].items())}
+
+Nach Kategorien:
+{chr(10).join(f"• {cat}: {count} Einstellungen" for cat, count in summary['by_category'].items())}
+
+Detaillierte Liste:
+{'='*40}
+"""
+            
+            for setting in summary['settings']:
+                summary_text += f"""
+[{setting['program']} {setting['version']}] {setting['name']}
+  Wert: {setting['value']}
+  Beschreibung: {setting['description']}
+  Kategorie: {setting['category']}
+"""
+            
+            text_widget = ctk.CTkTextbox(summary_window, width=580, height=460)
+            text_widget.pack(padx=10, pady=10)
+            text_widget.insert("0.0", summary_text)
+            text_widget.configure(state="disabled")
+            
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Konnte angewandte Einstellungen nicht anzeigen: {e}")
+    
+    def run(self):
+        """Anwendung starten"""
+        self.root.mainloop()
+
+
+def main():
+    """Hauptfunktion"""
+    try:
+        app = PCKonfiguratorGUI()
+        app.run()
+    except Exception as e:
+        messagebox.showerror("Kritischer Fehler", f"Anwendung konnte nicht gestartet werden: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
