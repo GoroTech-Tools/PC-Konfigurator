@@ -18,7 +18,10 @@ def setup_logging(log_level=logging.INFO):
     """Logging-System konfigurieren"""
     
     # Log-Verzeichnis erstellen
-    log_dir = Path(__file__).parent.parent / "logs"
+    if getattr(sys, 'frozen', False):
+        log_dir = Path(sys.executable).resolve().parent / "logs"
+    else:
+        log_dir = Path(__file__).resolve().parent.parent / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Log-Datei mit Zeitstempel
@@ -145,7 +148,10 @@ def remove_gui_handler(gui_handler):
 def get_log_files():
     """Alle Log-Dateien im Log-Verzeichnis auflisten"""
     try:
-        log_dir = Path(__file__).parent.parent / "logs"
+        if getattr(sys, 'frozen', False):
+            log_dir = Path(sys.executable).resolve().parent / "logs"
+        else:
+            log_dir = Path(__file__).resolve().parent.parent / "logs"
         if not log_dir.exists():
             return []
             

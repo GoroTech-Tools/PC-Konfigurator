@@ -11,6 +11,7 @@ from tkinter import messagebox, filedialog
 import threading
 import sys
 import os
+import subprocess
 
 # --- sys.path-Anpassung für PyInstaller-Build (src als Datenordner) ---
 if getattr(sys, 'frozen', False):
@@ -32,6 +33,18 @@ from registry_gui import RegistryExplanationWindow
 
 
 class PCKonfiguratorGUI:
+    def _get_runtime_base_dir(self) -> Path:
+        """Liefert das Basisverzeichnis der Anwendung."""
+        if getattr(sys, 'frozen', False):
+            return Path(sys.executable).resolve().parent
+        return Path(__file__).resolve().parent.parent
+
+    def _get_icon_path(self) -> Path:
+        """Ermittelt den Pfad zur ICO-Datei für GUI und EXE-Modus."""
+        if getattr(sys, 'frozen', False):
+            return Path(getattr(sys, '_MEIPASS', Path(sys.executable).resolve().parent)) / 'app_icon.ico'
+        return Path(__file__).resolve().with_name('app_icon.ico')
+
     def add_tools_menu(self):
         # Menüleiste für CustomTkinter: immer direkt mit tk.Menu arbeiten
         tk_root = self.root._get_tk() if hasattr(self.root, '_get_tk') else self.root  # type: ignore[attr-defined]
@@ -172,6 +185,7 @@ class PCKonfiguratorGUI:
         self.version = self.get_version_from_exe()
         self.setup_appearance()
         self.root = ctk.CTk()
+        self.app_dir = self._get_runtime_base_dir()
         self.setup_main_window()
         
         # Komponenten initialisieren
@@ -180,12 +194,6 @@ class PCKonfiguratorGUI:
         self.file_sync = FileSync()
         self.font_installer = FontInstaller()
         self.registry_gui = RegistryExplanationWindow(self.root, path_callback=self._get_configured_path)
-        
-        # App-Verzeichnis ermitteln
-        if getattr(sys, 'frozen', False):
-            self.app_dir = Path(sys.executable).parent
-        else:
-            self.app_dir = Path(__file__).parent.parent
         
         # Office Template Manager initialisieren
         self.template_manager = OfficeTemplateManager(self.app_dir)
@@ -221,9 +229,12 @@ class PCKonfiguratorGUI:
         self.root.resizable(True, True)
         
         # Icon setzen (falls vorhanden)
-        icon_path = Path(__file__).parent.parent / "assets" / "icon.ico"
+        icon_path = self._get_icon_path()
         if icon_path.exists():
-            self.root.iconbitmap(icon_path)
+            try:
+                self.root.iconbitmap(str(icon_path))
+            except Exception:
+                pass
             
         # Hidden-Attribute für Ordner setzen
         self.set_hidden_directories()
@@ -238,7 +249,6 @@ class PCKonfiguratorGUI:
             internal_dir = exe_dir / "_internal"
             if internal_dir.exists():
                 try:
-                    import subprocess
                     subprocess.run(["attrib", "+H", str(internal_dir)], check=False, capture_output=True)
                 except:
                     pass
@@ -247,7 +257,6 @@ class PCKonfiguratorGUI:
             logs_dir = exe_dir / "logs"
             if logs_dir.exists():
                 try:
-                    import subprocess
                     subprocess.run(["attrib", "+H", str(logs_dir)], check=False, capture_output=True)
                 except:
                     pass
@@ -1014,7 +1023,7 @@ class PCKonfiguratorGUI:
     def refresh_logs(self):
         """Log-Dateien neu laden und anzeigen"""
         try:
-            log_dir = Path(__file__).parent.parent / "logs"
+            log_dir = self.app_dir / "logs"
             if not log_dir.exists():
                 self.log_text.delete("0.0", "end")
                 self.log_text.insert("0.0", "Keine Log-Dateien gefunden.")

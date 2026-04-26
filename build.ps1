@@ -338,7 +338,13 @@ if ($buildDir) {
                 Remove-Item $zipPath -Force -ErrorAction Stop
             }
 
-            Compress-Archive -Path $buildDir.FullName -DestinationPath $zipPath -CompressionLevel Optimal -Force -ErrorAction Stop
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::CreateFromDirectory(
+                $buildDir.FullName,
+                $zipPath,
+                [System.IO.Compression.CompressionLevel]::Optimal,
+                $false
+            )
             if ($Quiet) {
                 Microsoft.PowerShell.Utility\Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
             } else {
