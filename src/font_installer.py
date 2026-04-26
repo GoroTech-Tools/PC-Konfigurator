@@ -157,41 +157,6 @@ class FontInstaller:
             self.logger.error(f"Fehler bei Font-Name-Extraktion für {font_file}: {e}")
             return None
     
-    def _register_font_in_registry(self, font_name, font_filename):
-        """
-        Registriert Font in der Windows Registry
-        
-        Args:
-            font_name: Anzeigename des Fonts
-            font_filename: Dateiname der Font-Datei
-            
-        Returns:
-            bool: True wenn erfolgreich
-        """
-        try:
-            # Registry-Schlüssel für Fonts öffnen
-            key_path = r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts"
-            
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path, 0, 
-                               winreg.KEY_SET_VALUE) as key:
-                
-                # Font registrieren
-                winreg.SetValueEx(key, font_name, 0, winreg.REG_SZ, font_filename)
-                self.logger.info(f"Font in Registry registriert: {font_name} -> {font_filename}")
-                return True
-                
-        except PermissionError:
-            # Fallback: User-Registry verwenden
-            try:
-                return self._register_font_in_user_registry(font_name, font_filename)
-            except Exception as e:
-                self.logger.error(f"Registry-Registrierung fehlgeschlagen: {e}")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"Fehler bei Registry-Registrierung für {font_name}: {e}")
-            return False
-    
     def _register_font_in_user_registry(self, font_name, font_filename):
         """
         Registriert Font in der User Registry (wenn keine Admin-Rechte)
@@ -265,47 +230,3 @@ class FontInstaller:
             
         except Exception as e:
             self.logger.error(f"Fehler beim Aktualisieren des Font-Cache: {e}")
-    
-    def get_available_fonts(self):
-        """
-        Holt Liste aller verfügbaren System-Fonts
-        
-        Returns:
-            list: Liste der verfügbaren Font-Namen
-        """
-        try:
-            import tkinter.font as tkFont
-            
-            # Temporäres Tkinter-Root für Font-Abfrage
-            import tkinter as tk
-            root = tk.Tk()
-            root.withdraw()
-            
-            # Verfügbare Font-Familien abrufen
-            fonts = sorted(tkFont.families())
-            
-            root.destroy()
-            
-            return fonts
-            
-        except Exception as e:
-            self.logger.error(f"Fehler beim Abrufen der verfügbaren Fonts: {e}")
-            return ['Arial', 'Calibri', 'Times New Roman']  # Fallback
-    
-    def is_font_installed(self, font_name):
-        """
-        Prüft ob ein Font installiert ist
-        
-        Args:
-            font_name: Name des zu prüfenden Fonts
-            
-        Returns:
-            bool: True wenn Font installiert ist
-        """
-        try:
-            available_fonts = self.get_available_fonts()
-            return font_name in available_fonts
-            
-        except Exception as e:
-            self.logger.error(f"Fehler bei Font-Prüfung für {font_name}: {e}")
-            return False

@@ -13,7 +13,7 @@ if ($Force -and (Test-Path ".\.venv")) {
 
 if (-not (Test-Path ".\.venv")) {
     Write-Host "[$repo] Erstelle .venv ..."
-    python -m venv .venv
+    py -m venv .venv
 } else {
     Write-Host "[$repo] .venv bereits vorhanden."
 }

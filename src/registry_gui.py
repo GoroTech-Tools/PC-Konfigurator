@@ -1,487 +1,355 @@
-"""
-Registry-Erläuterungs-GUI
-=========================
+"""Registry-Erläuterungs-GUI.
 
-GUI-Komponente zur Anzeige von Registry-Einstellungen mit detaillierten Erläuterungen.
-Beinhaltet Checkboxen zum Aktivieren/Deaktivieren von Einstellungen.
+Stabile, kompakte Oberfläche zur Anzeige der vom Konfigurator genutzten
+Registry-Einstellungen inklusive einfacher Auswahl-Checkboxen.
 """
 
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, messagebox
-from registry_explainer import RegistryExplainer
-import json
-from typing import Dict, List
-import os
+import tkinter.ttk as ttk
+from tkinter import messagebox
+from typing import Dict, List, Tuple
 
-def log_debug(msg):
-    """Loggt Debug-Meldungen in debug_registry_gui.txt"""
-    try:
-        # Schreibe ins Verzeichnis, in dem sich diese Datei befindet
-        log_path = os.path.join(os.path.dirname(__file__), "debug_registry_gui.txt")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(msg + "\n")
-    except Exception as e:
-        pass  # Im Fehlerfall ignorieren
+from registry_explainer import RegistryExplainer, RegistrySettingInfo
 
 
 class RegistryExplanationWindow:
-    """Fenster zur Anzeige von Registry-Erläuterungen"""
-    
-    def __init__(self, parent=None):
+    """Fenster zur Anzeige von Registry-Erläuterungen."""
+
+    def __init__(self, parent=None, path_callback=None):
         self.parent = parent
+        # Optionaler Callback: () -> str, liefert den aktuell konfigurierten Ziel-Pfad
+        self.path_callback = path_callback
         self.registry_explainer = RegistryExplainer()
         self.window = None
-        # Tracking für Checkbox-Zustände
+        self.tabview = None
         self.setting_checkboxes: Dict[str, tk.BooleanVar] = {}
         self.original_states: Dict[str, bool] = {}
         self.has_changes = False
-        
+
     def show_window(self):
-        """Registry-Erläuterungsfenster anzeigen"""
+        """Registry-Erläuterungsfenster anzeigen."""
         if self.window is not None and self.window.winfo_exists():
             self.window.lift()
             self.window.focus_force()
-            if self.window is not None:
-                self.window.attributes('-topmost', True)
-                self.window.after(100, lambda: self.window is not None and self.window.attributes('-topmost', False))
             return
-            
+
         self.window = ctk.CTkToplevel(self.parent)
         self.window.title("Registry-Einstellungen - Konfiguration")
         self.window.geometry("1000x750")
-        
-        # Fenster im Vordergrund halten
-        self.window.lift()
-        self.window.focus_force()
-        if self.window is not None:
-            self.window.attributes('-topmost', True)
-            self.window.after(100, lambda: self.window is not None and self.window.attributes('-topmost', False))
-        
-        # Fenster-Icon (falls verfügbar)
-        try:
-            self.window.iconbitmap("icon.ico")
-        except:
-            pass
-        
-        # Fenster-Schließen-Event abfangen
         self.window.protocol("WM_DELETE_WINDOW", self.on_window_closing)
-        
+
         self.create_widgets()
-        
+        self.load_current_settings()
+
+        self.window.after(50, self._bring_to_front)
+
     def create_widgets(self):
-        """GUI-Widgets erstellen"""
-        # Hauptframe
         main_frame = ctk.CTkFrame(self.window)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Titel
-        title_label = ctk.CTkLabel(
+
+        ctk.CTkLabel(
             main_frame,
             text="Registry-Einstellungen konfigurieren",
-            font=ctk.CTkFont(size=18, weight="bold")
-        )
-        title_label.pack(pady=(10, 5))
-        
-        # Info-Text
-        info_label = ctk.CTkLabel(
+            font=ctk.CTkFont(size=18, weight="bold"),
+        ).pack(pady=(10, 5))
+
+        ctk.CTkLabel(
             main_frame,
             text="✓ = Einstellung wird angewendet | ✗ = Einstellung wird übersprungen",
-            font=ctk.CTkFont(size=12)
-        )
-        info_label.pack(pady=(0, 10))
-        
-        # Tabs für verschiedene Ansichten
+            font=ctk.CTkFont(size=12),
+        ).pack(pady=(0, 10))
+
         self.tabview = ctk.CTkTabview(main_frame)
         self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Tabs erstellen
         self.tabview.add("Übersicht")
         self.tabview.add("Word-Einstellungen")
         self.tabview.add("Excel-Einstellungen")
         self.tabview.add("Windows-Einstellungen")
-        
-        # Button-Frame am unteren Rand
+
+        self.create_overview_tab()
+        self._populate_settings_tab("Word", "Word-Einstellungen", "📝")
+        self._populate_settings_tab("Excel", "Excel-Einstellungen", "📊")
+        self._populate_settings_tab("Windows", "Windows-Einstellungen", "🪟")
+
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x", padx=10, pady=10)
-        
-        # Buttons
-        save_button = ctk.CTkButton(
+
+        ctk.CTkButton(
             button_frame,
-            text="💾 Einstellungen anwenden",
+            text="💾 Auswahl anwenden",
             command=self.save_settings,
             height=40,
-            font=ctk.CTkFont(size=12, weight="bold")
-        )
-        save_button.pack(side="left", padx=10, pady=10)
-        
-        reset_button = ctk.CTkButton(
+            font=ctk.CTkFont(size=12, weight="bold"),
+        ).pack(side="left", padx=10, pady=10)
+
+        ctk.CTkButton(
             button_frame,
-            text="🔄 Zurücksetzen", 
+            text="🔄 Zurücksetzen",
             command=self.reset_settings,
-            height=40
-        )
-        reset_button.pack(side="left", padx=10, pady=10)
-        
-        # Kein Exportieren-Button, da keine Methode export_settings existiert
-        
-        close_button = ctk.CTkButton(
+            height=40,
+        ).pack(side="left", padx=10, pady=10)
+
+        ctk.CTkButton(
             button_frame,
             text="❌ Schließen",
             command=self.close_window,
-            height=40
-        )
-        close_button.pack(side="right", padx=10, pady=10)
+            height=40,
+        ).pack(side="right", padx=10, pady=10)
 
-        # Tabs mit Inhalt füllen
-        self.create_overview_tab()
-        self.create_word_settings_tab()
-        self.create_excel_settings_tab()
-        self.create_windows_settings_tab()
-
-    def create_windows_settings_tab(self):
-        """Windows-Einstellungen Tab mit Checkboxen erstellen"""
-        windows_frame = self.tabview.tab("Windows-Einstellungen")
-        scroll_frame = ctk.CTkScrollableFrame(windows_frame)
-        scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        windows_settings = self.registry_explainer.get_settings_by_category("Windows")
-        log_debug(f"[DEBUG] Windows-Settings geladen: {len(windows_settings)}")
-        from collections import defaultdict
-        grouped = defaultdict(list)
-        setting_name_map = {name: setting for name, setting in self.registry_explainer.settings.items() if setting in windows_settings}
-        for name, setting in setting_name_map.items():
-            grouped[setting.category].append((name, setting))
-        for subcat in sorted(grouped.keys()):
-            subcat_label = ctk.CTkLabel(scroll_frame, text=subcat, font=ctk.CTkFont(size=16, weight="bold"))
-            subcat_label.pack(anchor="w", padx=5, pady=(15, 5))
-            for setting_name, setting in grouped[subcat]:
-                setting_frame = ctk.CTkFrame(scroll_frame)
-                setting_frame.pack(fill="x", padx=5, pady=5)
-                header_frame = ctk.CTkFrame(setting_frame)
-                header_frame.pack(fill="x", padx=10, pady=(10, 5))
-                setting_key = setting_name
-                checkbox_var = tk.BooleanVar(value=True)
-                self.setting_checkboxes[setting_key] = checkbox_var
-                checkbox = ctk.CTkCheckBox(
-                    header_frame,
-                    text=f"🪟 {setting.value_name}",
-                    variable=checkbox_var,
-                    font=ctk.CTkFont(size=14, weight="bold"),
-                    command=lambda: self.on_setting_changed()
-                )
-                checkbox.pack(side="left", padx=5)
-                status_label = ctk.CTkLabel(
-                    header_frame,
-                    text="✓ Wird angewendet",
-                    font=ctk.CTkFont(size=10),
-                    text_color="green"
-                )
-                status_label.pack(side="right", padx=5)
-                def update_status(var=checkbox_var, label=status_label):
-                    if var.get():
-                        label.configure(text="✓ Wird angewendet", text_color="green")
-                    else:
-                        label.configure(text="✗ Wird übersprungen", text_color="red")
-                checkbox_var.trace_add("write", lambda *args, var=checkbox_var, label=status_label: update_status(var, label))
-                details_text = f"""Typ: {setting.value_type}\nStandardwert: {setting.default_value}\nRegistry-Pfad: HKEY_CURRENT_USER\\{setting.key_path.replace('{version}', '16.0')}\n\nBeschreibung:\n{setting.description}\n\nAuswirkung:\n{setting.impact}"""
-                details_textbox = ctk.CTkTextbox(setting_frame, height=120)
-                details_textbox.pack(fill="x", padx=10, pady=(0, 10))
-                details_textbox.insert("0.0", details_text)
-                details_textbox.configure(state="disabled")
-        
     def create_overview_tab(self):
-        """Übersicht-Tab erstellen"""
+        if self.tabview is None:
+            return
         overview_frame = self.tabview.tab("Übersicht")
-        
-        # Statistik-Frame
-        stats_frame = ctk.CTkFrame(overview_frame)
-        stats_frame.pack(fill="x", padx=10, pady=10)
-        
-        # Statistiken anzeigen
-        categories = self.registry_explainer.get_all_categories()
+
         total_settings = len(self.registry_explainer.settings)
-        
-                else:
-                    label.configure(text="✗ Wird übersprungen", text_color="red")
-            checkbox_var.trace_add("write", lambda *args, var=checkbox_var, label=status_label: update_status(var, label))
-            details_text = f"""Typ: {setting.value_type}\nStandardwert: {setting.default_value}\nRegistry-Pfad: HKEY_CURRENT_USER\\{setting.key_path.replace('{version}', '16.0')}\n\nBeschreibung:\n{setting.description}\n\nAuswirkung:\n{setting.impact}"""
-            details_textbox = ctk.CTkTextbox(setting_frame, height=120)
-            details_textbox.pack(fill="x", padx=10, pady=(0, 10))
-            details_textbox.insert("0.0", details_text)
-            details_textbox.configure(state="disabled")
-        
-    def create_general_settings_tab(self):
-        """Allgemeine Einstellungen Tab erstellen"""
-        general_frame = self.tabview.tab("Allgemein")
-        info_label = ctk.CTkLabel(
-            general_frame,
-            text="Übersicht und Verwaltung der Registry-Einstellungen",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        info_label.pack(pady=20)
-        stats_frame = ctk.CTkFrame(general_frame)
-        stats_frame.pack(fill="x", padx=20, pady=20)
-        summary_label = ctk.CTkLabel(
-            stats_frame,
-            text="Aktuelle Auswahl:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        summary_label.pack(pady=10)
-        self.summary_text = ctk.CTkTextbox(stats_frame, height=200)
+        categories = self.registry_explainer.get_all_categories()
+        by_category = {
+            c: len(self.registry_explainer.get_settings_by_category(c)) for c in categories
+        }
+
+        summary = [
+            "Verfügbare Einstellungskategorien:",
+            "",
+        ]
+        for cat in categories:
+            summary.append(f"• {cat}: {by_category[cat]} Einstellungen")
+        summary.extend([
+            "",
+            f"Gesamt: {total_settings} Einstellungen",
+            "",
+            "Hinweis: Diese Auswahl wird derzeit nur als Vorschau gespeichert.",
+            "Die eigentliche Registry-Anwendung erfolgt weiterhin über den Konfigurationslauf.",
+        ])
+
+        self.summary_text = ctk.CTkTextbox(overview_frame, height=350)
         self.summary_text.pack(fill="both", expand=True, padx=10, pady=10)
-        update_button = ctk.CTkButton(
-            stats_frame,
-            text="🔄 Zusammenfassung aktualisieren",
-            command=self.update_summary
-        )
-        update_button.pack(pady=10)
-        quick_frame = ctk.CTkFrame(general_frame)
-        quick_frame.pack(fill="x", padx=20, pady=20)
-        quick_label = ctk.CTkLabel(
-            quick_frame,
-            text="Schnellaktionen:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        quick_label.pack(pady=(10, 5))
-        button_row = ctk.CTkFrame(quick_frame)
-        button_row.pack(pady=10)
-        select_all_btn = ctk.CTkButton(
-            button_row,
-            text="✅ Alle auswählen",
-            command=self.select_all_settings
-        )
-        select_all_btn.pack(side="left", padx=5)
-        deselect_all_btn = ctk.CTkButton(
-            button_row,
-            text="❌ Alle abwählen",
-            command=self.deselect_all_settings
-        )
-        deselect_all_btn.pack(side="left", padx=5)
-        select_word_btn = ctk.CTkButton(
-            button_row,
-            text="📝 Nur Word",
-            command=self.select_word_only
-        )
-        select_word_btn.pack(side="left", padx=5)
-        select_excel_btn = ctk.CTkButton(
-            button_row,
-            text="📊 Nur Excel",
-            command=self.select_excel_only
-        )
-        select_excel_btn.pack(side="left", padx=5)
-        scroll_frame = ctk.CTkScrollableFrame(general_frame)
-        scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.summary_text.insert("0.0", "\n".join(summary))
+        self.summary_text.configure(state="disabled")
 
-        # Schließen-Button immer am unteren Rand, unabhängig vom Scrollbereich
-        close_button = ctk.CTkButton(
-            general_frame,
-            text="❌ Schließen",
-            command=self.close_window,
-            height=40
-        )
-        close_button.pack(side="right", padx=10, pady=(0, 10))
-        # Nur Office-Einstellungen anzeigen (Windows jetzt im eigenen Tab)
-        office_settings = self.registry_explainer.get_settings_by_category("Office")
-        log_debug(f"[DEBUG] Office-Settings geladen: {len(office_settings)}")
-        from collections import defaultdict
-        grouped = defaultdict(list)
-        setting_name_map = {name: setting for name, setting in self.registry_explainer.settings.items() if setting in office_settings}
-        for name, setting in setting_name_map.items():
-            grouped[setting.category].append((name, setting))
-        for subcat in sorted(grouped.keys()):
-            subcat_label = ctk.CTkLabel(scroll_frame, text=subcat, font=ctk.CTkFont(size=16, weight="bold"))
-            subcat_label.pack(anchor="w", padx=5, pady=(15, 5))
-            for setting_name, setting in grouped[subcat]:
-                setting_frame = ctk.CTkFrame(scroll_frame)
-                setting_frame.pack(fill="x", padx=5, pady=5)
-                header_frame = ctk.CTkFrame(setting_frame)
-                header_frame.pack(fill="x", padx=10, pady=(10, 5))
-                setting_key = setting_name
-                checkbox_var = tk.BooleanVar(value=True)
-                self.setting_checkboxes[setting_key] = checkbox_var
-                checkbox = ctk.CTkCheckBox(
-                    header_frame,
-                    text=f"⚙️ {setting.value_name}",
-                    variable=checkbox_var,
-                    font=ctk.CTkFont(size=14, weight="bold"),
-                    command=lambda: self.on_setting_changed()
-                )
-                checkbox.pack(side="left", padx=5)
-                status_label = ctk.CTkLabel(
-                    header_frame,
-                    text="✓ Wird angewendet",
-                    font=ctk.CTkFont(size=10),
-                    text_color="green"
-                )
-                status_label.pack(side="right", padx=5)
-                def update_status(var=checkbox_var, label=status_label):
-                    if var.get():
-                        label.configure(text="✓ Wird angewendet", text_color="green")
-                    else:
-                        label.configure(text="✗ Wird übersprungen", text_color="red")
-                checkbox_var.trace_add("write", lambda *args, var=checkbox_var, label=status_label: update_status(var, label))
-                details_text = f"""Typ: {setting.value_type}\nStandardwert: {setting.default_value}\nRegistry-Pfad: HKEY_CURRENT_USER\\{setting.key_path.replace('{version}', '16.0')}\n\nBeschreibung:\n{setting.description}\n\nAuswirkung:\n{setting.impact}"""
-                details_textbox = ctk.CTkTextbox(setting_frame, height=120)
-                details_textbox.pack(fill="x", padx=10, pady=(0, 10))
-                details_textbox.insert("0.0", details_text)
-                details_textbox.configure(state="disabled")
+    def _populate_settings_tab(self, category_prefix: str, tab_name: str, icon: str):
+        if self.tabview is None:
+            return
+        tab = self.tabview.tab(tab_name)
 
-        # Schließen-Button am unteren Rand ergänzen
-        close_button = ctk.CTkButton(
-            general_frame,
-            text="❌ Schließen",
-            command=self.close_window,
-            height=40
+        # Einstellungen filtern und sortieren
+        selected: List[Tuple[str, RegistrySettingInfo]] = sorted(
+            [(n, s) for n, s in self.registry_explainer.settings.items()
+             if s.category.startswith(category_prefix)],
+            key=lambda x: (x[1].category, x[0])
         )
-        close_button.pack(side="right", padx=10, pady=10)
-    
-    def select_all_settings(self):
-        """Wählt alle Einstellungen aus"""
-        for var in self.setting_checkboxes.values():
-            var.set(True)
-        self.on_setting_changed()
-        
-    def deselect_all_settings(self):
-        """Wählt alle Einstellungen ab"""
-        for var in self.setting_checkboxes.values():
-            var.set(False)
-        self.on_setting_changed()
-        
-    def select_word_only(self):
-        """Wählt nur Word-Einstellungen aus"""
-        for key, var in self.setting_checkboxes.items():
-            var.set(key.startswith("word_"))
-        self.on_setting_changed()
-        
-    def select_excel_only(self):
-        """Wählt nur Excel-Einstellungen aus"""
-        for key, var in self.setting_checkboxes.items():
-            var.set(key.startswith("excel_"))
-        self.on_setting_changed()
-    
+
+        # ── Treeview-Style (passend zu customtkinter Dark Theme) ──────────
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Reg.Treeview",
+            background="#2b2b2b", foreground="white",
+            fieldbackground="#2b2b2b", rowheight=22,
+            borderwidth=0, font=("", 10),
+        )
+        style.configure("Reg.Treeview.Heading",
+            background="#1f538d", foreground="white",
+            font=("", 10, "bold"), relief="flat",
+        )
+        style.map("Reg.Treeview",
+            background=[("selected", "#1f6aa5")],
+            foreground=[("selected", "white")],
+        )
+        style.configure("Reg.Vertical.TScrollbar",
+            troughcolor="#2b2b2b", background="#4a4a4a",
+        )
+
+        # ── Layout: Tabelle oben, Detail unten ────────────────────────────
+        table_frame = tk.Frame(tab, bg="#2b2b2b")
+        table_frame.pack(fill="both", expand=True, padx=10, pady=(10, 4))
+
+        detail_outer = ctk.CTkFrame(tab)
+        detail_outer.pack(fill="x", padx=10, pady=(0, 8))
+
+        detail_title = ctk.CTkLabel(
+            detail_outer,
+            text="Zeile auswählen für Details",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            anchor="w",
+        )
+        detail_title.pack(anchor="w", padx=10, pady=(6, 2))
+
+        detail_text = ctk.CTkTextbox(detail_outer, height=110)
+        detail_text.pack(fill="x", padx=10, pady=(0, 8))
+        detail_text.configure(state="disabled")
+
+        # ── Treeview ──────────────────────────────────────────────────────
+        cols = ("aktiv", "einstellung", "kategorie", "standardwert", "typ")
+        tree = ttk.Treeview(table_frame, columns=cols, show="headings",
+                            style="Reg.Treeview", selectmode="browse")
+
+        tree.heading("aktiv",        text="")
+        tree.heading("einstellung",  text="Einstellung")
+        tree.heading("kategorie",    text="Kategorie")
+        tree.heading("standardwert", text="Standardwert")
+        tree.heading("typ",          text="Typ")
+
+        tree.column("aktiv",        width=36,  minwidth=36,  anchor="center", stretch=False)
+        tree.column("einstellung",  width=220, minwidth=120, anchor="w")
+        tree.column("kategorie",    width=200, minwidth=120, anchor="w")
+        tree.column("standardwert", width=120, minwidth=60,  anchor="center")
+        tree.column("typ",          width=80,  minwidth=60,  anchor="center")
+
+        vsb = ttk.Scrollbar(table_frame, orient="vertical",
+                            command=tree.yview, style="Reg.Vertical.TScrollbar")
+        tree.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        tree.pack(fill="both", expand=True)
+
+        # Abwechselnde Zeilenfarben
+        tree.tag_configure("odd",  background="#2b2b2b")
+        tree.tag_configure("even", background="#333333")
+
+        # Aktuellen Pfad aus Callback holen (einmalig beim Öffnen)
+        current_path = ""
+        if self.path_callback is not None:
+            try:
+                current_path = self.path_callback()
+            except Exception:
+                pass
+
+        path_keys = {"word_doc_path", "excel_path"}
+
+        setting_map: Dict[str, RegistrySettingInfo] = {}
+        for i, (setting_name, setting) in enumerate(selected):
+            checkbox_var = tk.BooleanVar(value=True)
+            self.setting_checkboxes[setting_name] = checkbox_var
+            tag = "odd" if i % 2 == 0 else "even"
+            display_value = (
+                current_path if (setting_name in path_keys and current_path)
+                else (setting.default_value if setting.default_value != "" else "(konfigurierter Pfad)")
+            )
+            tree.insert("", "end", iid=setting_name, tags=(tag,), values=(
+                "☑", setting.value_name, setting.category,
+                display_value, setting.value_type,
+            ))
+            setting_map[setting_name] = setting
+
+        # ── Ereignisse ────────────────────────────────────────────────────
+        def _refresh_row(iid: str):
+            var = self.setting_checkboxes.get(iid)
+            if var is None:
+                return
+            vals = list(tree.item(iid, "values"))
+            vals[0] = "☑" if var.get() else "☐"
+            tree.item(iid, values=vals)
+
+        def on_click(event: tk.Event):
+            region = tree.identify_region(event.x, event.y)
+            col = tree.identify_column(event.x)
+            iid = tree.identify_row(event.y)
+            if not iid:
+                return
+            # Klick auf Aktiv-Spalte → Toggle
+            if region == "cell" and col == "#1":
+                var = self.setting_checkboxes.get(iid)
+                if var is not None:
+                    var.set(not var.get())
+                    _refresh_row(iid)
+                    self.has_changes = True
+
+        def on_select(event: tk.Event):
+            sel = tree.selection()
+            if not sel:
+                return
+            iid = sel[0]
+            s = setting_map.get(iid)
+            if s is None:
+                return
+            key = s.key_path.replace("{version}", "16.0")
+            text = (
+                f"Registry-Pfad:  HKEY_CURRENT_USER\\{key}\n"
+                f"Wertname:        {s.value_name}\n"
+                f"Typ:             {s.value_type}    "
+                f"Standardwert: {s.default_value}\n\n"
+                f"Beschreibung:\n{s.description}\n\n"
+                f"Auswirkung:\n{s.impact}"
+            )
+            detail_title.configure(text=f"{icon} {s.value_name}")
+            detail_text.configure(state="normal")
+            detail_text.delete("0.0", "end")
+            detail_text.insert("0.0", text)
+            detail_text.configure(state="disabled")
+
+        tree.bind("<ButtonRelease-1>", on_click)
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        # Öffentliche Referenz für reset_settings
+        if not hasattr(self, "_trees"):
+            self._trees: Dict[str, ttk.Treeview] = {}
+        self._trees[tab_name] = tree
+
     def on_setting_changed(self):
-        """Wird aufgerufen, wenn eine Checkbox geändert wird"""
         self.has_changes = True
-        self.update_summary()
-    
-    def update_summary(self):
-        """Aktualisiert die Zusammenfassung der ausgewählten Einstellungen"""
-        if hasattr(self, 'summary_text'):
-            enabled_count = sum(1 for var in self.setting_checkboxes.values() if var.get())
-            total_count = len(self.setting_checkboxes)
-            disabled_count = total_count - enabled_count
-            
-            word_count = sum(1 for key, var in self.setting_checkboxes.items() if key.startswith("word_") and var.get())
-            excel_count = sum(1 for key, var in self.setting_checkboxes.items() if key.startswith("excel_") and var.get())
-            
-            summary = f"""Registry-Einstellungen Übersicht:
-            
-✅ Aktiviert: {enabled_count} von {total_count}
-❌ Deaktiviert: {disabled_count} von {total_count}
 
-Nach Kategorien:
-📝 Word-Einstellungen: {word_count} aktiviert
-📊 Excel-Einstellungen: {excel_count} aktiviert
-
-Status: {"⚠️ Ungespeicherte Änderungen" if self.has_changes else "✅ Keine Änderungen"}
-
-Beim Klick auf 'Einstellungen anwenden' werden nur die
-aktivierten (✓) Einstellungen in die Windows Registry geschrieben.
-"""
-            
-            self.summary_text.delete("0.0", "end")
-            self.summary_text.insert("0.0", summary)
-    
     def load_current_settings(self):
-        """Lädt aktuelle Einstellungen und speichert ursprüngliche Zustände"""
         for key, var in self.setting_checkboxes.items():
             self.original_states[key] = var.get()
-        
         self.has_changes = False
-        self.update_summary()
-    
+
     def save_settings(self):
-        """Speichert/wendet die Einstellungen an"""
-        if not self.has_changes:
-            messagebox.showinfo("Information", "Keine Änderungen zu speichern.")
-            return
-        
-        # Bestätigung vor dem Anwenden
         enabled_count = sum(1 for var in self.setting_checkboxes.values() if var.get())
         disabled_count = len(self.setting_checkboxes) - enabled_count
-        
-        message = f"""Registry-Einstellungen anwenden?
 
-✅ {enabled_count} Einstellungen werden angewendet
-❌ {disabled_count} Einstellungen werden übersprungen
+        messagebox.showinfo(
+            "Auswahl gespeichert",
+            f"✅ {enabled_count} Einstellungen aktiviert\n"
+            f"❌ {disabled_count} Einstellungen deaktiviert\n\n"
+            "Hinweis: Die Auswahl dient aktuell als Dokumentation/Vorschau.\n"
+            "Die eigentliche Anwendung erfolgt im Konfigurationslauf.",
+        )
 
-Diese Änderungen werden in die Windows Registry geschrieben.
-Möchten Sie fortfahren?"""
-        
-        result = messagebox.askyesno("Bestätigung erforderlich", message)
-        
-        if result:
-            try:
-                # Hier würde die tatsächliche Registry-Anwendung erfolgen
-                # Das wird über den office_configurator mit den ausgewählten Einstellungen gemacht
-                
-                success_message = f"""Einstellungen erfolgreich angewendet!
+        for key, var in self.setting_checkboxes.items():
+            self.original_states[key] = var.get()
+        self.has_changes = False
 
-✅ {enabled_count} Registry-Einstellungen wurden geschrieben
-❌ {disabled_count} Einstellungen wurden übersprungen
-
-Die Änderungen sind sofort wirksam.
-Ein Neustart von Office-Anwendungen wird empfohlen."""
-                
-                messagebox.showinfo("Erfolgreich angewendet", success_message)
-                
-                # Neue Basis-Zustände speichern
-                for key, var in self.setting_checkboxes.items():
-                    self.original_states[key] = var.get()
-                
-                self.has_changes = False
-                self.update_summary()
-                
-            except Exception as e:
-                messagebox.showerror("Fehler", f"Fehler beim Anwenden der Einstellungen:\\n{e}")
-    
     def reset_settings(self):
-        """Setzt alle Einstellungen auf die ursprünglichen Werte zurück"""
-        if self.has_changes:
-            result = messagebox.askyesno("Bestätigung", 
-                                       "Alle Änderungen zurücksetzen?\\n"
-                                       "Alle nicht gespeicherten Änderungen gehen verloren.")
-            
-            if result:
-                for key, var in self.setting_checkboxes.items():
-                    var.set(self.original_states.get(key, True))
-                
-                self.has_changes = False
-                self.update_summary()
-                messagebox.showinfo("Zurückgesetzt", "Alle Einstellungen wurden zurückgesetzt.")
-        else:
-            messagebox.showinfo("Information", "Keine Änderungen zum Zurücksetzen.")
-    
+        if not self.setting_checkboxes:
+            return
+        for key, var in self.setting_checkboxes.items():
+            var.set(self.original_states.get(key, True))
+        # Treeview-Symbole aktualisieren
+        for tree in getattr(self, "_trees", {}).values():
+            for iid in tree.get_children():
+                var = self.setting_checkboxes.get(iid)
+                if var is not None:
+                    vals = list(tree.item(iid, "values"))
+                    vals[0] = "☑" if var.get() else "☐"
+                    tree.item(iid, values=vals)
+        self.has_changes = False
+
+    def _bring_to_front(self):
+        """Fenster in den Vordergrund bringen (verzögert, damit CTk fertig gerendert hat)."""
+        if self.window and self.window.winfo_exists():
+            self.window.lift()
+            self.window.focus_force()
+            self.window.grab_set()
+
     def on_window_closing(self):
-        """Wird beim Schließen des Fensters aufgerufen"""
         if self.has_changes:
-            result = messagebox.askyesnocancel("Fenster schließen", 
-                                             "Sie haben ungespeicherte Änderungen.\\n"
-                                             "Möchten Sie diese vor dem Schließen speichern?")
-            
-            if result is None:  # Abbrechen
+            result = messagebox.askyesnocancel(
+                "Fenster schließen",
+                "Sie haben ungespeicherte Änderungen.\nMöchten Sie diese vor dem Schließen speichern?",
+            )
+            if result is None:
                 return
-            elif result:  # Ja, speichern
+            if result:
                 self.save_settings()
-        
         self.close_window()
-    
+
     def close_window(self):
-        """Schließt das Fenster"""
         if self.window:
+            try:
+                self.window.grab_release()
+            except Exception:
+                pass
             self.window.destroy()
             self.window = None
-    
+
     def get_enabled_settings(self) -> Dict[str, bool]:
-        """Gibt die aktivierten Einstellungen zurück"""
         return {key: var.get() for key, var in self.setting_checkboxes.items()}

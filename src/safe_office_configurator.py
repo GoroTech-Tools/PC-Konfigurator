@@ -91,7 +91,7 @@ class SafeOfficeConfigurator:
             results['excel'] = excel_results
             
             # Outlook-Schriftart-Einstellungen
-            outlook_results = self._configure_outlook_font_registry(font_name)
+            outlook_results = self._configure_outlook_font_registry(font_name, font_size_word)
             results['outlook'] = outlook_results
             
         except Exception as e:
@@ -153,7 +153,7 @@ class SafeOfficeConfigurator:
             self.logger.error(f"Fehler bei Excel-Registry-Konfiguration: {e}")
             return False
     
-    def _configure_outlook_font_registry(self, font_name):
+    def _configure_outlook_font_registry(self, font_name, font_size=11):
         """Konfiguriert Outlook-Schriftarten über Registry"""
         try:
             outlook_versions = ['16.0', '15.0', '14.0']
@@ -163,10 +163,15 @@ class SafeOfficeConfigurator:
                     key_path = f"Software\\Microsoft\\Office\\{version}\\Outlook\\Options"
                     
                     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-                        # Standard-E-Mail-Schriftart setzen
+                        # Neue E-Mail-Schriftart setzen (tatsächlich von Outlook verwendete Keys)
+                        winreg.SetValueEx(key, "NewMailFont", 0, winreg.REG_SZ, font_name)
+                        winreg.SetValueEx(key, "NewMailFontSize", 0, winreg.REG_DWORD, int(font_size))
+                        winreg.SetValueEx(key, "ReplyForwardFont", 0, winreg.REG_SZ, font_name)
+                        winreg.SetValueEx(key, "ReplyForwardFontSize", 0, winreg.REG_DWORD, int(font_size))
+                        # Älterer Key (Kompatibilität)
                         winreg.SetValueEx(key, "DefaultMailFont", 0, winreg.REG_SZ, font_name)
-                        
-                        self.logger.info(f"Outlook {version} Schriftart konfiguriert: {font_name}")
+
+                        self.logger.info(f"Outlook {version} Schriftart konfiguriert: {font_name} {font_size}pt (NewMail + ReplyForward)")
                         
                 except Exception as e:
                     self.logger.warning(f"Konnte Outlook {version} nicht konfigurieren: {e}")

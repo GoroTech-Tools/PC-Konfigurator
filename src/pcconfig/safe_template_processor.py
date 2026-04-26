@@ -1,8 +1,9 @@
 """
-Sichere Office Template Verarbeitung mit COM-Automation
-=======================================================
+Sichere Office Template Verarbeitung
+=====================================
 
-Diese Klasse verwendet Office COM-Automation für professionelle Template-Bearbeitung.
+Bevorzugt python-docx (Word) und openpyxl (Excel) für Template-Anpassung.
+COM-Automation als optionaler Fallback.
 """
 
 import win32com.client
@@ -12,8 +13,251 @@ import logging
 import time
 
 
-
 class SafeTemplateProcessor:
+
+    # XML-Namespaces für Office Open XML
+    _NS_W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    _NS_XL = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+    def update_word_template_xml(self, template_path, font_name, font_size):
+        """
+        Setzt Schriftart und -größe in einem Word-Template (.dotm/.dotx/.docx) via lxml.
+        lxml behält Namespace-Präfixe beim Serialisieren (keine Namespace-Korruption).
+        Unterstützt auch .dotm-Dateien (Makro-Templates), die python-docx ablehnt.
+        """
+        import zipfile, shutil, tempfile, os
+        try:
+            from lxml import etree
+        except ImportError:
+            self.logger.error("lxml nicht verfügbar. Bitte 'pip install lxml' ausführen.")
+            return False
+
+        template_path = Path(template_path)
+        if not template_path.exists():
+            self.logger.error(f"Vorlagendatei nicht gefunden: {template_path}")
+            return False
+        try:
+            W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+            sz_val = str(int(font_size) * 2)  # Office speichert Halbpunkte
+
+            # Temp-Kopie anlegen
+            with tempfile.NamedTemporaryFile(delete=False, suffix=template_path.suffix) as tmp:
+                tmp_path = tmp.name
+            shutil.copy2(str(template_path), tmp_path)
+
+            # styles.xml lesen
+            styles_entry = None
+            with zipfile.ZipFile(tmp_path, 'r') as z:
+                names = z.namelist()
+                styles_entry = next((n for n in names if n.lower() == 'word/styles.xml'), None)
+                if not styles_entry:
+                    self.logger.error(f"word/styles.xml nicht in {template_path.name} gefunden.")
+                    os.unlink(tmp_path)
+                    return False
+                styles_xml = z.read(styles_entry)
+
+            # Mit lxml parsen (behält Namespace-Präfixe)
+            tree = etree.fromstring(styles_xml)
+            changed = 0
+
+            def _set_rpr(rpr_elem):
+                nonlocal changed
+                # rFonts setzen
+                rfonts = rpr_elem.find(f'{{{W}}}rFonts')
+                if rfonts is None:
+                    rfonts = etree.SubElement(rpr_elem, f'{{{W}}}rFonts')
+                # Theme-Font-Attribute entfernen – diese übersteuern w:ascii und würden
+                # die explizit gesetzte Schriftart in Outlook/Word ignorieren
+                for theme_attr in ('asciiTheme', 'hAnsiTheme', 'eastAsiaTheme', 'cstheme'):
+                    rfonts.attrib.pop(f'{{{W}}}{theme_attr}', None)
+                rfonts.set(f'{{{W}}}ascii', font_name)
+                rfonts.set(f'{{{W}}}hAnsi', font_name)
+                rfonts.set(f'{{{W}}}cs', font_name)
+                rfonts.set(f'{{{W}}}eastAsia', font_name)
+                # Schriftgröße (Halbpunkte)
+                for tag in [f'{{{W}}}sz', f'{{{W}}}szCs']:
+                    el = rpr_elem.find(tag)
+                    if el is None:
+                        el = etree.SubElement(rpr_elem, tag)
+                    el.set(f'{{{W}}}val', sz_val)
+                changed += 1
+
+            # 1. docDefaults
+            doc_defaults = tree.find(f'{{{W}}}docDefaults')
+            if doc_defaults is not None:
+                rpr_default = doc_defaults.find(f'{{{W}}}rPrDefault')
+                if rpr_default is not None:
+                    rpr = rpr_default.find(f'{{{W}}}rPr')
+                    if rpr is None:
+                        rpr = etree.SubElement(rpr_default, f'{{{W}}}rPr')
+                    _set_rpr(rpr)
+
+            # 2. Absatz-Standard-Stil: in deutschen Templates "Standard", in englischen "Normal"
+            #    Zusätzlich wird der Default-Stil (w:default="1") immer gesetzt.
+            default_style_ids = {'Normal', 'Standard'}  # EN + DE
+            for style in tree.findall(f'{{{W}}}style'):
+                style_id = style.get(f'{{{W}}}styleId', '')
+                is_default = style.get(f'{{{W}}}default', '') == '1' and \
+                             style.get(f'{{{W}}}type', '') == 'paragraph'
+                if style_id in default_style_ids or is_default:
+                    rpr = style.find(f'{{{W}}}rPr')
+                    if rpr is None:
+                        rpr = etree.SubElement(style, f'{{{W}}}rPr')
+                    _set_rpr(rpr)
+
+            self.logger.info(f"lxml: {changed} rPr-Blöcke in {template_path.name} gesetzt ({font_name} {font_size}pt)")
+
+            # Serialisieren — lxml behält alle originalen Namespace-Präfixe
+            new_styles_bytes = etree.tostring(
+                tree,
+                xml_declaration=True,
+                encoding='UTF-8',
+                standalone=True
+            )
+
+            # theme1.xml patchen: minorFont + majorFont auf font_name setzen.
+            # Ohne diesen Patch zeigt Outlook "Aptos (Textkörper)" statt der
+            # explizit gesetzten Schriftart, weil Theme-Referenzen Vorrang haben.
+            A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+            theme_entry = 'word/theme/theme1.xml'
+            new_theme_bytes = None
+            with zipfile.ZipFile(tmp_path, 'r') as z:
+                names = z.namelist()
+                if theme_entry in names:
+                    theme_xml = z.read(theme_entry)
+                    t = etree.fromstring(theme_xml)
+                    fmtscheme = t.find(f'.//{{{A}}}fontScheme')
+                    if fmtscheme is not None:
+                        for section_tag in ('majorFont', 'minorFont'):
+                            section = fmtscheme.find(f'{{{A}}}{section_tag}')
+                            if section is not None:
+                                latin = section.find(f'{{{A}}}latin')
+                                if latin is not None:
+                                    latin.set('typeface', font_name)
+                                    latin.attrib.pop('panose', None)
+                    new_theme_bytes = etree.tostring(
+                        t, xml_declaration=True, encoding='UTF-8', standalone=True
+                    )
+
+            # ZIP in-place patchen
+            out_tmp = tmp_path + '.out'
+            with zipfile.ZipFile(tmp_path, 'r') as zin, \
+                 zipfile.ZipFile(out_tmp, 'w', zipfile.ZIP_DEFLATED) as zout:
+                for item in zin.infolist():
+                    if item.filename == styles_entry:
+                        zout.writestr(item, new_styles_bytes)
+                    elif item.filename == theme_entry and new_theme_bytes is not None:
+                        zout.writestr(item, new_theme_bytes)
+                    else:
+                        zout.writestr(item, zin.read(item.filename))
+
+            os.unlink(tmp_path)
+            shutil.move(out_tmp, str(template_path))
+            self.logger.info(f"Word-Template angepasst (lxml): {template_path.name}")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Fehler bei Word-Template-Anpassung ({template_path.name}): {e}")
+            for f in [locals().get('tmp_path', ''), locals().get('tmp_path', '') + '.out']:
+                try:
+                    if f and os.path.exists(f):
+                        os.unlink(f)
+                except Exception:
+                    pass
+            return False
+
+    def update_excel_template_xml(self, template_path, font_name, font_size):
+        """
+        Setzt Schriftart und -größe in einem Excel-Template (.xltx/.xlsx) via openpyxl.
+        Kein COM, kein Bitness-Problem.
+        """
+        template_path = Path(template_path)
+        if not template_path.exists():
+            self.logger.error(f"Vorlagendatei nicht gefunden: {template_path}")
+            return False
+        try:
+            import zipfile
+            from lxml import etree
+            from openpyxl import load_workbook
+            from openpyxl.styles import Font
+
+            wb = load_workbook(str(template_path))
+            wb.template = True  # .xltx-Typ beibehalten
+
+            # 1. Erste Schriftart in der Fonts-Liste (Zell-Standard) überschreiben
+            if wb._fonts:
+                old = wb._fonts[0]
+                wb._fonts[0] = Font(
+                    name=font_name,
+                    size=float(font_size),
+                    bold=old.bold,
+                    italic=old.italic,
+                    underline=old.underline,
+                    color=old.color,
+                )
+
+            # 2. Named Style setzen — in deutschen Excel-Installationen heißt er "Standard"
+            for style_name in ('Standard', 'Normal'):
+                if style_name in wb._named_styles.names:
+                    wb._named_styles[style_name].font = Font(
+                        name=font_name,
+                        size=float(font_size)
+                    )
+                    self.logger.info(f"Named Style '{style_name}' gesetzt.")
+                    break
+
+            wb.save(str(template_path))
+
+            # 3. XML-Feinschliff für echten Default:
+            #    In manchen Templates hat cellXfs[0] kein applyFont=1.
+            #    Dann zeigt Excel in der Font-Auswahl weiter Aptos,
+            #    bis man die Stilvorlage "Standard" manuell anklickt.
+            with zipfile.ZipFile(str(template_path), 'r') as zin:
+                styles_xml = zin.read('xl/styles.xml')
+
+            XL = self._NS_XL
+            root = etree.fromstring(styles_xml)
+
+            # cellXfs: alle Standard-xf (xfId=0) aktiv auf Font anwenden
+            # In manchen Templates zeigt Excel initial auf xf[1] (ebenfalls xfId=0).
+            cell_xfs = root.find(f'{{{XL}}}cellXfs')
+            if cell_xfs is not None and len(cell_xfs) > 0:
+                for xf in cell_xfs:
+                    xf_id = xf.get('xfId', '0')
+                    if xf_id == '0':
+                        xf.set('fontId', '0')
+                        xf.set('applyFont', '1')
+
+            # cellStyleXfs[0] ebenfalls auf Font 0 fixieren
+            cell_style_xfs = root.find(f'{{{XL}}}cellStyleXfs')
+            if cell_style_xfs is not None and len(cell_style_xfs) > 0:
+                sxf0 = cell_style_xfs[0]
+                sxf0.set('fontId', '0')
+
+            new_styles = etree.tostring(
+                root,
+                xml_declaration=True,
+                encoding='UTF-8',
+                standalone=True
+            )
+
+            tmp_out = str(template_path) + '.tmp'
+            with zipfile.ZipFile(str(template_path), 'r') as zin, zipfile.ZipFile(tmp_out, 'w', zipfile.ZIP_DEFLATED) as zout:
+                for item in zin.infolist():
+                    if item.filename == 'xl/styles.xml':
+                        zout.writestr(item, new_styles)
+                    else:
+                        zout.writestr(item, zin.read(item.filename))
+
+            import os
+            os.replace(tmp_out, str(template_path))
+
+            self.logger.info(f"Excel-Template angepasst (openpyxl): {template_path.name} → {font_name} {font_size}pt")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Fehler bei Excel-Template-Anpassung ({template_path.name}): {e}")
+            return False
 
     def update_excel_template_safely(self, template_path, font_name, font_size):
         """

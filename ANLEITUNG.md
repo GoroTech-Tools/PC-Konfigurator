@@ -115,8 +115,24 @@ Bei Problemen prüfen Sie:
 3. Starten Sie das Programm als Administrator (falls nötig)
 
 ---
-**Version:** 2.5.3 (19.04.2026)
+**Version:** 2.6.9 (26.04.2026)
 **Entwickelt für:** Bildungseinrichtungen und professionelle Anwender
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

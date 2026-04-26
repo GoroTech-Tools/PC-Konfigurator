@@ -77,72 +77,60 @@ class OfficeTemplateManager:
             self.logger.error(f"Fehler bei target_paths-Initialisierung: {e}")
             self.target_paths = {}
 
-    def update_font_in_templates(self, font_name=None, font_size_word=None, font_size_excel=None, **kwargs):
-        """Setzt die Schriftart in allen Templates (Word/Excel). Gibt Status-Dict zurück und prüft nach Anpassung die Fonts."""
+    def update_font_in_templates(self, font_name=None, font_size_word=None, font_size_excel=None, skip_excel_com=False, **kwargs):
+        """
+        Setzt Schriftart und -größe in allen Templates.
+        Bevorzugt XML-basierte Anpassung (kein COM, kein Bitness-Problem).
+        COM als Fallback (nur wenn XML fehlschlägt und nicht im EXE-Modus).
+        """
+        import sys
+        frozen = getattr(sys, 'frozen', False)
         result = {}
-        # Word-Template anpassen
-        if 'normal_dotm' in self.source_templates and self.source_templates['normal_dotm'].exists():
+        fn = font_name or 'Arial'
+        fsw = font_size_word or 11
+        fse = font_size_excel or 10
+
+        # Word Normal.dotm
+        src = self.source_templates.get('normal_dotm')
+        if src and src.exists():
             try:
-                ok = self.safe_processor.update_word_template_safely(
-                    self.source_templates['normal_dotm'],
-                    font_name or 'Arial',
-                    font_size_word or 11
-                )
+                ok = self.safe_processor.update_word_template_xml(src, fn, fsw)
+                if not ok and not frozen:
+                    self.logger.info("XML-Fallback auf COM für Normal.dotm")
+                    ok = self.safe_processor.update_word_template_safely(src, fn, fsw)
                 result['normal_dotm'] = ok
-                # Nach Anpassung: Font auslesen und loggen
-                try:
-                    font_info = self.safe_processor.get_word_template_font_info(self.source_templates['normal_dotm'])
-                    self.logger.info(f"Normal.dotm Font-Check: {font_info}")
-                except Exception as e:
-                    self.logger.warning(f"Konnte Font-Info von Normal.dotm nicht auslesen: {e}")
             except Exception as e:
-                self.logger.error(f"Fehler bei Word-Template-Anpassung: {e}")
+                self.logger.error(f"Fehler bei Normal.dotm-Anpassung: {e}")
                 result['normal_dotm'] = False
-        # Excel-Template anpassen (analog zu Word: immer Originaldatei im Quellordner bearbeiten)
-        if 'mappe_xltx' in self.source_templates and self.source_templates['mappe_xltx'].exists():
+
+        # Excel Mappe.xltx
+        src = self.source_templates.get('mappe_xltx')
+        if src and src.exists():
             try:
-                # 1. Bearbeite Mappe.xltx direkt im Quellordner
-                ok = self.update_excel_template_safely(
-                    self.source_templates['mappe_xltx'],
-                    font_name or 'Arial',
-                    font_size_excel or 10
-                )
+                ok = self.safe_processor.update_excel_template_xml(src, fn, fse)
+                if not ok and not frozen:
+                    self.logger.info("XML-Fallback auf COM für Mappe.xltx")
+                    ok = self.safe_processor.update_excel_template_safely(src, fn, fse)
                 result['mappe_xltx'] = ok
-                if not ok:
-                    # PowerShell-Fallback für Excel, falls COM fehlschlägt
-                    fallback_ok = self._modify_excel_template_via_powershell(self.source_templates['mappe_xltx'], font_name or 'Arial', font_size_excel or 10)
-                    result['mappe_xltx_powershell'] = fallback_ok
-                    if fallback_ok:
-                        self.logger.info("PowerShell-Fallback für Mappe.xltx erfolgreich.")
-                # 2. Kopiere die bearbeitete Datei ins Benutzerprofil
-                try:
-                    target = self.target_paths['mappe_xltx']
-                    from shutil import copy2
-                    copy2(str(self.source_templates['mappe_xltx']), str(target))
-                    self.logger.info(f"Mappe.xltx ins Benutzerverzeichnis kopiert: {target}")
-                except Exception as copy_error:
-                    self.logger.error(f"Fehler beim Kopieren von Mappe.xltx ins Benutzerverzeichnis: {copy_error}")
-                # Nach Anpassung: Font-Check (Platzhalter, da nicht direkt auslesbar)
-                self.logger.info("Mappe.xltx wurde angepasst (Font-Check für Excel-Templates ist nur eingeschränkt möglich).")
             except Exception as e:
-                self.logger.error(f"Fehler bei Excel-Template-Anpassung: {e}")
+                self.logger.error(f"Fehler bei Mappe.xltx-Anpassung: {e}")
                 result['mappe_xltx'] = False
 
-        # Outlook-Template (NormalEmail.dotm) anpassen
+        # Outlook NormalEmail.dotm
         if 'normal_email_dotm' in self.source_templates and self.source_templates['normal_email_dotm'].exists():
             try:
-                ok = self.safe_processor.update_word_template_safely(
+                ok = self.safe_processor.update_word_template_xml(
                     self.source_templates['normal_email_dotm'],
-                    font_name or 'Arial',
-                    font_size_word or 11
+                    fn, fsw
                 )
                 result['normal_email_dotm'] = ok
                 # Nach Anpassung: Font auslesen und loggen
-                try:
-                    font_info = self.safe_processor.get_word_template_font_info(self.source_templates['normal_email_dotm'])
-                    self.logger.info(f"NormalEmail.dotm Font-Check: {font_info}")
-                except Exception as e:
-                    self.logger.warning(f"Konnte Font-Info von NormalEmail.dotm nicht auslesen: {e}")
+                if not ok and not frozen:
+                    self.logger.info("XML-Fallback auf COM für NormalEmail.dotm")
+                    ok = self.safe_processor.update_word_template_safely(
+                        self.source_templates['normal_email_dotm'], fn, fsw
+                    )
+                result['normal_email_dotm'] = ok
             except Exception as e:
                 self.logger.error(f"Fehler bei NormalEmail.dotm-Anpassung: {e}")
                 result['normal_email_dotm'] = False

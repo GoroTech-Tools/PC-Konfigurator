@@ -1,87 +1,147 @@
 # Build-Skript für PC-Konfigurator-Portable
 # Erstellt automatisch das Build und führt Post-Build-Aktionen aus
 
+param(
+    [switch]$NoVersionBump,
+    [switch]$SkipZip,
+    [switch]$Help,
+    [switch]$Quiet
+)
+
 # Setze die Konsole auf UTF-8 für korrekte Umlaut-Ausgabe
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 if ($PSVersionTable.PSVersion.Major -ge 6) {
     $OutputEncoding = [System.Text.Encoding]::UTF8
 }
 
+function Show-Usage {
+    Microsoft.PowerShell.Utility\Write-Host "PC-Konfigurator Build-Skript - Optionen:" -ForegroundColor DarkCyan
+    Microsoft.PowerShell.Utility\Write-Host "  -Help          : Nur diese Hilfe anzeigen und beenden" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -NoVersionBump : Versionsnummer/README/ANLEITUNG/BUILD-INFO nicht aktualisieren" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -SkipZip       : ZIP-Erstellung im release-Ordner überspringen" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -Quiet         : Kompakte Ausgabe (nur Fehler + Kurzfazit)" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet" -ForegroundColor DarkGray
+}
 
-# Schritt 0: Versionsnummer automatisch erhöhen
+if (-not $Quiet -or $Help) {
+    Show-Usage
+}
+
+if ($Help) {
+    exit 0
+}
+
+$script:QuietMode = $Quiet
+function Write-Host {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [object[]]$Object,
+        [ConsoleColor]$ForegroundColor,
+        [switch]$NoNewline,
+        [object]$Separator = ' '
+    )
+
+    if (-not $script:QuietMode) {
+        Microsoft.PowerShell.Utility\Write-Host @PSBoundParameters
+        return
+    }
+
+    $text = if ($null -eq $Object) { '' } else { ($Object -join [string]$Separator) }
+    $isErrorColor = $PSBoundParameters.ContainsKey('ForegroundColor') -and $ForegroundColor -eq [ConsoleColor]::Red
+    $isImportantErrorText = $text -match 'fehlgeschlagen|nicht gefunden|Konnte .* nicht|ERROR|Kein Build-Verzeichnis|konnte nicht erstellt werden'
+    $isSummary = $text -match 'Build erfolgreich abgeschlossen!|^Ergebnis:|^Build-Verzeichnis:|^EXE-Datei:|^Fonts:|^Templates:|^Dokumentation:|^ZIP-'
+
+    if ($isErrorColor -or $isImportantErrorText -or $isSummary) {
+        Microsoft.PowerShell.Utility\Write-Host @PSBoundParameters
+    }
+}
+
+
+# Schritt 0: Versionsnummer automatisch erhöhen (optional überspringbar)
 $buildInfoPath = Join-Path $PSScriptRoot 'src/build_info.py'
 $buildInfoTxtPath = Join-Path $PSScriptRoot 'BUILD-INFO.txt'
+$newVersion = $null
 if (Test-Path $buildInfoPath) {
     $content = Get-Content $buildInfoPath -Raw
     if ($content -match "'version': '([0-9]+)\.([0-9]+)\.([0-9]+)'") {
         $major = [int]$matches[1]
         $minor = [int]$matches[2]
         $patch = [int]$matches[3]
-        $patch++
-        if ($patch -ge 10) {
-            $patch = 0
-            $minor++
-            if ($minor -ge 10) {
-                $minor = 0
-                $major++
+        $currentVersion = "$major.$minor.$patch"
+
+        if ($NoVersionBump) {
+            $newVersion = $currentVersion
+            Write-Host "Versionssprung übersprungen (-NoVersionBump). Verwende Version: $newVersion" -ForegroundColor Cyan
+        } else {
+            $nextMajor = $major
+            $nextMinor = $minor
+            $nextPatch = $patch + 1
+            if ($nextPatch -ge 10) {
+                $nextPatch = 0
+                $nextMinor++
+                if ($nextMinor -ge 10) {
+                    $nextMinor = 0
+                    $nextMajor++
+                }
             }
-        }
-        $newVersion = "$major.$minor.$patch"
-        $newDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
-        $content = $content -replace "'version': '\d+\.\d+\.\d+'", "'version': '$newVersion'"
-        $content = $content -replace "'build_date': '[^']+'", "'build_date': '$newDate'"
-        Set-Content $buildInfoPath $content -Encoding UTF8
-        Write-Host "Neue Version: $newVersion (build_info.py aktualisiert)" -ForegroundColor Cyan
+            $newVersion = "$nextMajor.$nextMinor.$nextPatch"
+            $newDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
+            $content = $content -replace "'version': '\d+\.\d+\.\d+'", "'version': '$newVersion'"
+            $content = $content -replace "'build_date': '[^']+'", "'build_date': '$newDate'"
+            Set-Content $buildInfoPath $content -Encoding UTF8
+            Write-Host "Neue Version: $newVersion (build_info.py aktualisiert)" -ForegroundColor Cyan
 
-        # --- README.md und ANLEITUNG.md automatisch aktualisieren ---
-        $readmePath = Join-Path $PSScriptRoot 'README.md'
-        $anleitungPath = Join-Path $PSScriptRoot 'ANLEITUNG.md'
-        $pythonVersionShort = $null
-        if ($content -match "'python_version': '([^']+)'") {
-            $pythonVersionShort = $matches[1] -replace ' \(.*', ''
-        }
-        $dateForMd = (Get-Date).ToString('dd.MM.yyyy')
+            # --- README.md und ANLEITUNG.md automatisch aktualisieren ---
+            $readmePath = Join-Path $PSScriptRoot 'README.md'
+            $anleitungPath = Join-Path $PSScriptRoot 'ANLEITUNG.md'
+            $pythonVersionShort = $null
+            if ($content -match "'python_version': '([^']+)'") {
+                $pythonVersionShort = $matches[1] -replace ' \(.*', ''
+            }
+            $dateForMd = (Get-Date).ToString('dd.MM.yyyy')
 
-        # README.md: *Version: 1.0.24 (Build: 07.04.2026, Python 3.13.7)*
-        if (Test-Path $readmePath) {
-            $readme = Get-Content $readmePath -Raw
-            $readme = [regex]::Replace($readme, '\*Version: [0-9]+\.[0-9]+\.[0-9]+ \(Build: [0-9]{2}\.[0-9]{2}\.[0-9]{4}, Python [0-9.]+\)\*', "*Version: $newVersion (Build: $dateForMd, Python $pythonVersionShort)*")
-            Set-Content $readmePath $readme -Encoding UTF8
-            Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
-        }
+            # README.md: *Version: 1.0.24 (Build: 07.04.2026, Python 3.13.7)*
+            if (Test-Path $readmePath) {
+                $readme = Get-Content $readmePath -Raw
+                $readme = [regex]::Replace($readme, '\*Version: [0-9]+\.[0-9]+\.[0-9]+ \(Build: [0-9]{2}\.[0-9]{2}\.[0-9]{4}, Python [0-9.]+\)\*', "*Version: $newVersion (Build: $dateForMd, Python $pythonVersionShort)*")
+                Set-Content $readmePath $readme -Encoding UTF8
+                Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
+            }
 
-        # ANLEITUNG.md: **Version:** 1.0.24 (07.04.2026)
-        if (Test-Path $anleitungPath) {
-            $anleitung = Get-Content $anleitungPath -Raw
-            $anleitung = [regex]::Replace($anleitung, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
-            Set-Content $anleitungPath $anleitung -Encoding UTF8
-            Write-Host "ANLEITUNG.md automatisch aktualisiert." -ForegroundColor Cyan
-        }
+            # ANLEITUNG.md: **Version:** 1.0.24 (07.04.2026)
+            if (Test-Path $anleitungPath) {
+                $anleitung = Get-Content $anleitungPath -Raw
+                $anleitung = [regex]::Replace($anleitung, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
+                Set-Content $anleitungPath $anleitung -Encoding UTF8
+                Write-Host "ANLEITUNG.md automatisch aktualisiert." -ForegroundColor Cyan
+            }
 
-        # --- BUILD-INFO.txt automatisch aktualisieren ---
-        $pythonVersion = $null
-        $platform = $null
-        if ($content -match "'python_version': '([^']+)'") { $pythonVersion = $matches[1] }
-        if ($content -match "'platform': '([^']+)'") { $platform = $matches[1] }
-        $buildInfoTxt = @()
-        $buildInfoTxt += "# Build-Informationen"
-        $buildInfoTxt += ""
-        $buildInfoTxt += "**Build:** PC-Konfigurator-Portable"
-        $buildInfoTxt += "**Datum:** $newDate"
-        $buildInfoTxt += "**Version:** $newVersion (Release)"
-        $buildInfoTxt += ""
-        $buildInfoTxt += "## Build-Details"
-        $buildInfoTxt += ""
-        $buildInfoTxt += "- **Python-Version:** $pythonVersion"
-        $buildInfoTxt += "- **PyInstaller:** 6.17.0"
-        $buildInfoTxt += "- **Build-Modus:** --onedir --windowed"
-        $buildInfoTxt += "- **Build-Datum:** $newDate"
-        $buildInfoTxt += "- **Build-Version:** $newVersion"
-        $buildInfoTxt += "- **Plattform:** $platform"
-        $buildInfoTxt += "- **EXE-Name:** PC-Konfigurator-Portable.exe"
-        $buildInfoTxt += ""
-        Set-Content $buildInfoTxtPath $buildInfoTxt -Encoding UTF8
-        Write-Host "BUILD-INFO.txt automatisch aktualisiert." -ForegroundColor Cyan
+            # --- BUILD-INFO.txt automatisch aktualisieren ---
+            $pythonVersion = $null
+            $platform = $null
+            if ($content -match "'python_version': '([^']+)'") { $pythonVersion = $matches[1] }
+            if ($content -match "'platform': '([^']+)'") { $platform = $matches[1] }
+            $buildInfoTxt = @()
+            $buildInfoTxt += "# Build-Informationen"
+            $buildInfoTxt += ""
+            $buildInfoTxt += "**Build:** PC-Konfigurator-Portable"
+            $buildInfoTxt += "**Datum:** $newDate"
+            $buildInfoTxt += "**Version:** $newVersion (Release)"
+            $buildInfoTxt += ""
+            $buildInfoTxt += "## Build-Details"
+            $buildInfoTxt += ""
+            $buildInfoTxt += "- **Python-Version:** $pythonVersion"
+            $buildInfoTxt += "- **PyInstaller:** 6.17.0"
+            $buildInfoTxt += "- **Build-Modus:** --onedir --windowed"
+            $buildInfoTxt += "- **Build-Datum:** $newDate"
+            $buildInfoTxt += "- **Build-Version:** $newVersion"
+            $buildInfoTxt += "- **Plattform:** $platform"
+            $buildInfoTxt += "- **EXE-Name:** PC-Konfigurator-Portable.exe"
+            $buildInfoTxt += ""
+            Set-Content $buildInfoTxtPath $buildInfoTxt -Encoding UTF8
+            Write-Host "BUILD-INFO.txt automatisch aktualisiert." -ForegroundColor Cyan
+        }
     } else {
         Write-Host "Konnte Versionsnummer nicht erkennen!" -ForegroundColor Red
     }
@@ -108,108 +168,139 @@ if (Test-Path dist) {
     }
 }
 
+if ($NoVersionBump -and $newVersion) {
+    $reuseBuildDir = Join-Path $PSScriptRoot "dist/PC-Konfigurator-Portable-v$newVersion"
+    if (Test-Path $reuseBuildDir) {
+        Write-Host "Vorhandenen Build-Ordner für -NoVersionBump bereinigen: $reuseBuildDir" -ForegroundColor Yellow
+        try {
+            & attrib -r -h -s "$reuseBuildDir\*" /S /D 2>$null
+        } catch {
+            # Ignorieren: attrib kann bei einzelnen Dateien fehlschlagen
+        }
+
+        try {
+            Remove-Item $reuseBuildDir -Recurse -Force -ErrorAction Stop
+            Write-Host "Alter Build-Ordner entfernt." -ForegroundColor DarkGray
+        } catch {
+            Write-Host "Konnte vorhandenen Build-Ordner nicht entfernen: $_" -ForegroundColor Red
+            Write-Host "Bitte ggf. Explorer-Fenster schließen oder OneDrive-Sync kurz pausieren." -ForegroundColor Yellow
+            exit 1
+        }
+    }
+}
+
 Write-Host "`n1. PyInstaller Build wird erstellt..." -ForegroundColor Yellow
-& python -m PyInstaller PC-Konfigurator-Portable.spec --noconfirm
+$pyInstallerLog = Join-Path $PSScriptRoot 'build\last-pyinstaller.log'
+if ($Quiet) {
+    New-Item -ItemType Directory -Path (Split-Path $pyInstallerLog -Parent) -Force | Out-Null
+    & py -m PyInstaller PC-Konfigurator-Portable.spec --noconfirm *> $pyInstallerLog
+} else {
+    & py -m PyInstaller PC-Konfigurator-Portable.spec --noconfirm
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "PyInstaller Build fehlgeschlagen!" -ForegroundColor Red
+    if ($Quiet -and (Test-Path $pyInstallerLog)) {
+        Write-Host "Details siehe: $pyInstallerLog" -ForegroundColor Yellow
+        Write-Host "--- Letzte 40 Zeilen ---" -ForegroundColor Yellow
+        Get-Content $pyInstallerLog -Tail 40
+    }
     exit 1
 }
 
 # Schritt 2: Post-Build-Aktionen
 Write-Host "`n2. Post-Build-Aktionen werden ausgeführt..." -ForegroundColor Yellow
-& python post_build.py
+$postBuildLog = Join-Path $PSScriptRoot 'build\last-post-build.log'
+if ($Quiet) {
+    & py src/post_build.py *> $postBuildLog
+} else {
+    & py src/post_build.py
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Post-Build fehlgeschlagen!" -ForegroundColor Red
+    if ($Quiet -and (Test-Path $postBuildLog)) {
+        Write-Host "Details siehe: $postBuildLog" -ForegroundColor Yellow
+        Write-Host "--- Letzte 40 Zeilen ---" -ForegroundColor Yellow
+        Get-Content $postBuildLog -Tail 40
+    }
     exit 1
 }
 
 
-# Schritt 2b/2c: Datei-Vorlagen und Fonts in alle Build-Verzeichnisse unter dist kopieren
-$quelleVorlagen = Join-Path $PSScriptRoot 'Datei-Vorlagen'
-$quelleFonts = Join-Path $PSScriptRoot 'Fonts'
-$buildDirs = Get-ChildItem dist -Directory
-foreach ($dir in $buildDirs) {
-    # Kopiere Datei-Vorlagen und Fonts direkt ins Build-Root
-    $zielVorlagen = Join-Path $dir.FullName 'Datei-Vorlagen'
-    $zielFonts = Join-Path $dir.FullName 'Fonts'
-    if (Test-Path $quelleVorlagen) {
-        Write-Host "Kopiere Datei-Vorlagen nach: $zielVorlagen" -ForegroundColor Yellow
-        Copy-Item $quelleVorlagen $zielVorlagen -Recurse -Force -ErrorAction SilentlyContinue
-    } else {
-        Write-Host "Warnung: Datei-Vorlagen-Quellverzeichnis nicht gefunden: $quelleVorlagen" -ForegroundColor Red
-    }
-    if (Test-Path $quelleFonts) {
-        Write-Host "Kopiere Fonts nach: $zielFonts" -ForegroundColor Yellow
-        Copy-Item $quelleFonts $zielFonts -Recurse -Force -ErrorAction SilentlyContinue
-    } else {
-        Write-Host "Warnung: Fonts-Quellverzeichnis nicht gefunden: $quelleFonts" -ForegroundColor Red
-    }
+# Schritt 2b: Aktuelles Build-Verzeichnis ermitteln (statt alle dist-Versionen zu bearbeiten)
+$buildDir = $null
+if ($newVersion) {
+    $expectedBuildName = "PC-Konfigurator-Portable-v$newVersion"
+    $buildDir = Get-ChildItem dist -Directory | Where-Object { $_.Name -eq $expectedBuildName } | Select-Object -First 1
+}
 
-    # --- NEU: Kopiere wichtige Dokumentationsdateien ---
-    $docsToCopy = @('ANLEITUNG.md', 'BUILD-INFO.txt', 'README.md')
-    foreach ($doc in $docsToCopy) {
-        $srcDoc = Join-Path $PSScriptRoot $doc
-        if (Test-Path $srcDoc) {
-            $dstDoc = Join-Path $dir.FullName $doc
-            Copy-Item $srcDoc $dstDoc -Force -ErrorAction SilentlyContinue
-            Write-Host "Kopiere $doc nach: $dstDoc" -ForegroundColor Yellow
-        } else {
-            Write-Host "Warnung: $doc nicht gefunden!" -ForegroundColor Red
-        }
-    }
+if (-not $buildDir) {
+    $buildDir = Get-ChildItem dist -Directory | Where-Object {$_.Name -like "PC-Konfigurator-Portable-v*"} | Sort-Object LastWriteTime | Select-Object -Last 1
+}
 
-    # Nach dem Kopieren: Lösche Fonts, Datei-Vorlagen und Doku-Dateien aus _internal, falls vorhanden
-    $internalPath = Join-Path $dir.FullName '_internal'
-    if (Test-Path $internalPath) {
-        $delList = @('Fonts', 'Datei-Vorlagen', 'README.md', 'ANLEITUNG.md', 'BUILD-INFO.txt')
-        foreach ($item in $delList) {
-            $delPath = Join-Path $internalPath $item
-            if (Test-Path $delPath) {
-                try {
-                    Remove-Item $delPath -Recurse -Force -ErrorAction Stop
-                    Write-Host "Lösche $delPath aus _internal" -ForegroundColor DarkGray
-                } catch {
-                    Write-Host "Konnte $delPath nicht löschen: $_" -ForegroundColor Red
-                }
+if (-not $buildDir) {
+    Write-Host "Kein Build-Verzeichnis nach Post-Build gefunden." -ForegroundColor Red
+    exit 1
+}
+
+# Schritt 2c: Bereinige nur das _internal des aktuellen Builds
+$internalPath = Join-Path $buildDir.FullName '_internal'
+if (Test-Path $internalPath) {
+    $delList = @('Fonts', 'Datei-Vorlagen', 'README.md', 'ANLEITUNG.md', 'BUILD-INFO.txt')
+    foreach ($item in $delList) {
+        $delPath = Join-Path $internalPath $item
+        if (Test-Path $delPath) {
+            try {
+                Remove-Item $delPath -Recurse -Force -ErrorAction Stop
+                Write-Host "Lösche $delPath aus _internal" -ForegroundColor DarkGray
+            } catch {
+                Write-Host "Konnte $delPath nicht löschen: $_" -ForegroundColor Red
             }
-        }
-    }
-
-    # --- NEU: Setze logs-Ordner auf 'hidden' ---
-    $logsDir = Join-Path $dir.FullName 'logs'
-    if (-not (Test-Path $logsDir)) {
-        try {
-            New-Item -ItemType Directory -Path $logsDir | Out-Null
-            Write-Host "Erstelle logs-Ordner: $logsDir" -ForegroundColor DarkGray
-        } catch {
-            Write-Host "Konnte logs-Ordner nicht erstellen: $logsDir ($_ )" -ForegroundColor Red
-        }
-    }
-    if (Test-Path $logsDir) {
-        try {
-            (Get-Item $logsDir).Attributes = 'Hidden,Directory'
-            Write-Host "Setze Attribut 'hidden' für: $logsDir" -ForegroundColor DarkGray
-        } catch {
-            Write-Host "Konnte Attribut 'hidden' nicht setzen: $logsDir ($_ )" -ForegroundColor Red
         }
     }
 }
 
+# Schritt 2d: Pflicht-Check - Externe Ordner müssen im Build vorhanden sein
+$fontsPath = Join-Path $buildDir.FullName 'Fonts'
+$templatesPath = Join-Path $buildDir.FullName 'Datei-Vorlagen'
+$fontsCount = @(Get-ChildItem $fontsPath -Recurse -File -ErrorAction SilentlyContinue).Count
+$templatesCount = @(Get-ChildItem $templatesPath -Recurse -File -ErrorAction SilentlyContinue).Count
+
+if (-not (Test-Path $fontsPath) -or $fontsCount -le 0) {
+    Write-Host "Pflicht-Check fehlgeschlagen: Fonts fehlt oder ist leer ($fontsPath)." -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path $templatesPath) -or $templatesCount -le 0) {
+    Write-Host "Pflicht-Check fehlgeschlagen: Datei-Vorlagen fehlt oder ist leer ($templatesPath)." -ForegroundColor Red
+    exit 1
+}
+
 # Schritt 3: Erfolgsmeldung
-Write-Host "`nBuild erfolgreich abgeschlossen!" -ForegroundColor Green
+if ($Quiet) {
+    Microsoft.PowerShell.Utility\Write-Host "Build erfolgreich abgeschlossen!" -ForegroundColor Green
+} else {
+    Write-Host "`nBuild erfolgreich abgeschlossen!" -ForegroundColor Green
+}
 
 # Zeige Ergebnis
-$buildDir = Get-ChildItem dist -Directory | Where-Object {$_.Name -like "PC-Konfigurator-Portable-v*"} | Sort-Object LastWriteTime | Select-Object -Last 1
 
 if ($buildDir) {
-    Write-Host "`nErgebnis:" -ForegroundColor Cyan
-    Write-Host "Build-Verzeichnis: dist/$($buildDir.Name)" -ForegroundColor White
+    if ($Quiet) {
+        Microsoft.PowerShell.Utility\Write-Host "Ergebnis:" -ForegroundColor Cyan
+        Microsoft.PowerShell.Utility\Write-Host "Build-Verzeichnis: dist/$($buildDir.Name)" -ForegroundColor White
+    } else {
+        Write-Host "`nErgebnis:" -ForegroundColor Cyan
+        Write-Host "Build-Verzeichnis: dist/$($buildDir.Name)" -ForegroundColor White
+    }
     $exeFile = Get-ChildItem "$($buildDir.FullName)\*.exe" | Select-Object -First 1
     if ($exeFile) {
         $sizeInMB = [Math]::Round($exeFile.Length / 1MB, 2)
-        Write-Host "EXE-Datei: $($exeFile.Name) (${sizeInMB} MB)" -ForegroundColor White
+        if ($Quiet) {
+            Microsoft.PowerShell.Utility\Write-Host "EXE-Datei: $($exeFile.Name) (${sizeInMB} MB)" -ForegroundColor White
+        } else {
+            Write-Host "EXE-Datei: $($exeFile.Name) (${sizeInMB} MB)" -ForegroundColor White
+        }
     }
     
     # Zähle Inhalte
@@ -217,7 +308,48 @@ if ($buildDir) {
     $templates = Get-ChildItem "$($buildDir.FullName)\Datei-Vorlagen" -Recurse -File -ErrorAction SilentlyContinue
     $docs = Get-ChildItem "$($buildDir.FullName)\*.md" -ErrorAction SilentlyContinue
     
-    Write-Host "Fonts: $($fonts.Count) Dateien" -ForegroundColor White
-    Write-Host "Templates: $($templates.Count) Dateien" -ForegroundColor White
-    Write-Host "Dokumentation: $($docs.Count) Dateien" -ForegroundColor White
+    if ($Quiet) {
+        Microsoft.PowerShell.Utility\Write-Host "Fonts: $($fonts.Count) Dateien" -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host "Templates: $($templates.Count) Dateien" -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host "Dokumentation: $($docs.Count) Dateien" -ForegroundColor White
+    } else {
+        Write-Host "Fonts: $($fonts.Count) Dateien" -ForegroundColor White
+        Write-Host "Templates: $($templates.Count) Dateien" -ForegroundColor White
+        Write-Host "Dokumentation: $($docs.Count) Dateien" -ForegroundColor White
+    }
+
+    if ($SkipZip) {
+        if ($Quiet) {
+            Microsoft.PowerShell.Utility\Write-Host "ZIP-Erstellung übersprungen (-SkipZip)." -ForegroundColor Yellow
+        } else {
+            Write-Host "ZIP-Erstellung übersprungen (-SkipZip)." -ForegroundColor Yellow
+        }
+    } else {
+        # Schritt 4: ZIP-Release erstellen
+        $releaseDir = Join-Path $PSScriptRoot 'release'
+        if (-not (Test-Path $releaseDir)) {
+            New-Item -ItemType Directory -Path $releaseDir | Out-Null
+            Write-Host "Release-Ordner erstellt: $releaseDir" -ForegroundColor DarkGray
+        }
+
+        $zipPath = Join-Path $releaseDir "$($buildDir.Name).zip"
+        try {
+            if (Test-Path $zipPath) {
+                Remove-Item $zipPath -Force -ErrorAction Stop
+            }
+
+            Compress-Archive -Path $buildDir.FullName -DestinationPath $zipPath -CompressionLevel Optimal -Force -ErrorAction Stop
+            if ($Quiet) {
+                Microsoft.PowerShell.Utility\Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
+            } else {
+                Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "ZIP-Release konnte nicht erstellt werden: $_" -ForegroundColor Red
+            exit 1
+        }
+    }
+} else {
+    Write-Host "Kein Build-Verzeichnis für ZIP-Erstellung gefunden." -ForegroundColor Red
+    exit 1
 }

@@ -1,7 +1,7 @@
 # PC-Konfigurator-Portable
 
 **Komplette Portable Anwendung für Windows-PC-Konfiguration**  
-*Version: 2.5.3 (Build: 19.04.2026, Python 3.13.7)*
+*Version: 2.6.9 (Build: 26.04.2026, Python 3.13.7)*
 
 ## 🚀 Übersicht
 
@@ -185,6 +185,22 @@ python -m PyInstaller PC-Konfigurator-Portable.spec
 **Build-Tool:** PyInstaller 6.17.0  
 
 *Für Bildungseinrichtungen und professionelle Anwender optimiert.*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
