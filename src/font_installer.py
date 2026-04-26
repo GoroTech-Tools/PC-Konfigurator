@@ -9,6 +9,7 @@ Basiert auf der ursprünglichen PowerShell-Implementierung.
 import os
 import shutil
 import logging
+import re
 from pathlib import Path
 import winreg
 import ctypes
@@ -17,6 +18,13 @@ from ctypes import wintypes
 
 class FontInstaller:
     """Klasse zur Installation von benutzerdefinierten Fonts"""
+
+    FONT_EXTENSIONS = ('.ttf', '.otf', '.woff', '.woff2')
+    STYLE_TOKENS = {
+        'regular', 'italic', 'bold', 'light', 'medium', 'thin', 'black',
+        'semibold', 'semi', 'extrabold', 'extra', 'book', 'demi', 'heavy',
+        'oblique', 'ultralight', 'extralight', 'solid'
+    }
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -25,6 +33,76 @@ class FontInstaller:
         self.gdi32 = ctypes.windll.gdi32
         self.user32 = ctypes.windll.user32
         self.kernel32 = ctypes.windll.kernel32
+
+    def get_user_fonts_dir(self):
+        """Liefert das benutzerspezifische Fonts-Verzeichnis."""
+        return Path(os.environ['LOCALAPPDATA']) / 'Microsoft' / 'Windows' / 'Fonts'
+
+    def discover_font_families(self, fonts_directory):
+        """Ermittelt verfügbare Font-Familien aus dem Fonts-Verzeichnis."""
+        fonts_dir = Path(fonts_directory)
+        families = {}
+
+        if not fonts_dir.exists():
+            self.logger.warning(f"Fonts-Verzeichnis nicht gefunden: {fonts_dir}")
+            return families
+
+        font_files = []
+        for ext in self.FONT_EXTENSIONS:
+            font_files.extend(fonts_dir.rglob(f'*{ext}'))
+
+        for font_file in sorted(font_files):
+            family_name = self._get_font_family_from_file(font_file)
+            if not family_name:
+                continue
+            families.setdefault(family_name, []).append(font_file)
+
+        return dict(sorted(families.items(), key=lambda item: item[0].lower()))
+
+    def get_available_font_families(self, fonts_directory):
+        """Liefert die erkannten Font-Familien sortiert zurück."""
+        return list(self.discover_font_families(fonts_directory).keys())
+
+    def install_font_family(self, fonts_directory, family_name):
+        """Installiert alle Font-Dateien einer ausgewählten Familie."""
+        try:
+            normalized_family = (family_name or '').strip()
+            if not normalized_family:
+                return {"success": False, "error": "Keine Font-Familie ausgewählt."}
+
+            family_files = self.discover_font_families(fonts_directory).get(normalized_family, [])
+            if not family_files:
+                return {
+                    "success": False,
+                    "error": f"Keine Dateien für Font-Familie gefunden: {normalized_family}"
+                }
+
+            installed_fonts = []
+            failed_fonts = []
+            installed_paths = []
+            fonts_user_dir = self.get_user_fonts_dir()
+            fonts_user_dir.mkdir(parents=True, exist_ok=True)
+
+            for font_file in family_files:
+                if self._install_single_font(font_file):
+                    installed_fonts.append(font_file.name)
+                    installed_paths.append(str(fonts_user_dir / font_file.name))
+                else:
+                    failed_fonts.append(font_file.name)
+
+            self._refresh_font_cache()
+
+            return {
+                "success": len(installed_fonts) > 0 and not failed_fonts,
+                "family_name": normalized_family,
+                "installed_fonts": installed_fonts,
+                "failed_fonts": failed_fonts,
+                "installed_paths": installed_paths,
+                "total_processed": len(family_files)
+            }
+        except Exception as e:
+            self.logger.error(f"Fehler bei Installation der Font-Familie {family_name}: {e}")
+            return {"success": False, "error": str(e)}
         
     def install_fonts_from_directory(self, fonts_directory):
         """
@@ -48,10 +126,9 @@ class FontInstaller:
             failed_fonts = []
             
             # Rekursiv alle Font-Dateien finden
-            font_extensions = ['.ttf', '.otf', '.woff', '.woff2']
             font_files = []
             
-            for ext in font_extensions:
+            for ext in self.FONT_EXTENSIONS:
                 font_files.extend(fonts_dir.rglob(f'*{ext}'))
             
             self.logger.info(f"Gefundene Font-Dateien: {len(font_files)}")
@@ -95,7 +172,7 @@ class FontInstaller:
         """
         try:
             # Ziel-Verzeichnis für User-Fonts
-            fonts_user_dir = Path(os.environ['LOCALAPPDATA']) / 'Microsoft' / 'Windows' / 'Fonts'
+            fonts_user_dir = self.get_user_fonts_dir()
             fonts_user_dir.mkdir(parents=True, exist_ok=True)
 
             # Font-Name aus Datei extrahieren
@@ -156,6 +233,31 @@ class FontInstaller:
         except Exception as e:
             self.logger.error(f"Fehler bei Font-Name-Extraktion für {font_file}: {e}")
             return None
+
+    def _get_font_family_from_file(self, font_file):
+        """Leitet aus dem Dateinamen einen Family-Namen ab."""
+        try:
+            name = font_file.stem
+            name = name.replace('_', ' ').replace('-', ' ')
+            name = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', name)
+            name = re.sub(r'(?<=[A-Z])(?=[A-Z][a-z])', ' ', name)
+            tokens = [token for token in name.split() if token]
+
+            while tokens and tokens[-1].isdigit():
+                tokens.pop()
+
+            while tokens and tokens[-1].lower() in self.STYLE_TOKENS:
+                tokens.pop()
+
+            family_name = ' '.join(tokens).strip()
+            if family_name:
+                return family_name
+
+            fallback = font_file.parent.name.strip()
+            return fallback or font_file.stem
+        except Exception as e:
+            self.logger.error(f"Fehler bei Family-Erkennung für {font_file}: {e}")
+            return font_file.stem
     
     def _register_font_in_user_registry(self, font_name, font_filename):
         """

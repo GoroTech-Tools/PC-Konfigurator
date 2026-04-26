@@ -45,6 +45,39 @@ class PCKonfiguratorGUI:
             return Path(getattr(sys, '_MEIPASS', Path(sys.executable).resolve().parent)) / 'app_icon.ico'
         return Path(__file__).resolve().with_name('app_icon.ico')
 
+    def _get_fonts_dir(self) -> Path:
+        """Liefert das Fonts-Verzeichnis der Anwendung."""
+        return self.app_dir / "Fonts"
+
+    def _load_available_font_families(self):
+        """Lädt die verfügbaren Font-Familien aus dem Fonts-Ordner."""
+        default_fonts = [
+            "Aptos",
+            "Aptos Display",
+            "Aptos Mono",
+            "Aptos Narrow",
+            "Aptos Serif",
+            "European Pi One",
+            "Font Awesome 6 Brands",
+            "Font Awesome 6 Free",
+            "Futura Cyrillic",
+            "Glacial Indifference",
+            "Montserrat",
+            "PT Sans",
+            "PT Sans Caption",
+            "PT Sans Narrow",
+            "Raleway",
+        ]
+        try:
+            font_families = self.font_installer.get_available_font_families(self._get_fonts_dir())
+            return font_families or default_fonts
+        except Exception:
+            return default_fonts
+
+    def _install_selected_font_family(self):
+        """Installiert die aktuell gewählte Font-Familie ins Benutzerprofil."""
+        return self.font_installer.install_font_family(self._get_fonts_dir(), self.font_name.get())
+
     def add_tools_menu(self):
         # Menüleiste für CustomTkinter: immer direkt mit tk.Menu arbeiten
         tk_root = self.root._get_tk() if hasattr(self.root, '_get_tk') else self.root  # type: ignore[attr-defined]
@@ -206,11 +239,14 @@ class PCKonfiguratorGUI:
         
         # Logging setup
         self.logger = setup_logging()
+
+        self.available_font_families = self._load_available_font_families()
+        default_font_family = "Aptos" if "Aptos" in self.available_font_families else self.available_font_families[0]
         
         # Variablen für Konfiguration
         self.target_drive = tk.StringVar(value="Z:")
         self.use_documents = tk.BooleanVar(value=False)
-        self.font_name = tk.StringVar(value="Aptos")
+        self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
         
@@ -461,7 +497,7 @@ class PCKonfiguratorGUI:
         
         font_hint = ctk.CTkLabel(
             font_section,
-            text="Custom-Fonts werden automatisch installiert. Wählen Sie Ihre bevorzugte Schriftart:",
+            text="Die gewählte Font-Familie aus dem Ordner 'Fonts' wird automatisch im Benutzerprofil installiert und anschließend den Office-Vorlagen zugewiesen:",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
@@ -473,20 +509,8 @@ class PCKonfiguratorGUI:
         
         ctk.CTkLabel(font_frame, text="Schriftart:").pack(anchor="w", padx=5)
         
-        # Verfügbare Fonts laden
-        try:
-            # Vollständige Liste der gewünschten Schriftarten (unabhängig von Installation)
-            priority_fonts = ["Aptos", "Aptos Narrow", "Arial", "Calibri", "Futura", "Montserrat", "PT Sans", "Raleway"]
-            
-            # Immer die komplette Liste anzeigen, damit Benutzer sehen können was verfügbar wird
-            font_options = priority_fonts
-            
-        except Exception:
-            # Fallback falls etwas schiefgeht
-            font_options = ["Aptos", "Aptos Narrow", "Arial", "Calibri", "Futura", "Montserrat", "PT Sans", "Raleway"]
-        
         font_menu = ctk.CTkOptionMenu(font_frame, variable=self.font_name, 
-                                     values=font_options)
+                                     values=self.available_font_families)
         font_menu.pack(anchor="w", padx=5, pady=5)
         
         # Schriftgrößen
@@ -742,9 +766,19 @@ class PCKonfiguratorGUI:
             self.root.update()
             system_info = self.system_checker.get_system_info()
             self.execution_status.insert("end", f"   Erfolg: {system_info.get('platform', 'System')} erkannt\n")
+
+            # Gewählte Font-Familie installieren
+            self.execution_status.insert("end", "2. Gewählte Font-Familie installieren...\n")
+            self.root.update()
+            font_result = self._install_selected_font_family()
+            if font_result.get('success'):
+                installed_count = len(font_result.get('installed_fonts', []))
+                self.execution_status.insert("end", f"   Erfolg: {self.font_name.get()} installiert ({installed_count} Dateien im Benutzerprofil)\n")
+            else:
+                self.execution_status.insert("end", f"   Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n")
             
             # Office-Konfiguration
-            self.execution_status.insert("end", "2. Office-Konfiguration...\n")
+            self.execution_status.insert("end", "3. Office-Konfiguration...\n")
             self.root.update()
             
             office_settings = self._get_office_settings_from_gui()
@@ -760,7 +794,7 @@ class PCKonfiguratorGUI:
                 self.execution_status.insert("end", f"   Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
             
             # Office-Templates wirklich anpassen + kopieren
-            self.execution_status.insert("end", "3. Office-Templates anpassen und kopieren...\n")
+            self.execution_status.insert("end", "4. Office-Templates anpassen und kopieren...\n")
             self.root.update()
             
             try:
@@ -808,6 +842,11 @@ class PCKonfiguratorGUI:
         """Nur Office-Konfiguration in separatem Thread"""
         try:
             self.execution_status.insert("end", "Office-Konfiguration startet...\n")
+            font_result = self._install_selected_font_family()
+            if font_result.get('success'):
+                self.execution_status.insert("end", f"Gewählte Font-Familie installiert: {self.font_name.get()}\n")
+            else:
+                self.execution_status.insert("end", f"Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n")
             self.root.update()
             
             office_settings = self._get_office_settings_from_gui()
@@ -1165,6 +1204,8 @@ class PCKonfiguratorGUI:
             # Sichere Template-Konfiguration ausführen
             progress_details.configure(text="Sichere Schriftart-Konfiguration...")
             progress_window.update()
+
+            font_install_result = self._install_selected_font_family()
             
             results = self.safe_office_config.safe_font_setup(
                 font_name=self.font_name.get(),
@@ -1178,12 +1219,14 @@ class PCKonfiguratorGUI:
             if results['success']:
                 recovered_templates = sum(results['template_recovery'].values())
                 total_templates = len(results['template_recovery'])
+                installed_font_count = len(font_install_result.get('installed_fonts', []))
                 
                 messagebox.showinfo(
                     "✅ Sichere Wiederherstellung erfolgreich!",
                     f"Templates und Schriftarten erfolgreich konfiguriert!\\n\\n"
                     f"📁 Templates wiederhergestellt: {recovered_templates}/{total_templates}\\n"
-                    f"📝 Schriftart-Konfiguration: Erfolgreich\\n\\n"
+                    f"📝 Schriftart-Konfiguration: Erfolgreich\\n"
+                    f"🔤 Installierte Font-Dateien: {installed_font_count}\\n\\n"
                     f"🎯 Neue Einstellungen:\\n"
                     f"• Schriftart: {self.font_name.get()}\\n"
                     f"• Word: {self.font_size_word.get()}pt\\n"
