@@ -62,7 +62,8 @@ class SystemChecker:
                                    r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
                     build_number = winreg.QueryValueEx(key, "CurrentBuild")[0]
                     build_number = int(build_number)
-            except Exception:$([char]10)                build_number = 0
+            except Exception:
+                build_number = 0
                 
             # Windows 10/11 Erkennung
             is_windows_10_or_11 = False
@@ -274,7 +275,8 @@ class SystemChecker:
                                 "version_string": f"Office 2013 (Version {version})",
                                 "installation_type": "Executable"
                             }
-                    except Exception:$([char]10)                        # Fallback ohne Versionserkennung
+                    except Exception:
+                        # Fallback ohne Versionserkennung
                         if "Office16" in path:
                             return {
                                 "found": True,
