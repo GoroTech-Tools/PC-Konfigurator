@@ -57,14 +57,17 @@ class OfficeConfigurator:
                 
             # Outlook-Vorlagen kopieren
             outlook_result = self.copy_outlook_templates()
+            outlook_warning = None
             if not outlook_result["success"]:
-                self.logger.warning(f"Outlook-Konfiguration teilweise fehlgeschlagen: {outlook_result.get('error', '')}")
+                outlook_warning = outlook_result.get("error", "Outlook-Vorlage nicht gefunden")
+                self.logger.warning(f"Outlook-Konfiguration fehlgeschlagen: {outlook_warning}")
             
             return {
                 "success": True,
                 "message": "Office-Einstellungen erfolgreich konfiguriert",
                 "applied_count": len(self.applied_settings),
                 "word_start_screen_disabled": bool(word_result.get("word_start_screen_disabled", False)),
+                "outlook_warning": outlook_warning,
             }
             
         except Exception as e:

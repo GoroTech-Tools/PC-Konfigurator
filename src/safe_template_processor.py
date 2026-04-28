@@ -1,4 +1,4 @@
-"""
+﻿"""
 Sichere Office Template Verarbeitung mit COM-Automation
 =======================================================
 
@@ -42,7 +42,7 @@ class SafeTemplateProcessor:
                 word = win32com.client.GetActiveObject("Word.Application")
         """
                 self.logger.debug("Verwende bestehende Word-Instanz")
-            except:
+            except Exception:
                 word = win32com.client.Dispatch("Word.Application")
                 self.logger.debug("Neue Word-Instanz gestartet")
             word.Visible = False
@@ -114,8 +114,7 @@ class SafeTemplateProcessor:
                 if 'word' in locals():
                     word.Quit()
                 pythoncom.CoUninitialize()
-            except:
-                pass
+            except Exception:$([char]10)                passpass
             
             # PowerShell-Fallback für direkte Word Template-Modifikation
             powershell_success = self._modify_template_via_powershell(template_path, font_name, font_size, 'word')
@@ -147,7 +146,7 @@ class SafeTemplateProcessor:
             try:
                 excel = win32com.client.GetActiveObject("Excel.Application")
                 self.logger.debug("Verwende bestehende Excel-Instanz")
-            except:
+            except Exception:
                 excel = win32com.client.Dispatch("Excel.Application")
                 self.logger.debug("Neue Excel-Instanz gestartet")
             
@@ -203,8 +202,7 @@ class SafeTemplateProcessor:
             try:
                 subprocess.run(["taskkill", "/f", "/im", "excel.exe"], 
                              capture_output=True, check=False)
-            except:
-                pass
+            except Exception:$([char]10)                passpass
             
             self.logger.info(f"Excel-Template erfolgreich über COM aktualisiert: {template_path}")
             return True
@@ -220,8 +218,7 @@ class SafeTemplateProcessor:
                 if 'excel' in locals():
                     excel.Quit()
                 pythoncom.CoUninitialize()
-            except:
-                pass
+            except Exception:$([char]10)                passpass
             
             # PowerShell COM-Fallback (wie PC-Konfigurator.ps1)
             powershell_success = self._modify_template_via_powershell(template_path, font_name, font_size, 'excel')
@@ -305,15 +302,14 @@ class SafeTemplateProcessor:
             pythoncom.CoUninitialize()
             
             return True
-        except:
+        except Exception:
             try:
                 if 'doc' in locals():
                     doc.Close(SaveChanges=False)
                 if 'word' in locals():
                     word.Quit()
                 pythoncom.CoUninitialize()
-            except:
-                pass
+            except Exception:$([char]10)                passpass
             return False
     
     def _test_excel_access(self, template_path):
@@ -323,7 +319,7 @@ class SafeTemplateProcessor:
             
             try:
                 excel = win32com.client.GetActiveObject("Excel.Application")
-            except:
+            except Exception:
                 excel = win32com.client.Dispatch("Excel.Application")
                 
             excel.Visible = False
@@ -335,15 +331,14 @@ class SafeTemplateProcessor:
             pythoncom.CoUninitialize()
             
             return True
-        except:
+        except Exception:
             try:
                 if 'workbook' in locals():
                     workbook.Close(SaveChanges=False)
                 if 'excel' in locals():
                     excel.Quit()
                 pythoncom.CoUninitialize()
-            except:
-                pass
+            except Exception:$([char]10)                passpass
             return False
     
     def _configure_word_fonts_via_registry(self, font_name, font_size):
@@ -358,7 +353,7 @@ class SafeTemplateProcessor:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, word_key_path, 0, winreg.KEY_SET_VALUE):
                     pass
                 registry_root = winreg.HKEY_CURRENT_USER
-            except:
+            except Exception:
                 # Fallback zu HKEY_LOCAL_MACHINE
                 registry_root = winreg.HKEY_LOCAL_MACHINE
             
@@ -385,7 +380,7 @@ class SafeTemplateProcessor:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, excel_key_path, 0, winreg.KEY_SET_VALUE):
                     pass
                 registry_root = winreg.HKEY_CURRENT_USER
-            except:
+            except Exception:
                 # Fallback zu HKEY_LOCAL_MACHINE
                 registry_root = winreg.HKEY_LOCAL_MACHINE
             

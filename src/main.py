@@ -25,24 +25,24 @@ from system_checker import SystemChecker
 from office_configurator import OfficeConfigurator
 from pcconfig.office_template_manager import OfficeTemplateManager
 from safe_office_configurator import SafeOfficeConfigurator
-# from hybrid_template_manager import HybridTemplateManager
 from file_sync import FileSync
 from font_installer import FontInstaller
 from logger_config import setup_logging
 from registry_gui import RegistryExplanationWindow
+from build_info import BUILD_INFO
 
 # Feste Auswahlliste der unterstützten Schriftarten.
 # Schlüssel  = Anzeigename im Dropdown
 # Wert       = Schriftname, den Windows/Office intern kennt
 FONT_OPTIONS: dict[str, str] = {
-    "Aptos":                       "Aptos",
-    "Aptos Narrow":                "Aptos Narrow",
-    "FuturaCyrillic":              "Futura Cyrillic",
-    "GlacialIndifference-Regular": "Glacial Indifference",
-    "Montserrat-Regular":          "Montserrat",
-    "PT Sans":                     "PT Sans",
-    "PT Sans Narrow":              "PT Sans Narrow",
-    "Raleway-Regular":             "Raleway",
+    "Aptos":              "Aptos",
+    "Aptos Narrow":       "Aptos Narrow",
+    "Futura Cyrillic":    "Futura Cyrillic",
+    "Glacial Indifference": "Glacial Indifference",
+    "Montserrat":         "Montserrat",
+    "PT Sans":            "PT Sans",
+    "PT Sans Narrow":     "PT Sans Narrow",
+    "Raleway":            "Raleway",
 }
 
 
@@ -257,29 +257,9 @@ class PCKonfiguratorGUI:
             log.error(f"Fehler beim Bitness-Check: {e}")
             messagebox.showerror("Fehler", str(e))
     
-    def get_version_from_exe(self):
-        """Version aus EXE-Namen extrahieren"""
-        try:
-            if getattr(sys, 'frozen', False):
-                # Ausführung als EXE
-                exe_path = Path(sys.executable)
-                exe_name = exe_path.stem
-                # Extrahiere Version aus Namen wie "PC-Konfigurator-V9-Enhanced"
-                if '-V' in exe_name:
-                    version_part = exe_name.split('-V')[1]
-                    return f"V{version_part}"
-                elif 'V' in exe_name and exe_name.count('-') >= 2:
-                    parts = exe_name.split('-')
-                    for part in parts:
-                        if part.startswith('V') and any(c.isdigit() for c in part):
-                            return part
-            return "Development"
-        except:
-            return "v1.0"
-    
     def __init__(self):
         """Initialisierung der GUI"""
-        self.version = self.get_version_from_exe()
+        self.version = BUILD_INFO.get("version", "?")
         self.setup_appearance()
         self.root = ctk.CTk()
         self.app_dir = self._get_runtime_base_dir()
@@ -298,9 +278,6 @@ class PCKonfiguratorGUI:
         # Sicherer Office-Konfigurator initialisieren
         self.safe_office_config = SafeOfficeConfigurator(self.app_dir)
         
-        # Hybrid Template-Manager initialisieren (PowerShell-Ansatz: Kopieren + COM-Anpassung)
-        # self.template_manager = HybridTemplateManager(self.app_dir)
-        
         # Logging setup
         self.logger = setup_logging()
 
@@ -316,6 +293,8 @@ class PCKonfiguratorGUI:
         
         self.create_widgets()
         self.add_tools_menu()
+        # Systemstatus direkt beim Start im Hintergrund ermitteln
+        self.root.after(500, self.check_system_requirements)
         
     def setup_appearance(self):
         """Erscheinungsbild der Anwendung festlegen"""
@@ -350,7 +329,7 @@ class PCKonfiguratorGUI:
             if internal_dir.exists():
                 try:
                     subprocess.run(["attrib", "+H", str(internal_dir)], check=False, capture_output=True)
-                except:
+                except Exception:
                     pass
             
             # logs Ordner verstecken (falls vorhanden)
@@ -358,7 +337,7 @@ class PCKonfiguratorGUI:
             if logs_dir.exists():
                 try:
                     subprocess.run(["attrib", "+H", str(logs_dir)], check=False, capture_output=True)
-                except:
+                except Exception:
                     pass
             
     def create_widgets(self):
@@ -875,6 +854,8 @@ class PCKonfiguratorGUI:
                     self.execution_status.insert("end", "   Erfolg: Office-Einstellungen angewendet\n")
                 if result.get('word_start_screen_disabled'):
                     self.execution_status.insert("end", "   ✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
+                if result.get('outlook_warning'):
+                    self.execution_status.insert("end", f"   ⚠️ Outlook-Vorlage: {result['outlook_warning']}\n")
             else:
                 self.execution_status.insert("end", f"   Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
             
@@ -947,6 +928,8 @@ class PCKonfiguratorGUI:
                     self.execution_status.insert("end", "Erfolg: Office-Einstellungen angewendet\n")
                 if result.get('word_start_screen_disabled'):
                     self.execution_status.insert("end", "✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
+                if result.get('outlook_warning'):
+                    self.execution_status.insert("end", f"⚠️ Outlook-Vorlage: {result['outlook_warning']}\n")
                 self.execution_status.insert("end", "Office-Konfiguration abgeschlossen!\n")
                 self._add_registry_restart_notice()
             else:

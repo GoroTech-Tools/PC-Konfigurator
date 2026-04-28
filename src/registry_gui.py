@@ -120,8 +120,8 @@ class RegistryExplanationWindow:
             "",
             f"Gesamt: {total_settings} Einstellungen",
             "",
-            "Hinweis: Diese Auswahl wird derzeit nur als Vorschau gespeichert.",
-            "Die eigentliche Registry-Anwendung erfolgt weiterhin über den Konfigurationslauf.",
+            "Wählen Sie in den Reitern unten, welche Einstellungen angewendet werden sollen.",
+            "Klicken Sie auf eine Zeile, um eine detaillierte Beschreibung zu sehen.",
         ])
 
         self.summary_text = ctk.CTkTextbox(overview_frame, height=350)
@@ -332,8 +332,7 @@ class RegistryExplanationWindow:
             "Auswahl gespeichert",
             f"✅ {enabled_count} Einstellungen aktiviert\n"
             f"❌ {disabled_count} Einstellungen deaktiviert\n\n"
-            "Hinweis: Die Auswahl dient aktuell als Dokumentation/Vorschau.\n"
-            "Die eigentliche Anwendung erfolgt im Konfigurationslauf.",
+            "Die Auswahl wird beim nächsten Konfigurationslauf berücksichtigt.",
         )
 
         for key, var in self.setting_checkboxes.items():

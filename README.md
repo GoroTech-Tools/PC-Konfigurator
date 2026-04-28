@@ -1,100 +1,103 @@
 ﻿# PC-Konfigurator-Portable
 
-Komplette Portable Anwendung fÃ¼r Windows-PC-Konfiguration.
+Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-Version: 3.0.0 (Build: 26.04.2026, Python 3.13.7)
+**Version:** 3.2.5 (Build: 28.04.2026, Python 3.13.7)
 
-## ðŸš€ Ãœbersicht
+## Übersicht
 
-Dies ist die portable Version des PC-Konfigurators mit erweiterter Windows-Systemkonfiguration, sicherer Template-Verarbeitung und dynamischer Schriftfamilien-Auswahl aus dem Ordner `Fonts`.
+Dies ist die portable Version des PC-Konfigurators mit erweiterter
+Windows-Systemkonfiguration, sicherer Template-Verarbeitung und dynamischer
+Schriftfamilien-Auswahl aus dem Ordner `Fonts`.
 
-Die Anwendung konfiguriert automatisch Office-Programme, Windows-Einstellungen, Office-Vorlagen und benutzerspezifische Schriftarten.
+Die Anwendung konfiguriert automatisch Office-Programme, Windows-Einstellungen,
+Office-Vorlagen und benutzerspezifische Schriftarten.
 
-## âœ¨ Hauptfunktionen
+## Hauptfunktionen
 
-### ðŸ“ Template-Verarbeitung
+### Template-Verarbeitung
 
 - Korruptionsfreie Verarbeitung aller drei Template-Typen:
   - `Normal.dotm` (Word-Standardvorlage)
   - `Mappe.xltx` (Excel-Arbeitsmappe)
   - `NormalEmail.dotm` (Outlook-E-Mail-Vorlage)
-- `SafeTemplateProcessor` mit ZIP-IntegritÃ¤tsprÃ¼fung
+- `SafeTemplateProcessor` mit ZIP-Integritätsprüfung
 - Backup-&-Restore-Mechanismus
-- Automatische Font-Anpassung ohne Template-BeschÃ¤digung
+- Automatische Font-Anpassung ohne Template-Beschädigung
 
-### ðŸ–¥ï¸ Windows-System
+### Windows-System
 
-- Taskleiste linksbÃ¼ndig ausrichten (Windows 11)
-- Klassisches KontextmenÃ¼ aktivieren
+- Taskleiste linksbündig ausrichten (Windows 11)
+- Klassisches Kontextmenü aktivieren
 - Taskleisten-Widgets ausblenden
 - Suchfeld in der Taskleiste ausblenden
 
-### ðŸ“‹ Office-Konfiguration
+### Office-Konfiguration
 
 - Word, Excel und Outlook automatisch konfigurieren
 - Template-Management aus `Datei-Vorlagen/Sonstiges/Standards`
 - Standard-Schriftarten sicher setzen
-- Entwicklertools und BenutzeroberflÃ¤che optimieren
+- Entwicklertools und Benutzeroberfläche optimieren
 - Zentrale Word-Autokorrektur-Optionen per Registry deaktivieren:
-  - Zwei GroÃŸbuchstaben am Wortanfang korrigieren
-  - Jeden Satz mit einem GroÃŸbuchstaben beginnen
-  - Automatische AufzÃ¤hlung
+  - Zwei Großbuchstaben am Wortanfang korrigieren
+  - Jeden Satz mit einem Großbuchstaben beginnen
+  - Automatische Aufzählung
   - Automatische Nummerierung
-  - Ersten Buchstaben groÃŸ schreiben
+  - Ersten Buchstaben groß schreiben
 
-### ðŸ”¤ Schriftart-Management
+### Schriftart-Management
 
 - Font-Familien werden dynamisch aus dem Ordner `Fonts` erkannt
-- Die gewÃ¤hlte Familie wird ins Benutzerprofil installiert
-- Die gewÃ¤hlte Familie wird anschlieÃŸend Templates und Office-Einstellungen zugeordnet
+- Die gewählte Familie wird ins Benutzerprofil installiert
+- Die gewählte Familie wird anschließend Templates und Office-Einstellungen zugeordnet
 - Windows Font API und Benutzer-Registry werden genutzt
 
-## ðŸ“ Projektstruktur
+## Projektstruktur
 
 ```text
-PC-Konfigurator-Portable-v3.0.0/
-â”œâ”€â”€ PC-Konfigurator-Portable.exe
-â”œâ”€â”€ README.md
-â”œâ”€â”€ ANLEITUNG.md
-â”œâ”€â”€ BUILD-INFO.txt
-â”œâ”€â”€ Datei-Vorlagen/
-â”‚   â””â”€â”€ Sonstiges/Standards/
-â”‚       â”œâ”€â”€ Normal.dotm
-â”‚       â”œâ”€â”€ Mappe.xltx
-â”‚       â””â”€â”€ NormalEmail.dotm
-â”œâ”€â”€ Fonts/
-â”‚   â”œâ”€â”€ Aptos/
-â”‚   â”œâ”€â”€ Futura/
-â”‚   â”œâ”€â”€ Montserrat/
-â”‚   â””â”€â”€ ...
-â”œâ”€â”€ logs/          # versteckt
-â””â”€â”€ _internal/     # versteckt
+PC-Konfigurator-Portable-v3.2.5/
+├── PC-Konfigurator-Portable.exe
+├── README.md
+├── ANLEITUNG.md
+├── BUILD-INFO.txt
+├── Datei-Vorlagen/
+│   └── Sonstiges/Standards/
+│       ├── Normal.dotm
+│       ├── Mappe.xltx
+│       └── NormalEmail.dotm
+├── Fonts/
+│   ├── Aptos/
+│   ├── Futura/
+│   ├── Montserrat/
+│   └── ...
+├── logs/          # versteckt
+└── _internal/     # versteckt
 ```
 
-## ðŸ”§ Template-Verarbeitung im Detail
+## Template-Verarbeitung im Detail
 
 ### SafeTemplateProcessor
 
 - ZIP-basierte sichere Template-Bearbeitung
 - Automatische Backup-Erstellung vor Modifikation
 - XML-Namespace-bewusste Font-Einstellungen
-- IntegritÃ¤tsprÃ¼fung mit Rollback bei BeschÃ¤digung
-- UnterstÃ¼tzung fÃ¼r Word- und Excel-Templates
+- Integritätsprüfung mit Rollback bei Beschädigung
+- Unterstützung für Word- und Excel-Templates
 
 ### Deployment-Ziele
 
-- `Normal.dotm` â†’ `%APPDATA%\Microsoft\Templates\`
-- `Mappe.xltx` â†’ `%APPDATA%\Microsoft\Excel\XLSTART\`
-- `NormalEmail.dotm` â†’ `%APPDATA%\Microsoft\Templates\`
+- `Normal.dotm` → `%APPDATA%\Microsoft\Templates\`
+- `Mappe.xltx` → `%APPDATA%\Microsoft\Excel\XLSTART\`
+- `NormalEmail.dotm` → `%APPDATA%\Microsoft\Templates\`
 
-## ðŸ”§ Installation und Verwendung
+## Installation und Verwendung
 
 ### Schnellstart
 
 1. Keine Installation erforderlich.
 2. Doppelklick auf `PC-Konfigurator-Portable.exe`.
-3. GewÃ¼nschte Schriftfamilie auswÃ¤hlen.
-4. `VollstÃ¤ndige Konfiguration starten` fÃ¼r die komplette Einrichtung wÃ¤hlen.
+3. Gewünschte Schriftfamilie auswählen.
+4. `Vollständige Konfiguration starten` für die komplette Einrichtung wählen.
 5. Templates werden automatisch sicher angepasst und kopiert.
 
 ### Entwicklung und Build-System
@@ -103,60 +106,69 @@ PC-Konfigurator-Portable-v3.0.0/
 # Python-Umgebung einrichten
 pip install -r requirements.txt
 
-# Anwendung aus Source ausfÃ¼hren
+# Anwendung aus Source ausführen
 python src/main.py
 
 # Neues Build erstellen
 python -m PyInstaller PC-Konfigurator-Portable.spec
 ```
 
-Der Post-Build ergÃ¤nzt automatisch:
+Der Post-Build ergänzt automatisch:
 
 - Fonts
 - Templates
 - Dokumentation
-- Hidden-Attribute fÃ¼r `_internal` und `logs`
+- Hidden-Attribute für `_internal` und `logs`
 
-## ðŸ“Š Technische Details
+## Technische Details
 
-### ðŸ”’ Sicherheit und Template-Schutz
+### Sicherheit und Template-Schutz
 
-- ZIP-IntegritÃ¤tsprÃ¼fung vor Template-Bearbeitung
+- ZIP-Integritätsprüfung vor Template-Bearbeitung
 - Automatische Backup-Erstellung mit Rollback
-- XML-sichere Modifikationen mit Namespace-UnterstÃ¼tzung
-- Nur `HKEY_CURRENT_USER` wird geÃ¤ndert
-- VollstÃ¤ndiges Logging aller Template- und Registry-Operationen
+- XML-sichere Modifikationen mit Namespace-Unterstützung
+- Nur `HKEY_CURRENT_USER` wird geändert
+- Vollständiges Logging aller Template- und Registry-Operationen
 
-### ðŸ’» KompatibilitÃ¤t
+### Kompatibilität
 
 - Windows 10 und Windows 11
 - Office 2013, 2016, 2019, 2021 und Microsoft 365
 - Outlook-E-Mail-Templates (`NormalEmail.dotm`)
-- Funktioniert auch ohne Office-Installation fÃ¼r Windows-/Font-Teile
+- Funktioniert auch ohne Office-Installation für Windows-/Font-Teile
 
-### ðŸ“ˆ Aktuelle Statistiken
+### Aktuelle Statistiken
 
-- 3 Template-Typen vollstÃ¤ndig unterstÃ¼tzt
+- 3 Template-Typen vollständig unterstützt
 - 15 dynamisch erkannte Font-Familien im aktuellen Fonts-Bestand
 - 55 Schriftart-Dateien im Build
 - 173 Vorlagen-Dateien im Build
 
-### âš¡ Template-Verarbeitung
+### Template-Verarbeitungszeiten
 
 - `Normal.dotm`: Styles- und Theme-Anpassung
 - `Mappe.xltx`: Font-Definitionen in `styles.xml`
 - `NormalEmail.dotm`: Outlook-spezifische Formatierung
 - Verarbeitungszeit typischerweise ca. 2 bis 5 Sekunden pro Template
 
-## ðŸ“ Changelog
+## Changelog
+
+### v3.2.5 (28. April 2026)
+
+- Registry-UX deutlich verbessert (übersichtlichere Darstellung, Erklärungen)
+- Word-Startverhalten wiederhergestellt (Dokument beim Start nicht automatisch öffnen)
+- `publish_release.ps1` für automatisiertes Release-Packaging hinzugefügt
+- `SafeTemplateProcessor` erweitert
+- `office_configurator.py` überarbeitet
+- Build-Skript (`build.ps1`) verbessert
 
 ### v3.0.0 (26. April 2026)
 
 - Dynamische Font-Familien-Auswahl aus dem Ordner `Fonts`
-- GewÃ¤hlte Font-Familie wird gezielt ins Benutzerprofil installiert
-- Zuordnung der gewÃ¤hlten Familie zu Templates und Office-Konfiguration verbessert
+- Gewählte Font-Familie wird gezielt ins Benutzerprofil installiert
+- Zuordnung der gewählten Familie zu Templates und Office-Konfiguration verbessert
 - EXE- und Fenster-Icon korrigiert
-- Release-ZIP enthÃ¤lt `_internal` und `logs` zuverlÃ¤ssig
+- Release-ZIP enthält `_internal` und `logs` zuverlässig
 - ZIP-Struktur vereinfacht
 - Release-ZIP-Artefakte werden nicht mehr in Git versioniert
 
@@ -165,58 +177,28 @@ Der Post-Build ergÃ¤nzt automatisch:
 - Build- und Packaging-Verbesserungen
 - Portable Release mit Hidden-Verzeichnissen
 
-### FrÃ¼here Versionen
+### Frühere Versionen
 
 - `v2.5.1`: Template-Revolution mit sicherer ZIP-Manipulation
-- `v2.5.0`: Template-Fixes fÃ¼r `NormalEmail.dotm` und `Mappe.xltx`
-- `v2.4.0`: groÃŸe PowerShell-Implementierung
+- `v2.5.0`: Template-Fixes für `NormalEmail.dotm` und `Mappe.xltx`
+- `v2.4.0`: große PowerShell-Implementierung
 
-## ðŸ†˜ Support
+## Support
 
 ### Bei Problemen
 
-1. Log-Dateien im Ordner `logs/` prÃ¼fen.
+1. Log-Dateien im Ordner `logs/` prüfen.
 2. Windows-Ereignisanzeige kontrollieren.
-3. Falls nÃ¶tig als Administrator starten.
+3. Falls nötig als Administrator starten.
 
 ### Dokumentation
 
-- `ANLEITUNG.md` â€“ Detaillierte Benutzeranleitung
-- `src/` â€“ VollstÃ¤ndiger Source-Code
+- `ANLEITUNG.md` – Detaillierte Benutzeranleitung
+- `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
 
 ---
 
-Entwickelt: 26. April 2026
+Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
-Python-Version: 3.13.7
-
-Framework: CustomTkinter 5.2.2
-
-Build-Tool: PyInstaller 6.17.0
-
-FÃ¼r Bildungseinrichtungen und professionelle Anwender optimiert.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Für Bildungseinrichtungen und professionelle Anwender optimiert.
