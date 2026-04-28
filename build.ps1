@@ -191,11 +191,44 @@ if ($NoVersionBump -and $newVersion) {
 
 Write-Host "`n1. PyInstaller Build wird erstellt..." -ForegroundColor Yellow
 $pyInstallerLog = Join-Path $PSScriptRoot 'build\last-pyinstaller.log'
+# Workpath außerhalb von OneDrive, damit der OneDrive-Sync die Intermediate-Dateien nicht sperrt
+$pyiWorkPath = Join-Path $env:TEMP 'pyi-build-pc-konfigurator'
+$specPath = Join-Path $PSScriptRoot 'PC-Konfigurator-Portable.spec'
+$specOffline = $false
+if (Test-Path $specPath) {
+    try {
+        # OneDrive-Offline robust via attrib prüfen (zeigt z.B. "A O P ...")
+        $attribLine = (& attrib $specPath 2>$null | Select-Object -First 1)
+        if ($attribLine -match '\sO\s') {
+            $specOffline = $true
+            Write-Host "Hinweis: Spec-Datei ist OneDrive-Offline markiert. Fallback ohne .spec wird verwendet." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Warnung: Konnte Spec-Attribute nicht lesen. Verwende Fallback ohne .spec." -ForegroundColor Yellow
+        $specOffline = $true
+    }
+} else {
+    $specOffline = $true
+    Write-Host "Hinweis: Spec-Datei nicht gefunden. Fallback ohne .spec wird verwendet." -ForegroundColor Yellow
+}
+
+$buildName = if ($newVersion) { "PC-Konfigurator-Portable-v$newVersion" } else { "PC-Konfigurator-Portable-vmanual" }
+$entryScript = Join-Path $PSScriptRoot 'src\main.py'
+$iconPath = Join-Path $PSScriptRoot 'src\app_icon.ico'
+
 if ($Quiet) {
     New-Item -ItemType Directory -Path (Split-Path $pyInstallerLog -Parent) -Force | Out-Null
-    & py -m PyInstaller PC-Konfigurator-Portable.spec --noconfirm *> $pyInstallerLog
+    if (-not $specOffline) {
+        & py -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath *> $pyInstallerLog
+    } else {
+        & py -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript *> $pyInstallerLog
+    }
 } else {
-    & py -m PyInstaller PC-Konfigurator-Portable.spec --noconfirm
+    if (-not $specOffline) {
+        & py -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath
+    } else {
+        & py -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript
+    }
 }
 
 if ($LASTEXITCODE -ne 0) {
@@ -338,17 +371,37 @@ if ($buildDir) {
                 Remove-Item $zipPath -Force -ErrorAction Stop
             }
 
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::CreateFromDirectory(
-                $buildDir.FullName,
-                $zipPath,
-                [System.IO.Compression.CompressionLevel]::Optimal,
-                $false
-            )
+            # tar.exe ist robuster bei langen Pfaden und versteckten Ordnern (_internal)
+            # -a: Format anhand Dateiendung (.zip) erkennen
+            # -C: aus dem dist-Ordner packen, damit der Build-Ordner als Root im ZIP liegt
+            & tar.exe -a -c -f $zipPath -C $buildDir.Parent.FullName $buildDir.Name
+            if ($LASTEXITCODE -ne 0) {
+                throw "tar.exe fehlgeschlagen (ExitCode=$LASTEXITCODE)"
+            }
+
+            # ZIP-Sanity-Check: Kernordner müssen im Archiv enthalten sein
+            $zipEntries = & tar.exe -tf $zipPath
+            if ($LASTEXITCODE -ne 0 -or -not $zipEntries) {
+                throw "ZIP-Sanity-Check fehlgeschlagen: Konnte ZIP-Inhalt nicht lesen."
+            }
+
+            $internalEntryCount = @($zipEntries | Where-Object { $_ -match '(^|/)_internal(/|$)' }).Count
+            $fontsEntryCount = @($zipEntries | Where-Object { $_ -match '(^|/)Fonts(/|$)' }).Count
+            $templatesEntryCount = @($zipEntries | Where-Object { $_ -match '(^|/)Datei-Vorlagen(/|$)' }).Count
+
+            if ($internalEntryCount -le 0 -or $fontsEntryCount -le 0 -or $templatesEntryCount -le 0) {
+                throw (
+                    "ZIP-Sanity-Check fehlgeschlagen: " +
+                    "_internal=$internalEntryCount, Fonts=$fontsEntryCount, Datei-Vorlagen=$templatesEntryCount"
+                )
+            }
+            
             if ($Quiet) {
                 Microsoft.PowerShell.Utility\Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
+                Microsoft.PowerShell.Utility\Write-Host "ZIP-Check: _internal=$internalEntryCount, Fonts=$fontsEntryCount, Datei-Vorlagen=$templatesEntryCount" -ForegroundColor White
             } else {
                 Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
+                Write-Host "ZIP-Check: _internal=$internalEntryCount, Fonts=$fontsEntryCount, Datei-Vorlagen=$templatesEntryCount" -ForegroundColor White
             }
         } catch {
             Write-Host "ZIP-Release konnte nicht erstellt werden: $_" -ForegroundColor Red

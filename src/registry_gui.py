@@ -7,6 +7,7 @@ Registry-Einstellungen inklusive einfacher Auswahl-Checkboxen.
 import customtkinter as ctk
 import tkinter as tk
 import tkinter.ttk as ttk
+from pathlib import Path
 from tkinter import messagebox
 from typing import Dict, List, Tuple
 
@@ -16,10 +17,11 @@ from registry_explainer import RegistryExplainer, RegistrySettingInfo
 class RegistryExplanationWindow:
     """Fenster zur Anzeige von Registry-Erläuterungen."""
 
-    def __init__(self, parent=None, path_callback=None):
+    def __init__(self, parent=None, path_callback=None, config_callback=None):
         self.parent = parent
-        # Optionaler Callback: () -> str, liefert den aktuell konfigurierten Ziel-Pfad
-        self.path_callback = path_callback
+        # config_callback: () -> dict mit 'path', 'font', 'font_size_word', 'font_size_excel'
+        # path_callback: Legacy-Support (nur Pfad als str)
+        self.config_callback = config_callback or (lambda: {'path': path_callback(), 'font': '', 'font_size_word': 11, 'font_size_excel': 10} if path_callback else None)
         self.registry_explainer = RegistryExplainer()
         self.window = None
         self.tabview = None
@@ -205,25 +207,55 @@ class RegistryExplanationWindow:
         tree.tag_configure("odd",  background="#2b2b2b")
         tree.tag_configure("even", background="#333333")
 
-        # Aktuellen Pfad aus Callback holen (einmalig beim Öffnen)
-        current_path = ""
-        if self.path_callback is not None:
+        # Aktuelle Konfigurationswerte aus Callback holen (einmalig beim Öffnen)
+        cfg: dict = {}
+        if self.config_callback is not None:
             try:
-                current_path = self.path_callback()
+                cfg = self.config_callback() or {}
             except Exception:
                 pass
 
-        path_keys = {"word_doc_path", "excel_path"}
+        current_path = cfg.get('path', '')
+        current_font = cfg.get('font', '')
+        current_size_word = cfg.get('font_size_word', '')
+        current_size_excel = cfg.get('font_size_excel', '')
+
+        datei_vorlagen_path_keys = {
+            "word_dot_path", "word_personal_templates",
+            "excel_xlstart_info", "excel_personal_templates",
+        }
+        path_keys = {
+            "word_startup_path", "word_doc_path", "excel_path",
+        }
+        font_keys = {"word_default_font", "word_font_override", "excel_default_font", "excel_font_override"}
+        font_size_word_keys = {"word_default_font_size"}
+        font_size_excel_keys = {"excel_default_font_size"}
+        clear_keys = {"word_font_substitutes"}
+        excel_font_display_keys = {"excel_font_override"}
 
         setting_map: Dict[str, RegistrySettingInfo] = {}
         for i, (setting_name, setting) in enumerate(selected):
             checkbox_var = tk.BooleanVar(value=True)
             self.setting_checkboxes[setting_name] = checkbox_var
             tag = "odd" if i % 2 == 0 else "even"
-            display_value = (
-                current_path if (setting_name in path_keys and current_path)
-                else (setting.default_value if setting.default_value != "" else "(konfigurierter Pfad)")
-            )
+            if setting_name in excel_font_display_keys and current_font:
+                display_value = f"{current_font},{current_size_excel}" if current_size_excel else current_font
+            elif setting_name in font_keys and current_font:
+                display_value = current_font
+            elif setting_name in font_size_word_keys and current_size_word:
+                display_value = f"{current_size_word} pt"
+            elif setting_name in font_size_excel_keys and current_size_excel:
+                display_value = f"{current_size_excel} pt"
+            elif setting_name in datei_vorlagen_path_keys and current_path:
+                display_value = str(Path(current_path) / "Datei-Vorlagen")
+            elif setting_name in path_keys and current_path:
+                display_value = current_path
+            elif setting_name in clear_keys:
+                display_value = "(wird geleert)"
+            elif setting.default_value != "":
+                display_value = setting.default_value
+            else:
+                display_value = "–"
             tree.insert("", "end", iid=setting_name, tags=(tag,), values=(
                 "☑", setting.value_name, setting.category,
                 display_value, setting.value_type,

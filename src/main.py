@@ -31,6 +31,20 @@ from font_installer import FontInstaller
 from logger_config import setup_logging
 from registry_gui import RegistryExplanationWindow
 
+# Feste Auswahlliste der unterstützten Schriftarten.
+# Schlüssel  = Anzeigename im Dropdown
+# Wert       = Schriftname, den Windows/Office intern kennt
+FONT_OPTIONS: dict[str, str] = {
+    "Aptos":                       "Aptos",
+    "Aptos Narrow":                "Aptos Narrow",
+    "FuturaCyrillic":              "Futura Cyrillic",
+    "GlacialIndifference-Regular": "Glacial Indifference",
+    "Montserrat-Regular":          "Montserrat",
+    "PT Sans":                     "PT Sans",
+    "PT Sans Narrow":              "PT Sans Narrow",
+    "Raleway-Regular":             "Raleway",
+}
+
 
 class PCKonfiguratorGUI:
     def _get_runtime_base_dir(self) -> Path:
@@ -50,33 +64,16 @@ class PCKonfiguratorGUI:
         return self.app_dir / "Fonts"
 
     def _load_available_font_families(self):
-        """Lädt die verfügbaren Font-Familien aus dem Fonts-Ordner."""
-        default_fonts = [
-            "Aptos",
-            "Aptos Display",
-            "Aptos Mono",
-            "Aptos Narrow",
-            "Aptos Serif",
-            "European Pi One",
-            "Font Awesome 6 Brands",
-            "Font Awesome 6 Free",
-            "Futura Cyrillic",
-            "Glacial Indifference",
-            "Montserrat",
-            "PT Sans",
-            "PT Sans Caption",
-            "PT Sans Narrow",
-            "Raleway",
-        ]
-        try:
-            font_families = self.font_installer.get_available_font_families(self._get_fonts_dir())
-            return font_families or default_fonts
-        except Exception:
-            return default_fonts
+        """Liefert die feste Auswahlliste der unterstützten Schriftarten."""
+        return list(FONT_OPTIONS.keys())
 
-    def _install_selected_font_family(self):
-        """Installiert die aktuell gewählte Font-Familie ins Benutzerprofil."""
-        return self.font_installer.install_font_family(self._get_fonts_dir(), self.font_name.get())
+    def _get_office_font_name(self) -> str:
+        """Liefert den Windows-internen Schriftnamen für Office-Konfiguration."""
+        return FONT_OPTIONS.get(self.font_name.get(), self.font_name.get())
+
+    def _install_all_fonts(self):
+        """Installiert alle Fonts aus dem Fonts-Ordner ins benutzerspezifische Fonts-Verzeichnis."""
+        return self.font_installer.install_fonts_from_directory(self._get_fonts_dir())
 
     def add_tools_menu(self):
         # Menüleiste für CustomTkinter: immer direkt mit tk.Menu arbeiten
@@ -86,6 +83,73 @@ class PCKonfiguratorGUI:
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Tools', menu=tools_menu)
         tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
+        tools_menu.add_command(label='GPO-Design-Prüfung', command=self.run_gpo_check)
+
+    def run_gpo_check(self):
+        """GPO-Prüfung auf Office-Design-Richtlinien als eigenständiges Dialogfenster."""
+        from registry_explainer import RegistryExplainer
+        import tkinter as tk
+        import customtkinter as ctk
+
+        result = RegistryExplainer().check_gpo_office_theme()
+
+        win = ctk.CTkToplevel(self.root)
+        win.title("GPO-Design-Prüfung")
+        win.geometry("820x540")
+        win.lift()
+        win.focus_force()
+        win.grab_set()
+
+        # Status-Zeile
+        if result["gpo_active"]:
+            if result["theme_related_count"] > 0:
+                status = (
+                    f"⚠ GPO aktiv – {result['theme_related_count']} Theme-bezogene(r) Eintrag/Einträge "
+                    f"gefunden (gesamt: {result['all_entries_count']})"
+                )
+                color = "#e07800"
+            else:
+                status = (
+                    f"ℹ GPO aktiv – {result['all_entries_count']} Office-Richtlinie(n), "
+                    "kein direkter Theme-Eintrag"
+                )
+                color = "#1f6aa5"
+        else:
+            status = "✓ Keine Office-Gruppenrichtlinien für Themes/Designs gefunden."
+            color = "#2e8b57"
+
+        ctk.CTkLabel(
+            win, text=status,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=color, wraplength=780, justify="left"
+        ).pack(anchor="w", padx=16, pady=(14, 4))
+
+        ctk.CTkLabel(
+            win, text=result["recommendation"],
+            wraplength=780, justify="left"
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        # Detailbox
+        lines = ["Geprüfte Registry-Pfade:"]
+        for p in result["checked_paths"]:
+            lines.append(f"  {p}")
+        if result["entries"]:
+            lines.append("")
+            lines.append("Gefundene Richtlinien-Einträge:")
+            for e in result["entries"]:
+                marker = " [⚠ THEME]" if e["theme_related"] else ""
+                lines.append(f"  {e['path']}")
+                lines.append(f"    {e['name']} = {e['data']!r}{marker}")
+        else:
+            lines.append("")
+            lines.append("Keine Richtlinien-Einträge gefunden.")
+
+        box = ctk.CTkTextbox(win, font=ctk.CTkFont(family="Consolas", size=11))
+        box.pack(fill="both", expand=True, padx=16, pady=(0, 8))
+        box.insert("0.0", "\n".join(lines))
+        box.configure(state="disabled")
+
+        ctk.CTkButton(win, text="Schließen", command=win.destroy).pack(pady=(0, 12))
 
     def run_bitness_check(self):
         import sys
@@ -226,7 +290,7 @@ class PCKonfiguratorGUI:
         self.office_configurator = OfficeConfigurator()
         self.file_sync = FileSync()
         self.font_installer = FontInstaller()
-        self.registry_gui = RegistryExplanationWindow(self.root, path_callback=self._get_configured_path)
+        self.registry_gui = RegistryExplanationWindow(self.root, config_callback=self._get_registry_config)
         
         # Office Template Manager initialisieren
         self.template_manager = OfficeTemplateManager(self.app_dir)
@@ -497,7 +561,7 @@ class PCKonfiguratorGUI:
         
         font_hint = ctk.CTkLabel(
             font_section,
-            text="Die gewählte Font-Familie aus dem Ordner 'Fonts' wird automatisch im Benutzerprofil installiert und anschließend den Office-Vorlagen zugewiesen:",
+                text="Alle Schriften aus dem Ordner 'Fonts' werden automatisch im Benutzerprofil installiert. Die gewählte Schrift wird den Office-Vorlagen und der Registry zugewiesen:",
             font=ctk.CTkFont(size=11),
             text_color="gray"
         )
@@ -627,7 +691,17 @@ class PCKonfiguratorGUI:
         kategorie_label.pack(anchor="w", padx=22, pady=(5, 0))
         kategorie_text = ctk.CTkLabel(
             registry_frame,
-            text="• Word - Benutzeroberfläche (Entwicklertools, Lineal)\n• Word - Formatierung (Formatierungszeichen, Tabellen)\n• Word - Dateipfade und Schriftarten\n• Word - Autokorrektur-Einstellungen\n• Excel - Dateipfade und Schriftarten\n• Office - Allgemeine Einstellungen\n• Windows - Taskleiste und Kontextmenü",
+            text=(
+                "• Word - Benutzeroberfläche (Entwicklertools, Lineal)\n"
+                "• Word - Formatierung (Formatierungszeichen, Tabellen)\n"
+                "• Word - Datei-Vorlagen (DOT-PATH, STARTUP-PATH für Normal.dotm)\n"
+                "• Word - Dateipfade und Schriftarten\n"
+                "• Word - Autokorrektur-Einstellungen\n"
+                "• Excel - Datei-Vorlagen (XLSTART-Info für Mappe.xltx)\n"
+                "• Excel - Dateipfade und Schriftarten\n"
+                "• Office - Allgemeine Einstellungen\n"
+                "• Windows - Taskleiste und Kontextmenü"
+            ),
             wraplength=900,
             justify="left"
         )
@@ -702,6 +776,15 @@ class PCKonfiguratorGUI:
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
 
+        restart_explorer_button = ctk.CTkButton(
+            execution_frame,
+            text="Windows-Explorer neu starten",
+            command=self.restart_windows_explorer,
+            width=260,
+            height=36
+        )
+        restart_explorer_button.pack(pady=(0, 10))
+
         # Status-Anzeige
         status_label = ctk.CTkLabel(execution_frame, text="Status und Fortschritt:",
                                    font=ctk.CTkFont(weight="bold"))
@@ -768,12 +851,12 @@ class PCKonfiguratorGUI:
             self.execution_status.insert("end", f"   Erfolg: {system_info.get('platform', 'System')} erkannt\n")
 
             # Gewählte Font-Familie installieren
-            self.execution_status.insert("end", "2. Gewählte Font-Familie installieren...\n")
+            self.execution_status.insert("end", "2. Alle Schriften aus dem Fonts-Ordner installieren...\n")
             self.root.update()
-            font_result = self._install_selected_font_family()
+            font_result = self._install_all_fonts()
             if font_result.get('success'):
                 installed_count = len(font_result.get('installed_fonts', []))
-                self.execution_status.insert("end", f"   Erfolg: {self.font_name.get()} installiert ({installed_count} Dateien im Benutzerprofil)\n")
+                self.execution_status.insert("end", f"   Erfolg: {installed_count} Schrift-Dateien im Benutzerprofil installiert\n")
             else:
                 self.execution_status.insert("end", f"   Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n")
             
@@ -790,6 +873,8 @@ class PCKonfiguratorGUI:
                     self.execution_status.insert("end", f"   Erfolg: {applied_count} Einstellungen angewendet\n")
                 else:
                     self.execution_status.insert("end", "   Erfolg: Office-Einstellungen angewendet\n")
+                if result.get('word_start_screen_disabled'):
+                    self.execution_status.insert("end", "   ✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
             else:
                 self.execution_status.insert("end", f"   Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
             
@@ -799,13 +884,13 @@ class PCKonfiguratorGUI:
             
             try:
                 mod_results = self.template_manager.update_font_in_templates(
-                    font_name=self.font_name.get(),
+                    font_name=self._get_office_font_name(),
                     font_size_word=self.font_size_word.get(),
                     font_size_excel=self.font_size_excel.get()
                 )
                 copy_results = self.template_manager.copy_templates_to_user()
                 safe_results = self.safe_office_config.configure_fonts_via_registry(
-                    font_name=self.font_name.get(),
+                    font_name=self._get_office_font_name(),
                     font_size_word=self.font_size_word.get(),
                     font_size_excel=self.font_size_excel.get()
                 )
@@ -820,7 +905,7 @@ class PCKonfiguratorGUI:
                     self.execution_status.insert("end", "   ⚠️ Template-Anpassung/Kopie teilweise fehlgeschlagen (Details im Log)\n")
 
                 if registry_ok:
-                    self.execution_status.insert("end", f"   ✅ Schriftart konfiguriert: {self.font_name.get()}\n")
+                    self.execution_status.insert("end", f"   ✅ Schriftart konfiguriert: {self._get_office_font_name()}\n")
                     self.execution_status.insert("end", f"   ✅ Word: {self.font_size_word.get()}pt, Excel: {self.font_size_excel.get()}pt\n")
                 else:
                     self.execution_status.insert("end", "   ⚠️ Registry-Schriftart-Konfiguration teilweise fehlgeschlagen\n")
@@ -832,6 +917,7 @@ class PCKonfiguratorGUI:
             # (Feature nicht aktiviert)
                 
             self.execution_status.insert("end", "\nKonfiguration abgeschlossen!\n")
+            self._add_registry_restart_notice()
             
         except Exception as e:
             self.execution_status.insert("end", f"\nFEHLER: {e}\n")
@@ -842,9 +928,10 @@ class PCKonfiguratorGUI:
         """Nur Office-Konfiguration in separatem Thread"""
         try:
             self.execution_status.insert("end", "Office-Konfiguration startet...\n")
-            font_result = self._install_selected_font_family()
+            font_result = self._install_all_fonts()
             if font_result.get('success'):
-                self.execution_status.insert("end", f"Gewählte Font-Familie installiert: {self.font_name.get()}\n")
+                installed_count = len(font_result.get('installed_fonts', []))
+                self.execution_status.insert("end", f"Alle Schriften installiert: {installed_count} Dateien im Benutzerprofil\n")
             else:
                 self.execution_status.insert("end", f"Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n")
             self.root.update()
@@ -858,7 +945,10 @@ class PCKonfiguratorGUI:
                     self.execution_status.insert("end", f"Erfolg: {applied_count} Einstellungen angewendet\n")
                 else:
                     self.execution_status.insert("end", "Erfolg: Office-Einstellungen angewendet\n")
+                if result.get('word_start_screen_disabled'):
+                    self.execution_status.insert("end", "✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
                 self.execution_status.insert("end", "Office-Konfiguration abgeschlossen!\n")
+                self._add_registry_restart_notice()
             else:
                 self.execution_status.insert("end", f"Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
             
@@ -866,28 +956,87 @@ class PCKonfiguratorGUI:
             self.execution_status.insert("end", f"FEHLER: {e}\n")
         
         self.root.update()
+
+    def _add_registry_restart_notice(self):
+        """Hinweis für Anwender nach Registry-Anpassungen anzeigen."""
+        notice = (
+            "\nℹ️ Wichtiger Hinweis: Nach dem Anwenden der Registry-Einstellungen "
+            "ist ein Neustart des Windows-Explorers oder eine Neuanmeldung am System empfohlen, "
+            "damit alle Änderungen vollständig wirksam werden.\n"
+        )
+        self.execution_status.insert("end", notice)
+        self.root.after(
+            0,
+            lambda: messagebox.showinfo(
+                "Hinweis zur Übernahme",
+                "Die Registry-Einstellungen wurden angewendet.\n\n"
+                "Bitte starten Sie den Windows-Explorer neu oder melden Sie sich einmal am System ab und wieder an, "
+                "damit alle Änderungen vollständig wirksam werden."
+            )
+        )
+
+    def restart_windows_explorer(self):
+        """Startet den Windows-Explorer mit Rückfrage neu."""
+        confirm = messagebox.askyesno(
+            "Windows-Explorer neu starten",
+            "Der Windows-Explorer wird jetzt neu gestartet.\n\n"
+            "Dadurch werden Taskleiste und Desktop kurz neu geladen.\n"
+            "Möchten Sie fortfahren?",
+            icon="question"
+        )
+
+        if not confirm:
+            return
+
+        try:
+            subprocess.run(["taskkill", "/F", "/IM", "explorer.exe"], check=False, capture_output=True)
+            subprocess.Popen(["explorer.exe"])
+
+            self.execution_status.insert(
+                "end",
+                "ℹ️ Windows-Explorer wurde neu gestartet. Änderungen sollten nun sichtbar sein.\n"
+            )
+            self.execution_status.see("end")
+            messagebox.showinfo(
+                "Explorer neu gestartet",
+                "Der Windows-Explorer wurde neu gestartet.\n"
+                "Die Registry-Änderungen sollten jetzt vollständig übernommen sein."
+            )
+        except Exception as e:
+            self.execution_status.insert("end", f"⚠️ Explorer-Neustart fehlgeschlagen: {e}\n")
+            self.execution_status.see("end")
+            messagebox.showerror(
+                "Fehler beim Explorer-Neustart",
+                f"Der Explorer konnte nicht neu gestartet werden:\n{e}\n\n"
+                "Bitte melden Sie sich am System ab und wieder an."
+            )
     
     def _get_office_settings_from_gui(self):
         """Office-Einstellungen aus GUI-Eingaben extrahieren"""
         return {
-            'font_name': self.font_name.get(),
+              'font_name': self._get_office_font_name(),
             'font_size_word': self.font_size_word.get(),
             'font_size_excel': self.font_size_excel.get(),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }
 
-    def _get_configured_path(self) -> str:
-        """Gibt den aktuell konfigurierten Ziel-Pfad zurück (für Registry-Info-Anzeige)."""
+    def _get_registry_config(self) -> dict:
+        """Gibt die aktuelle Konfiguration für die Registry-Info-Anzeige zurück."""
         try:
             if self.use_documents.get():
-                return str(Path.home() / "Documents")
-            drive = self.target_drive.get()
-            if drive and Path(drive + "\\").exists():
-                return drive + "\\"
-            return str(Path.home() / "Documents")
+                path = str(Path.home() / "Documents")
+            else:
+                drive = self.target_drive.get()
+                path = (drive + "\\") if drive and Path(drive + "\\").exists() else str(Path.home() / "Documents")
+            return {
+                'path': path,
+                'font': self._get_office_font_name(),
+                'font_size_word': self.font_size_word.get(),
+                'font_size_excel': self.font_size_excel.get(),
+            }
         except Exception:
-            return str(Path.home() / "Documents")
+            return {'path': str(Path.home() / "Documents"), 'font': 'Aptos', 'font_size_word': 11, 'font_size_excel': 10}
         
     def create_logs_tab(self):
         """Logs-Tab erstellen"""
@@ -1205,10 +1354,10 @@ class PCKonfiguratorGUI:
             progress_details.configure(text="Sichere Schriftart-Konfiguration...")
             progress_window.update()
 
-            font_install_result = self._install_selected_font_family()
+            font_install_result = self._install_all_fonts()
             
             results = self.safe_office_config.safe_font_setup(
-                font_name=self.font_name.get(),
+                font_name=self._get_office_font_name(),
                 font_size_word=self.font_size_word.get(),
                 font_size_excel=self.font_size_excel.get()
             )

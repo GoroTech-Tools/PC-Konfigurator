@@ -33,7 +33,17 @@ class OfficeConfigurator:
             font_name = config.get("font_name", "Aptos")
             font_size_word = config.get("font_size_word", 11)
             font_size_excel = config.get("font_size_excel", 10)
-            target_path = config.get("target_path", "")
+
+            # Zielpfad aus GUI-Auswahl berechnen
+            use_documents = config.get("use_documents_folder", False)
+            if use_documents:
+                target_path = str(Path.home() / "Documents")
+            else:
+                drive = config.get("target_drive", "")
+                if drive:
+                    target_path = drive if drive.endswith("\\") else drive + "\\"
+                else:
+                    target_path = config.get("target_path", "")
             
             # Word konfigurieren
             word_result = self.configure_word(font_name, font_size_word, target_path)
@@ -53,7 +63,8 @@ class OfficeConfigurator:
             return {
                 "success": True,
                 "message": "Office-Einstellungen erfolgreich konfiguriert",
-                "applied_count": len(self.applied_settings)
+                "applied_count": len(self.applied_settings),
+                "word_start_screen_disabled": bool(word_result.get("word_start_screen_disabled", False)),
             }
             
         except Exception as e:
@@ -71,14 +82,19 @@ class OfficeConfigurator:
                 "Ruler": (1, "word_ruler"), 
                 "ShowAllFormatting": (1, "word_show_all_formatting"),
                 "VisiDrawTableDrs": (1, "word_table_gridlines"),
-                "DOC-PATH": (str(target_path) if target_path else self._get_default_docs_path(), "word_doc_path"),
+                "DOC-PATH": (target_path, "word_doc_path"),
                 # Autokorrektur-Optionen:
                 "CorrectCapsLock": (0, "word_correct_initial_caps"),
                 "CorrectSentenceCaps": (0, "word_correct_sentence_caps"),
                 "AutoFormatAsYouTypeApplyBulletedLists": (0, "word_auto_bullets"),
-                "AutoFormatAsYouTypeApplyNumberedLists": (0, "word_auto_numbering")
+                "AutoFormatAsYouTypeApplyNumberedLists": (0, "word_auto_numbering"),
+                # Schriftart-Anzeige und Ersetzungen:
+                "Font": (font_name, "word_font_override"),
+                "Fontsubstitutes": ("", "word_font_substitutes"),
+                # Persönliche Vorlagen:
+                "PersonalTemplates": (self._get_datei_vorlagen_path(target_path), "word_personal_templates"),
             }
-            
+
             # Schriftart-Einstellungen
             font_settings = {
                 "Default Font": (font_name, "word_default_font"),
@@ -87,11 +103,26 @@ class OfficeConfigurator:
             
             # Registry-Einstellungen anwenden
             self._apply_word_registry_settings(word_settings, font_settings)
-            
+
+            # Word-Startbildschirm deaktivieren (direkt in leeres Dokument starten)
+            for version in ["16.0", "15.0"]:
+                general_key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\General"
+                self._set_registry_values_with_explanation(
+                    winreg.HKEY_CURRENT_USER,
+                    general_key_path,
+                    {"DisableBootToOfficeStart": (1, "word_disable_start_screen")},
+                    "Word",
+                    version,
+                )
+
             # Angewandte Einstellungen protokollieren
             self._log_applied_settings("Word")
-            
-            return {"success": True, "message": "Word erfolgreich konfiguriert"}
+
+            return {
+                "success": True,
+                "message": "Word erfolgreich konfiguriert",
+                "word_start_screen_disabled": True,
+            }
             
         except Exception as e:
             self.logger.error(f"Fehler bei Word-Konfiguration: {e}")
@@ -104,7 +135,13 @@ class OfficeConfigurator:
             
             # Excel Registry-Einstellungen mit Erläuterungen
             excel_settings = {
-                "EXCEL-PATH": (str(target_path) if target_path else self._get_default_docs_path(), "excel_path")
+                "EXCEL-PATH": (target_path, "excel_path"),
+                # Schriftart-Anzeige:
+                "Font": (f"{font_name},{font_size}", "excel_font_override"),
+                # Persönliche Vorlagen:
+                "PersonalTemplates": (self._get_datei_vorlagen_path(target_path), "excel_personal_templates"),
+                # Alternative Startup-Verzeichnis für Templates:
+                "AltStartupPath": (self._get_datei_vorlagen_path(target_path), "excel_xlstart_info"),
             }
             
             # Schriftart-Einstellungen
@@ -276,6 +313,21 @@ class OfficeConfigurator:
                 return str(Path.home() / "Documents")
         except Exception:
             return str(Path.home() / "Documents")
+    
+    def _get_datei_vorlagen_path(self, target_path):
+        """Datei-Vorlagen-Ordner-Pfad ermitteln (als Unterpfad des Zielverzeichnisses)"""
+        try:
+            if target_path:
+                datei_vorlagen = Path(target_path) / "Datei-Vorlagen"
+                return str(datei_vorlagen.resolve())
+            else:
+                # Fallback auf Standard-Dokumentenpfad
+                default_path = self._get_default_docs_path()
+                datei_vorlagen = Path(default_path) / "Datei-Vorlagen"
+                return str(datei_vorlagen.resolve())
+        except Exception as e:
+            self.logger.error(f"Fehler beim Ermitteln des Datei-Vorlagen-Pfads: {e}")
+            return str(Path.home() / "Documents" / "Datei-Vorlagen")
     
     def _get_outlook_templates_dir(self):
         """Outlook-Vorlagenverzeichnis ermitteln"""

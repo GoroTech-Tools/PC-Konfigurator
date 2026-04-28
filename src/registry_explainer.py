@@ -98,6 +98,16 @@ class RegistryExplainer:
                 category="Word - Benutzeroberfläche",
                 office_versions=["15.0", "16.0"],
             ),
+            "word_disable_start_screen": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Common\\General",
+                value_name="DisableBootToOfficeStart",
+                value_type="REG_DWORD",
+                default_value=1,
+                description="Deaktiviert den Word-Startbildschirm beim Programmstart.",
+                impact="Word startet direkt mit einem neuen leeren Dokument statt der Startseite.",
+                category="Word - Benutzeroberfläche",
+                office_versions=["15.0", "16.0"],
+            ),
             "word_ruler": RegistrySettingInfo(
                 key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
                 value_name="Ruler",
@@ -158,6 +168,90 @@ class RegistryExplainer:
                 category="Word - Schriftarten",
                 office_versions=["15.0", "16.0"],
             ),
+            "word_dot_path": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="DOT-PATH",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Verzeichnis der Word-Benutzervorlagen (enthält u. a. Normal.dotm). "
+                    "Leer = Word nutzt das Standard-Vorlagenverzeichnis "
+                    "(%APPDATA%\\Microsoft\\Templates)."
+                ),
+                impact=(
+                    "Word sucht Normal.dotm in diesem Verzeichnis. "
+                    "Falsch gesetzt, wird Normal.dotm ignoriert und Word zeigt "
+                    "die werksseitige Schriftart."
+                ),
+                category="Word - Datei-Vorlagen",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_startup_path": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="STARTUP-PATH",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Word-Startverzeichnis. Add-Ins und Vorlagen in diesem Ordner "
+                    "werden beim Programmstart automatisch geladen."
+                ),
+                impact=(
+                    "Leer = Word nutzt den Standard-Startordner. "
+                    "Beim Einsatz eigener Makro-Vorlagen muss dieses Verzeichnis korrekt zeigen."
+                ),
+                category="Word - Datei-Vorlagen",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_font_override": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="Font",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Schriftart, die Word in der Schriftauswahl-Dropdownliste bei neuen Dokumenten "
+                    "vorschlägt. Dieser Wert übersteuert die in der Normal.dotm gespeicherte Schrift."
+                ),
+                impact=(
+                    "Muss auf die gewünschte Schriftart gesetzt sein. Fehlt dieser Eintrag oder "
+                    "ist er falsch, zeigt Word beim Erstellen neuer Dokumente die falsche Schrift."
+                ),
+                category="Word - Schriftarten",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_font_substitutes": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="Fontsubstitutes",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Schriftartersetzungstabelle (Format: 'Aptos=Arial;Calibri=Arial'). "
+                    "Enthält dieser Eintrag Ersetzungen, zeigt Word andere Schriften als "
+                    "in der Vorlage definiert – unabhängig von Normal.dotm."
+                ),
+                impact=(
+                    "Muss geleert werden. Einträge wie 'Aptos=Arial' verhindern die Anzeige der "
+                    "konfigurierten Schriftart, selbst wenn Normal.dotm korrekt konfiguriert ist."
+                ),
+                category="Word - Schriftarten",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_personal_templates": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="PersonalTemplates",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Standardspeicherort für persönliche Word-Vorlagen. Wird in "
+                    "'Datei > Neu > Persönlich' angezeigt. Ab Office 2013 der empfohlene "
+                    "Weg, eigene Vorlagen zugänglich zu machen (ersetzt teilweise DOT-PATH)."
+                ),
+                impact=(
+                    "Leer = Word zeigt keine persönlichen Vorlagen unter 'Neu > Persönlich'. "
+                    "Korrekt gesetzt ermöglicht direkten Zugriff auf Vorlagen aus Office heraus."
+                ),
+                category="Word - Datei-Vorlagen",
+                office_versions=["15.0", "16.0"],
+            ),
         }
 
     def _get_excel_settings(self) -> Dict[str, RegistrySettingInfo]:
@@ -200,6 +294,59 @@ class RegistryExplainer:
                 description="Standard-Schriftgröße für neue Arbeitsmappen.",
                 impact="Neue Arbeitsmappen verwenden diese Schriftgröße.",
                 category="Excel - Schriftarten",
+                office_versions=["15.0", "16.0"],
+            ),
+            "excel_xlstart_info": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Excel\\Options",
+                value_name="AltStartupPath",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Zusätzliches Excel-Startverzeichnis (XLSTART-Ergänzung). "
+                    "Excel lädt beim Start alle Dateien aus dem Standard-XLSTART-Ordner "
+                    "(%APPDATA%\\Microsoft\\Excel\\XLSTART) sowie diesem Pfad. "
+                    "Mappe.xltx im XLSTART-Ordner definiert die Arbeitsmappenvorlage."
+                ),
+                impact=(
+                    "Leer = Excel verwendet nur den Standard-XLSTART-Ordner. "
+                    "Mappe.xltx wird von dort geladen. Fehlt die Datei, "
+                    "nutzt Excel die interne Standardschrift (meist Calibri)."
+                ),
+                category="Excel - Datei-Vorlagen",
+                office_versions=["15.0", "16.0"],
+            ),
+            "excel_font_override": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Excel\\Options",
+                value_name="Font",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Schriftart und -größe, die Excel in der Schriftauswahl vorschlägt. "
+                    "Format: 'Schriftartname,Größe' (z. B. 'Aptos,10'). "
+                    "Steuert die im Ribbon angezeigte Standardschriftart."
+                ),
+                impact=(
+                    "Muss auf 'Schriftartname,Größe' gesetzt sein. Sonst zeigt Excel beim "
+                    "Start über das Startmenü eine abweichende Schriftart in der Werkzeugleiste."
+                ),
+                category="Excel - Schriftarten",
+                office_versions=["15.0", "16.0"],
+            ),
+            "excel_personal_templates": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Excel\\Options",
+                value_name="PersonalTemplates",
+                value_type="REG_SZ",
+                default_value="",
+                description=(
+                    "Standardspeicherort für persönliche Excel-Vorlagen. Wird in "
+                    "'Datei > Neu > Persönlich' angezeigt. Ab Office 2013 der empfohlene "
+                    "Weg, eigene Vorlagen zugänglich zu machen."
+                ),
+                impact=(
+                    "Leer = Excel zeigt keine persönlichen Vorlagen unter 'Neu > Persönlich'. "
+                    "Korrekt gesetzt ermöglicht direkten Zugriff auf Vorlagen aus Excel heraus."
+                ),
+                category="Excel - Datei-Vorlagen",
                 office_versions=["15.0", "16.0"],
             ),
         }
@@ -333,3 +480,114 @@ class RegistryExplainer:
             return isinstance(value, str) and len(value) <= 260
 
         return False
+
+    def check_gpo_office_theme(self, office_version: str = "16.0") -> Dict[str, Any]:
+        """
+        Prüft, ob eine Gruppenrichtlinie (GPO) ein Office-Design/Theme vorgibt.
+
+        Office-GPOs schreiben in den 'Policies'-Zweig der Registry:
+          HKCU\\SOFTWARE\\Policies\\Microsoft\\Office\\...
+          HKLM\\SOFTWARE\\Policies\\Microsoft\\Office\\...
+
+        Rückgabe (Dict):
+          'gpo_active'        : bool   – True, wenn mind. eine relevante Richtlinie gefunden wurde
+          'entries'           : list   – Liste der gefundenen Richtlinien-Einträge
+          'checked_paths'     : list   – Alle durchsuchten Registry-Pfade
+          'recommendation'    : str    – Handlungsempfehlung
+        """
+        import winreg
+
+        # Registry-Pfade, in denen Office-Richtlinien für Themes stehen können
+        policy_paths = [
+            # Benutzerbezogene Richtlinien (HKCU)
+            (winreg.HKEY_CURRENT_USER,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Common\\General"),
+            (winreg.HKEY_CURRENT_USER,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Common\\Graphics"),
+            (winreg.HKEY_CURRENT_USER,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Word\\Options"),
+            (winreg.HKEY_CURRENT_USER,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Excel\\Options"),
+            # Maschinenbezogene Richtlinien (HKLM)
+            (winreg.HKEY_LOCAL_MACHINE,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Common\\General"),
+            (winreg.HKEY_LOCAL_MACHINE,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Common\\Graphics"),
+            (winreg.HKEY_LOCAL_MACHINE,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Word\\Options"),
+            (winreg.HKEY_LOCAL_MACHINE,
+             f"SOFTWARE\\Policies\\Microsoft\\Office\\{office_version}\\Excel\\Options"),
+        ]
+
+        # Werte, die auf eine Theme/Design-Richtlinie hindeuten
+        theme_value_keywords = {
+            "theme", "design", "font", "schrift", "template", "vorlage",
+            "color", "farbe", "scheme", "style",
+        }
+
+        entries: list = []
+        checked_paths: list = []
+        hive_names = {
+            winreg.HKEY_CURRENT_USER: "HKEY_CURRENT_USER",
+            winreg.HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE",
+        }
+
+        for hive, path in policy_paths:
+            hive_name = hive_names.get(hive, str(hive))
+            full_path = f"{hive_name}\\{path}"
+            checked_paths.append(full_path)
+            try:
+                with winreg.OpenKey(hive, path, 0, winreg.KEY_READ) as key:
+                    i = 0
+                    while True:
+                        try:
+                            name, data, reg_type = winreg.EnumValue(key, i)
+                            name_lower = name.lower()
+                            is_theme_related = any(
+                                kw in name_lower for kw in theme_value_keywords
+                            )
+                            entries.append({
+                                "path": full_path,
+                                "name": name,
+                                "data": data,
+                                "type": reg_type,
+                                "theme_related": is_theme_related,
+                            })
+                            i += 1
+                        except OSError:
+                            break  # Keine weiteren Werte
+            except FileNotFoundError:
+                pass  # Key existiert nicht – keine Richtlinie aktiv
+            except PermissionError:
+                checked_paths[-1] += " (kein Zugriff)"
+
+        gpo_active = bool(entries)
+        theme_entries = [e for e in entries if e["theme_related"]]
+
+        if theme_entries:
+            recommendation = (
+                "Es wurden GPO-Einträge mit Theme-/Design-Bezug gefunden. "
+                "Diese überschreiben möglicherweise die Template-Anpassungen. "
+                "Bitte die IT-Abteilung/Gruppenrichtlinien-Verwaltung kontaktieren."
+            )
+        elif gpo_active:
+            recommendation = (
+                "Es wurden Office-Gruppenrichtlinien gefunden, aber keine "
+                "eindeutigen Theme-Einträge. Die Richtlinien können die Schrift "
+                "trotzdem indirekt beeinflussen."
+            )
+        else:
+            recommendation = (
+                "Keine Office-Gruppenrichtlinien für Themes/Designs gefunden. "
+                "Falls das Problem weiterhin besteht, prüfen Sie das Theme-XML "
+                "direkt in der Template-Datei."
+            )
+
+        return {
+            "gpo_active": gpo_active,
+            "theme_related_count": len(theme_entries),
+            "all_entries_count": len(entries),
+            "entries": entries,
+            "checked_paths": checked_paths,
+            "recommendation": recommendation,
+        }

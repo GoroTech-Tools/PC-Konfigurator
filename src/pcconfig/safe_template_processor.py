@@ -118,12 +118,18 @@ class SafeTemplateProcessor:
             # theme1.xml patchen: minorFont + majorFont auf font_name setzen.
             # Ohne diesen Patch zeigt Outlook "Aptos (Textkörper)" statt der
             # explizit gesetzten Schriftart, weil Theme-Referenzen Vorrang haben.
+            # HINWEIS: Suche case-insensitiv, da manche Office-Versionen
+            # "word/theme/Theme1.xml" (Großbuchstabe T) in der ZIP ablegen.
             A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
-            theme_entry = 'word/theme/theme1.xml'
             new_theme_bytes = None
+            theme_entry = None
             with zipfile.ZipFile(tmp_path, 'r') as z:
                 names = z.namelist()
-                if theme_entry in names:
+                # Case-insensitive Suche nach dem Theme-Eintrag
+                theme_entry = next(
+                    (n for n in names if n.lower() == 'word/theme/theme1.xml'), None
+                )
+                if theme_entry:
                     theme_xml = z.read(theme_entry)
                     t = etree.fromstring(theme_xml)
                     fmtscheme = t.find(f'.//{{{A}}}fontScheme')
@@ -132,11 +138,17 @@ class SafeTemplateProcessor:
                             section = fmtscheme.find(f'{{{A}}}{section_tag}')
                             if section is not None:
                                 latin = section.find(f'{{{A}}}latin')
-                                if latin is not None:
-                                    latin.set('typeface', font_name)
-                                    latin.attrib.pop('panose', None)
+                                if latin is None:
+                                    latin = etree.SubElement(section, f'{{{A}}}latin')
+                                latin.set('typeface', font_name)
+                                latin.attrib.pop('panose', None)
                     new_theme_bytes = etree.tostring(
                         t, xml_declaration=True, encoding='UTF-8', standalone=True
+                    )
+                else:
+                    self.logger.warning(
+                        f"Kein word/theme/theme1.xml in {template_path.name} gefunden – "
+                        f"Theme-Schrift kann nicht überschrieben werden."
                     )
 
             # ZIP in-place patchen
@@ -146,7 +158,7 @@ class SafeTemplateProcessor:
                 for item in zin.infolist():
                     if item.filename == styles_entry:
                         zout.writestr(item, new_styles_bytes)
-                    elif item.filename == theme_entry and new_theme_bytes is not None:
+                    elif theme_entry and item.filename == theme_entry and new_theme_bytes is not None:
                         zout.writestr(item, new_theme_bytes)
                     else:
                         zout.writestr(item, zin.read(item.filename))
@@ -241,18 +253,54 @@ class SafeTemplateProcessor:
                 standalone=True
             )
 
+            # xl/theme/theme1.xml patchen: minorFont auf font_name setzen.
+            # Ohne diesen Patch zeigt Excel in der Zellenformatvorlage "Standard"
+            # weiterhin die Theme-Schrift, wenn das Template von einer anderen
+            # Office-Installation stammt (z. B. Calibri-Theme von Office 2019).
+            A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+            new_xl_theme_bytes = None
+            xl_theme_entry = None
+            with zipfile.ZipFile(str(template_path), 'r') as zin_theme:
+                xl_names = zin_theme.namelist()
+                xl_theme_entry = next(
+                    (n for n in xl_names if n.lower() == 'xl/theme/theme1.xml'), None
+                )
+                if xl_theme_entry:
+                    xl_theme_xml = zin_theme.read(xl_theme_entry)
+                    t = etree.fromstring(xl_theme_xml)
+                    fmtscheme = t.find(f'.//{{{A}}}fontScheme')
+                    if fmtscheme is not None:
+                        for section_tag in ('majorFont', 'minorFont'):
+                            section = fmtscheme.find(f'{{{A}}}{section_tag}')
+                            if section is not None:
+                                latin = section.find(f'{{{A}}}latin')
+                                if latin is None:
+                                    latin = etree.SubElement(section, f'{{{A}}}latin')
+                                latin.set('typeface', font_name)
+                                latin.attrib.pop('panose', None)
+                    new_xl_theme_bytes = etree.tostring(
+                        t, xml_declaration=True, encoding='UTF-8', standalone=True
+                    )
+                else:
+                    self.logger.warning(
+                        f"Kein xl/theme/theme1.xml in {template_path.name} gefunden – "
+                        f"Excel-Theme-Schrift kann nicht überschrieben werden."
+                    )
+
             tmp_out = str(template_path) + '.tmp'
             with zipfile.ZipFile(str(template_path), 'r') as zin, zipfile.ZipFile(tmp_out, 'w', zipfile.ZIP_DEFLATED) as zout:
                 for item in zin.infolist():
                     if item.filename == 'xl/styles.xml':
                         zout.writestr(item, new_styles)
+                    elif xl_theme_entry and item.filename == xl_theme_entry and new_xl_theme_bytes is not None:
+                        zout.writestr(item, new_xl_theme_bytes)
                     else:
                         zout.writestr(item, zin.read(item.filename))
 
             import os
             os.replace(tmp_out, str(template_path))
 
-            self.logger.info(f"Excel-Template angepasst (openpyxl): {template_path.name} → {font_name} {font_size}pt")
+            self.logger.info(f"Excel-Template angepasst (openpyxl + Theme): {template_path.name} → {font_name} {font_size}pt")
             return True
 
         except Exception as e:
