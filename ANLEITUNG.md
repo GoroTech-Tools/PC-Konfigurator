@@ -144,5 +144,7 @@ Bei Problemen prüfen Sie:
 
 ---
 
-**Version:** 3.2.5 (28.04.2026) | **Entwickelt für:** Bildungseinrichtungen
+**Version:** 3.2.7 (29.04.2026) | **Entwickelt für:** Bildungseinrichtungen
 und professionelle Anwender
+
+

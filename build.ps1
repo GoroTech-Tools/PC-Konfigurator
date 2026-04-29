@@ -5,7 +5,9 @@ param(
     [switch]$NoVersionBump,
     [switch]$SkipZip,
     [switch]$Help,
-    [switch]$Quiet
+    [switch]$Quiet,
+    [ValidateSet('.venv', '.venv-bfw')]
+    [string]$PreferredVenv
 )
 
 # Setze die Konsole auf UTF-8 für korrekte Umlaut-Ausgabe
@@ -20,7 +22,8 @@ function Show-Usage {
     Microsoft.PowerShell.Utility\Write-Host "  -NoVersionBump : Versionsnummer/README/ANLEITUNG/BUILD-INFO nicht aktualisieren" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -SkipZip       : ZIP-Erstellung im release-Ordner überspringen" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -Quiet         : Kompakte Ausgabe (nur Fehler + Kurzfazit)" -ForegroundColor DarkGray
-    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -PreferredVenv : Bevorzugte venv wählen (.venv oder .venv-bfw)" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv-bfw -Quiet | .\build.ps1 -PreferredVenv .venv" -ForegroundColor DarkGray
 }
 
 if (-not $Quiet -or $Help) {
@@ -152,6 +155,38 @@ if (Test-Path $buildInfoPath) {
 Write-Host "PC-Konfigurator Build-Prozess" -ForegroundColor Green
 Write-Host "=============================" -ForegroundColor Green
 
+# Python-Interpreter bestimmen (unterstützt .venv ODER .venv-bfw)
+$pythonExe = $null
+$venvPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+$venvBfwPython = Join-Path $PSScriptRoot '.venv-bfw\Scripts\python.exe'
+
+if ($PreferredVenv -eq '.venv-bfw') {
+    if (Test-Path $venvBfwPython) {
+        $pythonExe = $venvBfwPython
+        Write-Host "Verwende Python aus .venv-bfw (explizit gewählt)" -ForegroundColor Cyan
+    } elseif (Test-Path $venvPython) {
+        $pythonExe = $venvPython
+        Write-Host ".venv-bfw nicht gefunden, fallback auf .venv" -ForegroundColor Yellow
+    }
+} elseif ($PreferredVenv -eq '.venv') {
+    if (Test-Path $venvPython) {
+        $pythonExe = $venvPython
+        Write-Host "Verwende Python aus .venv (explizit gewählt)" -ForegroundColor Cyan
+    } elseif (Test-Path $venvBfwPython) {
+        $pythonExe = $venvBfwPython
+        Write-Host ".venv nicht gefunden, fallback auf .venv-bfw" -ForegroundColor Yellow
+    }
+} elseif (Test-Path $venvPython) {
+    $pythonExe = $venvPython
+    Write-Host "Verwende Python aus .venv" -ForegroundColor Cyan
+} elseif (Test-Path $venvBfwPython) {
+    $pythonExe = $venvBfwPython
+    Write-Host "Verwende Python aus .venv-bfw" -ForegroundColor Cyan
+} else {
+    $pythonExe = 'py'
+    Write-Host "Keine lokale venv gefunden, verwende py-Launcher" -ForegroundColor Yellow
+}
+
 
 # Schritt 1: PyInstaller Build
 
@@ -219,15 +254,15 @@ $iconPath = Join-Path $PSScriptRoot 'src\app_icon.ico'
 if ($Quiet) {
     New-Item -ItemType Directory -Path (Split-Path $pyInstallerLog -Parent) -Force | Out-Null
     if (-not $specOffline) {
-        & py -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath *> $pyInstallerLog
+        & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath *> $pyInstallerLog
     } else {
-        & py -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript *> $pyInstallerLog
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript *> $pyInstallerLog
     }
 } else {
     if (-not $specOffline) {
-        & py -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath
+        & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath
     } else {
-        & py -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onedir --windowed --name $buildName --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com $entryScript
     }
 }
 
@@ -245,9 +280,9 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "`n2. Post-Build-Aktionen werden ausgeführt..." -ForegroundColor Yellow
 $postBuildLog = Join-Path $PSScriptRoot 'build\last-post-build.log'
 if ($Quiet) {
-    & py src/post_build.py *> $postBuildLog
+    & $pythonExe src/post_build.py *> $postBuildLog
 } else {
-    & py src/post_build.py
+    & $pythonExe src/post_build.py
 }
 
 if ($LASTEXITCODE -ne 0) {

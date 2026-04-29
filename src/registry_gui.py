@@ -185,17 +185,17 @@ class RegistryExplanationWindow:
         tree = ttk.Treeview(table_frame, columns=cols, show="headings",
                             style="Reg.Treeview", selectmode="browse")
 
-        tree.heading("aktiv",        text="")
-        tree.heading("einstellung",  text="Einstellung")
-        tree.heading("kategorie",    text="Kategorie")
-        tree.heading("standardwert", text="Standardwert")
-        tree.heading("typ",          text="Typ")
+        tree.heading("aktiv",        text="", anchor="center")
+        tree.heading("einstellung",  text="Einstellung", anchor="w")
+        tree.heading("kategorie",    text="Kategorie", anchor="center")
+        tree.heading("standardwert", text="Standardwert", anchor="center")
+        tree.heading("typ",          text="Typ", anchor="center")
 
         tree.column("aktiv",        width=36,  minwidth=36,  anchor="center", stretch=False)
         tree.column("einstellung",  width=220, minwidth=120, anchor="w")
         tree.column("kategorie",    width=200, minwidth=120, anchor="w")
-        tree.column("standardwert", width=120, minwidth=60,  anchor="center")
-        tree.column("typ",          width=80,  minwidth=60,  anchor="center")
+        tree.column("standardwert", width=120, minwidth=60,  anchor="w")
+        tree.column("typ",          width=80,  minwidth=60,  anchor="w")
 
         vsb = ttk.Scrollbar(table_frame, orient="vertical",
                             command=tree.yview, style="Reg.Vertical.TScrollbar")

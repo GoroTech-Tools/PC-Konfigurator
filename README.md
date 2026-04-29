@@ -202,3 +202,5 @@ Der Post-Build ergänzt automatisch:
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
+
+
