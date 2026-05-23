@@ -26,6 +26,58 @@ function Show-Usage {
     Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv-bfw -Quiet | .\build.ps1 -PreferredVenv .venv" -ForegroundColor DarkGray
 }
 
+function New-ReleaseNotesFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+        [Parameter(Mandatory = $true)]
+        [string]$BuildDirName,
+        [Parameter(Mandatory = $true)]
+        [string]$ExeName,
+        [Parameter(Mandatory = $true)]
+        [string]$ReleaseDir,
+        [string]$ZipFileName
+    )
+
+    if (-not (Test-Path $ReleaseDir)) {
+        New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null
+    }
+
+    $notesPath = Join-Path $ReleaseDir "RELEASE_NOTES_v$Version.md"
+    $buildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+
+    $zipLine = if ($ZipFileName) {
+        "- release/$ZipFileName"
+    } else {
+        "- *(noch nicht erstellt - Build wurde mit -SkipZip ausgefuehrt)*"
+    }
+
+    $content = @(
+        "# PC-Konfigurator-Portable v$Version",
+        "",
+        "## Build-Informationen",
+        "",
+        "- Erzeugt am: $buildDate",
+        "- Build-Modus: Onefile (--onefile --windowed)",
+        "- EXE: $ExeName",
+        "",
+        "## Artefakte",
+        "",
+        "- dist/$BuildDirName/",
+        "$zipLine",
+        "",
+        "## Hinweis",
+        "",
+        "Diese Release-Notes werden automatisch bei jedem Build erzeugt und bei ZIP-Erstellung aktualisiert.",
+        ""
+    ) -join "`r`n"
+
+    Set-Content -Path $notesPath -Value $content -Encoding UTF8
+    Write-Host "Release-Notes erstellt/aktualisiert: $notesPath" -ForegroundColor Green
+    return $notesPath
+}
+
 if (-not $Quiet -or $Help) {
     Show-Usage
 }
@@ -361,6 +413,14 @@ if ($buildDir) {
         Write-Host "Ausgabe: Onefile-EXE (keine externe _internal-Struktur)" -ForegroundColor White
     }
 
+    $releaseDir = Join-Path $PSScriptRoot 'release'
+    $notesVersion = if ($newVersion) { $newVersion } else { 'manual' }
+    $null = New-ReleaseNotesFile `
+        -Version $notesVersion `
+        -BuildDirName $buildDir.Name `
+        -ExeName $exeFile.Name `
+        -ReleaseDir $releaseDir
+
     if ($SkipZip) {
         if ($Quiet) {
             Microsoft.PowerShell.Utility\Write-Host "ZIP-Erstellung übersprungen (-SkipZip)." -ForegroundColor Yellow
@@ -369,7 +429,6 @@ if ($buildDir) {
         }
     } else {
         # Schritt 4: ZIP-Release erstellen
-        $releaseDir = Join-Path $PSScriptRoot 'release'
         if (-not (Test-Path $releaseDir)) {
             New-Item -ItemType Directory -Path $releaseDir | Out-Null
             Write-Host "Release-Ordner erstellt: $releaseDir" -ForegroundColor DarkGray
@@ -404,6 +463,13 @@ if ($buildDir) {
             if ($anleitungEntryCount -le 0) {
                 throw "ZIP-Sanity-Check fehlgeschlagen: ANLEITUNG.md nicht gefunden."
             }
+
+            $null = New-ReleaseNotesFile `
+                -Version $notesVersion `
+                -BuildDirName $buildDir.Name `
+                -ExeName $exeFile.Name `
+                -ReleaseDir $releaseDir `
+                -ZipFileName (Split-Path $zipPath -Leaf)
 
             try {
                 Remove-Item $extractRoot -Recurse -Force -ErrorAction Stop
