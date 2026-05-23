@@ -11,6 +11,7 @@ import winreg
 import os
 import logging
 import shutil
+import time
 from pathlib import Path
 from registry_explainer import RegistryExplainer
 
@@ -177,24 +178,66 @@ class OfficeConfigurator:
                 return {"success": False, "error": "Outlook-Vorlagenverzeichnis nicht gefunden"}
 
             # Quell-Template-Datei aus Unterordner 'Sonstiges/Standards'
+            runtime_root = os.environ.get('PCONFIG_RUNTIME_ROOT', '').strip()
+            if runtime_root:
+                base_dir = Path(runtime_root)
+            else:
+                import sys
+                if getattr(sys, 'frozen', False):
+                    # Fallback: EXE-Verzeichnis
+                    base_dir = Path(sys.executable).parent
+                else:
+                    # Ausgeführt als Script
+                    base_dir = Path(__file__).parent.parent.parent
+
+            source_candidates = [
+                base_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
+            ]
+
+            # Fallback: direkt aus dem PyInstaller-Bundle lesen, falls Runtime-Datei gesperrt ist
             import sys
-            if getattr(sys, 'frozen', False):
-                # Ausgeführt als EXE (PyInstaller)
-                base_dir = Path(sys.executable).parent
-            else:
-                # Ausgeführt als Script
-                base_dir = Path(__file__).parent.parent.parent
+            meipass = getattr(sys, '_MEIPASS', None)
+            if meipass:
+                source_candidates.append(Path(meipass) / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm")
 
-            source_template = base_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
+            target_path = outlook_templates_dir / "NormalEmail.dotm"
+            target_path.parent.mkdir(parents=True, exist_ok=True)
 
-            if source_template.exists():
-                target_path = outlook_templates_dir / "NormalEmail.dotm"
-                shutil.copy2(source_template, target_path)
-                self.logger.info(f"Outlook-Vorlage kopiert: {target_path}")
-                return {"success": True, "message": "Outlook-Vorlagen erfolgreich kopiert"}
-            else:
-                self.logger.warning(f"Quell-Template nicht gefunden: {source_template}")
-                return {"success": False, "error": "Outlook-Vorlage nicht gefunden"}
+            last_error = None
+            for source_template in source_candidates:
+                if not source_template.exists():
+                    continue
+
+                # Einige OneDrive-/Runtimeszenarien setzen Dateien auf read-only.
+                # Lesen klappt meist trotzdem, wir versuchen es hier proaktiv robuster zu machen.
+                try:
+                    os.chmod(source_template, 0o666)
+                except Exception:
+                    pass
+
+                for attempt in range(1, 4):
+                    try:
+                        shutil.copy2(source_template, target_path)
+                        self.logger.info(f"Outlook-Vorlage kopiert: {source_template} -> {target_path}")
+                        return {"success": True, "message": "Outlook-Vorlagen erfolgreich kopiert"}
+                    except PermissionError as e:
+                        last_error = e
+                        self.logger.warning(
+                            f"Permission-Problem beim Kopieren von Outlook-Vorlage (Versuch {attempt}/3): {e}"
+                        )
+                        time.sleep(0.7)
+                    except Exception as e:
+                        last_error = e
+                        self.logger.warning(
+                            f"Fehler beim Kopieren von Outlook-Vorlage aus {source_template} (Versuch {attempt}/3): {e}"
+                        )
+                        time.sleep(0.4)
+
+            if last_error is not None:
+                return {"success": False, "error": str(last_error)}
+
+            self.logger.warning("Quell-Template nicht gefunden (NormalEmail.dotm).")
+            return {"success": False, "error": "Outlook-Vorlage nicht gefunden"}
 
         except Exception as e:
             self.logger.error(f"Fehler beim Kopieren der Outlook-Vorlagen: {e}")

@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.2.5 (Build: 28.04.2026, Python 3.13.7)
+**Version:** 3.2.8 (Build: 23.05.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -58,7 +58,11 @@ Office-Vorlagen und benutzerspezifische Schriftarten.
 PC-Konfigurator-Portable-v3.2.5/
 ├── PC-Konfigurator-Portable.exe
 ├── README.md
-├── ANLEITUNG.md
+├── docs/
+│   ├── README.md
+│   ├── Dokumentation_Anwender.md
+│   ├── Dokumentation_Technik.md
+│   └── Dokumentation_Checkliste.md
 ├── BUILD-INFO.txt
 ├── Datei-Vorlagen/
 │   └── Sonstiges/Standards/
@@ -193,7 +197,10 @@ Der Post-Build ergänzt automatisch:
 
 ### Dokumentation
 
-- `ANLEITUNG.md` – Detaillierte Benutzeranleitung
+- `docs/README.md` – Dokumentations-Einstieg
+- `docs/Dokumentation_Anwender.md` – Detaillierte Benutzeranleitung
+- `docs/Dokumentation_Technik.md` – Technische Dokumentation
+- `docs/Dokumentation_Checkliste.md` – Doku-Qualitätscheckliste
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
 
@@ -202,5 +209,4 @@ Der Post-Build ergänzt automatisch:
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
-
 

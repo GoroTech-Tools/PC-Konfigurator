@@ -84,7 +84,11 @@ class FileSync:
             self.logger.info("Verwende robocopy für Synchronisation")
             
             # Robocopy-Log-Verzeichnis
-            log_dir = Path(__file__).parent.parent / "logs" / "robocopy"
+            runtime_root = os.environ.get("PCONFIG_RUNTIME_ROOT", "").strip()
+            if runtime_root:
+                log_dir = Path(runtime_root) / "logs" / "robocopy"
+            else:
+                log_dir = Path(__file__).parent.parent / "logs" / "robocopy"
             log_dir.mkdir(parents=True, exist_ok=True)
             
             # Log-Datei mit Zeitstempel

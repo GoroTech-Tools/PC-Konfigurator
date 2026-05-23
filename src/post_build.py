@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Post-Build-Skript für PC-Konfigurator (Unicode-sicher)
-Kopiert Fonts, Datei-Vorlagen und Dokumentation auf die gleiche Ebene wie die EXE-Datei
+Kopiert Fonts, Datei-Vorlagen und Dokumentation in das Build-Verzeichnis
 """
 
 import shutil
@@ -136,15 +136,17 @@ def copy_external_directories():
         # Quellverzeichnisse
         fonts_src = script_dir / "Fonts"
         templates_src = script_dir / "Datei-Vorlagen"
+        docs_src = script_dir / "docs"
         readme_src = script_dir / "README.md"
-        anleitung_src = script_dir / "ANLEITUNG.md"
         buildinfo_src = script_dir / "BUILD-INFO.txt"
         
         # Zielverzeichnisse
         fonts_dest = target_dir / "Fonts"
         templates_dest = target_dir / "Datei-Vorlagen"
+        docs_dest = target_dir / "docs"
         font_failures: list[tuple[Path, str]] = []
         tpl_failures: list[tuple[Path, str]] = []
+        docs_failures: list[tuple[Path, str]] = []
         
         # Fonts kopieren (immer frisch, damit nichts aus früheren Builds fehlt)
         if fonts_src.exists():
@@ -199,15 +201,26 @@ def copy_external_directories():
                     print(f"  ... und {len(tpl_failures) - 10} weitere")
         else:
             print(f"WARNING Datei-Vorlagen-Verzeichnis {templates_src} nicht gefunden!")
+
+        # docs kopieren
+        if docs_src.exists():
+            if docs_dest.exists():
+                rmtree_longpath(docs_dest)
+            docs_copied, docs_source, docs_failures = copytree_resilient(docs_src, docs_dest)
+            print(f"OK docs kopiert nach {docs_dest}")
+            if docs_failures:
+                print(f"WARNING {len(docs_failures)} Doku-Datei(en) konnten nicht kopiert werden:")
+                for missing_file, error_message in docs_failures[:10]:
+                    print(f"  - {missing_file}: {error_message}")
+                if len(docs_failures) > 10:
+                    print(f"  ... und {len(docs_failures) - 10} weitere")
+        else:
+            print(f"WARNING docs-Verzeichnis {docs_src} nicht gefunden!")
         
         # Dokumentation kopieren
         if readme_src.exists():
             shutil.copy2(readme_src, target_dir / "README.md")
             print(f"OK README.md kopiert")
-        
-        if anleitung_src.exists():
-            shutil.copy2(anleitung_src, target_dir / "ANLEITUNG.md")
-            print(f"OK ANLEITUNG.md kopiert")
         
         if buildinfo_src.exists():
             shutil.copy2(buildinfo_src, target_dir / "BUILD-INFO.txt")
@@ -218,8 +231,10 @@ def copy_external_directories():
         template_files = list(templates_dest.rglob("*.*")) if templates_dest.exists() else []
         src_font_count = count_files_recursive(fonts_src)
         src_template_count = count_files_recursive(templates_src)
+        src_docs_count = count_files_recursive(docs_src)
         dst_font_count = count_files_recursive(fonts_dest)
         dst_template_count = count_files_recursive(templates_dest)
+        dst_docs_count = count_files_recursive(docs_dest)
 
         if fonts_src.exists() and dst_font_count != src_font_count:
             raise RuntimeError(
@@ -252,10 +267,23 @@ def copy_external_directories():
                 "Optional für Tests: PCONFIG_ALLOW_PARTIAL_TEMPLATES=1"
             )
 
+        if docs_src.exists() and dst_docs_count != src_docs_count:
+            raise RuntimeError(
+                f"Dokumentation unvollständig kopiert: src={src_docs_count}, dst={dst_docs_count}. "
+                "Bitte OneDrive-Dateien lokal verfügbar machen."
+            )
+
+        if docs_src.exists() and docs_failures:
+            raise RuntimeError(
+                f"{len(docs_failures)} Doku-Datei(en) konnten nicht kopiert werden. "
+                "Bitte OneDrive-Dateien lokal verfügbar machen."
+            )
+
         folder_name = target_dir.name
         
         print(f"OK {len(font_files)} Font-Dateien kopiert")
         print(f"OK {len(template_files)} Template-Dateien kopiert")
+        print(f"OK {dst_docs_count} Doku-Dateien kopiert")
         print(f"OK Ordnername: {folder_name}")
         
         # Hidden-Attribute setzen

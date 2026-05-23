@@ -11,7 +11,7 @@ internal_dir = build_dir / '_internal'
 TO_COPY = [
     'Fonts',
     'Datei-Vorlagen',
-    'ANLEITUNG.md',
+    'docs',
     'README.md',
     'BUILD-INFO.txt',
     'com_bitness_checker.py',

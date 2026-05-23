@@ -108,9 +108,9 @@ class SystemChecker:
             if bitness == "?":
                 import sys
                 path = office_info.get("install_path", "")
-                if 'Program Files (x86)' in path:
+                if 'Program Files (x86)' in str(path):
                     bitness = '32-bit'
-                elif 'Program Files' in path:
+                elif 'Program Files' in str(path):
                     bitness = '64-bit'
                 else:
                     bitness = '64-bit' if sys.maxsize > 2**32 else '32-bit'
@@ -118,7 +118,7 @@ class SystemChecker:
                 # Office 2013 (15.0) oder neuer wird unterstützt
                 major_version = office_info.get("major_version", 0)
                 supported = major_version >= 15
-                version_string = office_info["version_string"]
+                version_string = str(office_info["version_string"])
                 if not supported:
                     version_string += " - ZU ALT"
                 self.logger.info(f"Office-Version: {version_string} ({bitness})")
@@ -304,10 +304,11 @@ class SystemChecker:
         office_processes = ["WINWORD.EXE", "EXCEL.EXE", "OUTLOOK.EXE", "POWERPNT.EXE"]
         running_processes = []
         
-        for proc in psutil.process_iter(['name']):
+        for proc in psutil.process_iter():
             try:
-                if proc.info['name'].upper() in [p.upper() for p in office_processes]:
-                    running_processes.append(proc.info['name'])
+                proc_name = proc.name()
+                if proc_name.upper() in [p.upper() for p in office_processes]:
+                    running_processes.append(proc_name)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
                 

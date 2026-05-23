@@ -14,14 +14,20 @@ from datetime import datetime
 import sys
 
 
+def _get_runtime_root() -> Path:
+    runtime_root = os.environ.get("PCONFIG_RUNTIME_ROOT", "").strip()
+    if runtime_root:
+        return Path(runtime_root)
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
 def setup_logging(log_level=logging.INFO):
     """Logging-System konfigurieren"""
     
     # Log-Verzeichnis erstellen
-    if getattr(sys, 'frozen', False):
-        log_dir = Path(sys.executable).resolve().parent / "logs"
-    else:
-        log_dir = Path(__file__).resolve().parent.parent / "logs"
+    log_dir = _get_runtime_root() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Log-Datei mit Zeitstempel
@@ -148,10 +154,7 @@ def remove_gui_handler(gui_handler):
 def get_log_files():
     """Alle Log-Dateien im Log-Verzeichnis auflisten"""
     try:
-        if getattr(sys, 'frozen', False):
-            log_dir = Path(sys.executable).resolve().parent / "logs"
-        else:
-            log_dir = Path(__file__).resolve().parent.parent / "logs"
+        log_dir = _get_runtime_root() / "logs"
         if not log_dir.exists():
             return []
             

@@ -11,6 +11,7 @@ from tkinter import messagebox, filedialog
 import threading
 import sys
 import os
+import shutil
 import subprocess
 
 # --- sys.path-Anpassung für PyInstaller-Build (src als Datenordner) ---
@@ -45,19 +46,96 @@ FONT_OPTIONS: dict[str, str] = {
     "Raleway":            "Raleway",
 }
 
+APP_NAME = "PC-Konfigurator-Portable"
+RUNTIME_FOLDERS = [
+    "Datei-Vorlagen",
+    "Fonts",
+    "docs",
+    "pcconfig",
+]
+RUNTIME_FILES = [
+    "README.md",
+    "BUILD-INFO.txt",
+    "app_icon.ico",
+]
+
+
+def get_bundle_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS"))
+    return Path(__file__).resolve().parent.parent
+
+
+def can_write_to(path: Path) -> bool:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write-test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        return True
+    except Exception:
+        return False
+
+
+def use_portable_runtime() -> bool:
+    value = os.environ.get("PCONFIG_RUNTIME_MODE", "").strip().lower()
+    return value in {"portable", "exe", "local"}
+
+
+def get_runtime_root() -> Path:
+    if getattr(sys, "frozen", False) and use_portable_runtime():
+        exe_dir = Path(sys.executable).resolve().parent
+        if can_write_to(exe_dir):
+            return exe_dir
+
+    appdata = os.environ.get("LOCALAPPDATA")
+    base = Path(appdata) if appdata else Path.home() / "AppData" / "Local"
+    version = BUILD_INFO.get("version", "dev")
+    return base / APP_NAME / str(version)
+
+
+def copy_path(src: Path, dst: Path) -> None:
+    if not src.exists():
+        return
+    if src.is_dir():
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+    else:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def prepare_runtime_bundle() -> Path:
+    bundle_root = get_bundle_root()
+    runtime_root = get_runtime_root()
+    runtime_root.mkdir(parents=True, exist_ok=True)
+
+    marker = runtime_root / ".bundle-ready"
+    critical_template = runtime_root / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm"
+    if marker.exists() and critical_template.exists():
+        return runtime_root
+
+    for folder in RUNTIME_FOLDERS:
+        copy_path(bundle_root / folder, runtime_root / folder)
+
+    for file_name in RUNTIME_FILES:
+        copy_path(bundle_root / file_name, runtime_root / file_name)
+
+    (runtime_root / "logs").mkdir(parents=True, exist_ok=True)
+    marker.write_text(BUILD_INFO.get("version", "dev"), encoding="utf-8")
+    return runtime_root
+
 
 class PCKonfiguratorGUI:
     def _get_runtime_base_dir(self) -> Path:
-        """Liefert das Basisverzeichnis der Anwendung."""
-        if getattr(sys, 'frozen', False):
-            return Path(sys.executable).resolve().parent
-        return Path(__file__).resolve().parent.parent
+        """Liefert das Basisverzeichnis der Laufzeitdaten."""
+        return prepare_runtime_bundle()
 
     def _get_icon_path(self) -> Path:
         """Ermittelt den Pfad zur ICO-Datei für GUI und EXE-Modus."""
-        if getattr(sys, 'frozen', False):
-            return Path(getattr(sys, '_MEIPASS', Path(sys.executable).resolve().parent)) / 'app_icon.ico'
-        return Path(__file__).resolve().with_name('app_icon.ico')
+        bundle_icon = get_bundle_root() / 'app_icon.ico'
+        if bundle_icon.exists():
+            return bundle_icon
+        return self.app_dir / 'app_icon.ico'
 
     def _get_fonts_dir(self) -> Path:
         """Liefert das Fonts-Verzeichnis der Anwendung."""
@@ -263,6 +341,7 @@ class PCKonfiguratorGUI:
         self.setup_appearance()
         self.root = ctk.CTk()
         self.app_dir = self._get_runtime_base_dir()
+        os.environ["PCONFIG_RUNTIME_ROOT"] = str(self.app_dir)
         self.setup_main_window()
         
         # Komponenten initialisieren
@@ -319,21 +398,9 @@ class PCKonfiguratorGUI:
         self.set_hidden_directories()
             
     def set_hidden_directories(self):
-        """Setzt Hidden-Attribute für _internal und logs Ordner"""
+        """Setzt Hidden-Attribute für Laufzeitordner."""
         if getattr(sys, 'frozen', False):
-            # Ausführung als EXE
-            exe_dir = Path(sys.executable).parent
-            
-            # _internal Ordner verstecken
-            internal_dir = exe_dir / "_internal"
-            if internal_dir.exists():
-                try:
-                    subprocess.run(["attrib", "+H", str(internal_dir)], check=False, capture_output=True)
-                except Exception:
-                    pass
-            
-            # logs Ordner verstecken (falls vorhanden)
-            logs_dir = exe_dir / "logs"
+            logs_dir = self.app_dir / "logs"
             if logs_dir.exists():
                 try:
                     subprocess.run(["attrib", "+H", str(logs_dir)], check=False, capture_output=True)
@@ -948,15 +1015,6 @@ class PCKonfiguratorGUI:
             "damit alle Änderungen vollständig wirksam werden.\n"
         )
         self.execution_status.insert("end", notice)
-        self.root.after(
-            0,
-            lambda: messagebox.showinfo(
-                "Hinweis zur Übernahme",
-                "Die Registry-Einstellungen wurden angewendet.\n\n"
-                "Bitte starten Sie den Windows-Explorer neu oder melden Sie sich einmal am System ab und wieder an, "
-                "damit alle Änderungen vollständig wirksam werden."
-            )
-        )
 
     def restart_windows_explorer(self):
         """Startet den Windows-Explorer mit Rückfrage neu."""
@@ -980,11 +1038,6 @@ class PCKonfiguratorGUI:
                 "ℹ️ Windows-Explorer wurde neu gestartet. Änderungen sollten nun sichtbar sein.\n"
             )
             self.execution_status.see("end")
-            messagebox.showinfo(
-                "Explorer neu gestartet",
-                "Der Windows-Explorer wurde neu gestartet.\n"
-                "Die Registry-Änderungen sollten jetzt vollständig übernommen sein."
-            )
         except Exception as e:
             self.execution_status.insert("end", f"⚠️ Explorer-Neustart fehlgeschlagen: {e}\n")
             self.execution_status.see("end")
@@ -1240,7 +1293,8 @@ class PCKonfiguratorGUI:
             if filename:
                 with open(filename, 'w', encoding='utf-8') as f:
                     f.write(content)
-                messagebox.showinfo("Erfolg", f"Logs gespeichert in: {filename}")
+                self.log_text.insert("end", f"\n[INFO] Logs gespeichert in: {filename}\n")
+                self.log_text.see("end")
                 
         except Exception as e:
             messagebox.showerror("Fehler", f"Fehler beim Speichern der Logs: {e}")
