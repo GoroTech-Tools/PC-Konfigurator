@@ -124,6 +124,10 @@ class FontInstaller:
             
             installed_fonts = []
             failed_fonts = []
+            skipped_fonts = []
+
+            fonts_user_dir = self.get_user_fonts_dir()
+            fonts_user_dir.mkdir(parents=True, exist_ok=True)
             
             # Rekursiv alle Font-Dateien finden
             font_files = []
@@ -135,6 +139,11 @@ class FontInstaller:
             
             for font_file in font_files:
                 try:
+                    target_file = fonts_user_dir / font_file.name
+                    if target_file.exists():
+                        skipped_fonts.append(font_file.name)
+                        continue
+
                     success = self._install_single_font(font_file)
                     if success:
                         installed_fonts.append(font_file.name)
@@ -147,13 +156,15 @@ class FontInstaller:
                     failed_fonts.append(font_file.name)
                     self.logger.error(f"Fehler bei Font-Installation {font_file.name}: {e}")
             
-            # System über neue Fonts benachrichtigen
-            self._refresh_font_cache()
+            # System nur bei echten Neuinstallationen benachrichtigen
+            if installed_fonts:
+                self._refresh_font_cache()
             
             return {
                 "success": True,
                 "installed_fonts": installed_fonts,
                 "failed_fonts": failed_fonts,
+                "skipped_fonts": skipped_fonts,
                 "total_processed": len(font_files)
             }
             
@@ -185,7 +196,7 @@ class FontInstaller:
 
             # Prüfen ob Font bereits installiert ist
             if target_file.exists():
-                self.logger.info(f"Font bereits installiert: {font_file.name}")
+                self.logger.debug(f"Font bereits installiert: {font_file.name}")
                 return True
 
             # Font-Datei kopieren

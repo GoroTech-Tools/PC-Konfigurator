@@ -1,4 +1,4 @@
-﻿# PC-Konfigurator-Portable – Anleitung
+# PC-Konfigurator-Portable – Anleitung
 
 ## Schnellstart
 
@@ -146,5 +146,3 @@ Bei Problemen prüfen Sie:
 
 **Version:** 3.2.7 (29.04.2026) | **Entwickelt für:** Bildungseinrichtungen
 und professionelle Anwender
-
-

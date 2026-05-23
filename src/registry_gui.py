@@ -79,7 +79,7 @@ class RegistryExplanationWindow:
 
         ctk.CTkButton(
             button_frame,
-            text="💾 Auswahl anwenden",
+            text="Auswahl anwenden",
             command=self.save_settings,
             height=40,
             font=ctk.CTkFont(size=12, weight="bold"),
@@ -87,14 +87,14 @@ class RegistryExplanationWindow:
 
         ctk.CTkButton(
             button_frame,
-            text="🔄 Zurücksetzen",
+            text="Zurücksetzen",
             command=self.reset_settings,
             height=40,
         ).pack(side="left", padx=10, pady=10)
 
         ctk.CTkButton(
             button_frame,
-            text="❌ Schließen",
+            text="Schließen",
             command=self.close_window,
             height=40,
         ).pack(side="right", padx=10, pady=10)

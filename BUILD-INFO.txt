@@ -1,16 +1,16 @@
-﻿# Build-Informationen
+# Build-Informationen
 
 **Build:** PC-Konfigurator-Portable
-**Datum:** 2026-05-23T14:58:55
-**Version:** 3.2.8 (Release)
+**Datum:** 2026-05-23T16:01:25
+**Version:** 3.3.1 (Release)
 
 ## Build-Details
 
 - **Python-Version:** 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
 - **PyInstaller:** 6.17.0
 - **Build-Modus:** --onefile --windowed
-- **Build-Datum:** 2026-05-23T14:58:55
-- **Build-Version:** 3.2.8
+- **Build-Datum:** 2026-05-23T16:01:25
+- **Build-Version:** 3.3.1
 - **Plattform:** win32
 - **EXE-Name:** PC-Konfigurator-Portable.exe
 

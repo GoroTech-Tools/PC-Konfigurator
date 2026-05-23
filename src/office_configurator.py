@@ -12,6 +12,7 @@ import os
 import logging
 import shutil
 import time
+import subprocess
 from pathlib import Path
 from registry_explainer import RegistryExplainer
 
@@ -24,7 +25,7 @@ class OfficeConfigurator:
         self.registry_explainer = RegistryExplainer()
         self.applied_settings = []  # Track applied settings for logging
         
-    def configure_all_settings(self, config):
+    def configure_all_settings(self, config, include_windows: bool = True):
         """Alle Office-Einstellungen konfigurieren"""
         try:
             self.logger.info("Konfiguration der Office-Einstellungen...")
@@ -62,6 +63,18 @@ class OfficeConfigurator:
             if not outlook_result["success"]:
                 outlook_warning = outlook_result.get("error", "Outlook-Vorlage nicht gefunden")
                 self.logger.warning(f"Outlook-Konfiguration fehlgeschlagen: {outlook_warning}")
+
+            windows_result = {"success": True, "message": "Windows-Einstellungen übersprungen"}
+            windows_warning = None
+            if include_windows:
+                windows_result = self.configure_windows_settings()
+                windows_warning = windows_result.get("warning")
+                if not windows_result.get("success", False):
+                    windows_warning = windows_result.get(
+                        "error",
+                        "Windows-Einstellungen konnten nicht vollständig gesetzt werden."
+                    )
+                    self.logger.warning(f"Windows-Konfiguration teilweise fehlgeschlagen: {windows_warning}")
             
             return {
                 "success": True,
@@ -69,6 +82,8 @@ class OfficeConfigurator:
                 "applied_count": len(self.applied_settings),
                 "word_start_screen_disabled": bool(word_result.get("word_start_screen_disabled", False)),
                 "outlook_warning": outlook_warning,
+                "windows_configured": bool(windows_result.get("success", False)),
+                "windows_warning": windows_warning,
             }
             
         except Exception as e:
@@ -294,6 +309,241 @@ class OfficeConfigurator:
         except Exception as e:
             self.logger.error(f"Fehler bei Excel Registry-Einstellungen: {e}")
             raise
+
+    def configure_windows_settings(self):
+        """Windows-Explorer- und Taskleisten-Defaults konfigurieren."""
+        try:
+            self.logger.info("Windows-Einstellungen werden konfiguriert...")
+
+            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+            windows_settings = [
+                ("TaskbarAl", 0, "windows_taskbar_alignment"),
+                ("TaskbarDa", 0, "windows_hide_widgets"),
+                ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
+                ("HideFileExt", 0, "windows_explorer_show_extensions"),
+            ]
+            failed_values: list[str] = []
+
+            for name, value, explanation_key in windows_settings:
+                if not self._set_windows_value_with_fallback(key_path, name, value, explanation_key):
+                    failed_values.append(name)
+
+            # Zusatzwerte ohne RegistryExplainer-Mapping
+            extra_values = {
+                "Hidden": 1,         # Versteckte Dateien anzeigen
+                "ShowSuperHidden": 1 # Geschützte Systemdateien anzeigen
+            }
+            for name, value in extra_values.items():
+                if not self._set_windows_extra_value_with_fallback(key_path, name, value):
+                    failed_values.append(name)
+
+            # Suchfeld/Suchsymbol zusätzlich im Search-Zweig setzen
+            # (einige Windows-Builds werten diesen Pfad bevorzugt aus)
+            search_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Search"
+            if not self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarMode", 0):
+                failed_values.append("SearchboxTaskbarMode")
+
+            # Optionaler Cache-Wert für konsistentere UI-Übernahme nach Explorer-Neustart
+            self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarModeCache", 0)
+
+            # Taskleisten-Ausrichtung hart verifizieren (einige Systeme überschreiben den Wert sofort)
+            taskbar_al = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, "TaskbarAl")
+            if taskbar_al != 0:
+                self.logger.warning(
+                    f"TaskbarAl nach Setzen unerwartet: {taskbar_al}. Fallback via reg.exe wird versucht."
+                )
+                subprocess.run(
+                    [
+                        "reg",
+                        "add",
+                        r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
+                        "/v",
+                        "TaskbarAl",
+                        "/t",
+                        "REG_DWORD",
+                        "/d",
+                        "0",
+                        "/f",
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                taskbar_al = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, "TaskbarAl")
+
+            if taskbar_al != 0:
+                if "TaskbarAl" not in failed_values:
+                    failed_values.append("TaskbarAl")
+
+            if failed_values:
+                unique_failed = sorted(set(failed_values))
+
+                # TaskbarDa (Widgets) ist optional und kann in einigen Umgebungen
+                # per Richtlinie gesperrt sein, ohne die Kernziele zu blockieren.
+                optional_values = {"TaskbarDa"}
+                blocking_failed = [name for name in unique_failed if name not in optional_values]
+
+                if not blocking_failed:
+                    return {
+                        "success": True,
+                        "warning": (
+                            "Ein optionaler Windows-Wert konnte nicht gesetzt werden "
+                            f"(nicht gesetzt: {', '.join(unique_failed)})."
+                        ),
+                        "message": "Windows-Kerneinstellungen erfolgreich konfiguriert",
+                    }
+
+                return {
+                    "success": False,
+                    "error": (
+                        "Windows-Einstellungen teilweise blockiert (mögliche Richtlinie/Berechtigung). "
+                        f"Nicht gesetzt: {', '.join(blocking_failed)}"
+                    ),
+                }
+
+            return {"success": True, "message": "Windows-Einstellungen erfolgreich konfiguriert"}
+        except Exception as e:
+            self.logger.error(f"Fehler bei Windows-Konfiguration: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _set_windows_value_with_fallback(self, key_path, name, value, explanation_key):
+        """Setzt einen dokumentierten Windows-Wert mit WinReg und reg.exe-Fallback."""
+        try:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                self._set_single_registry_value(
+                    key,
+                    name,
+                    int(value),
+                    explanation_key,
+                    "Windows",
+                    "Current",
+                    key_path,
+                )
+            return True
+        except Exception as e:
+            self.logger.warning(f"WinReg-Setzen fehlgeschlagen für {name}: {e}. Versuche reg.exe-Fallback...")
+
+            fallback = subprocess.run(
+                [
+                    "reg",
+                    "add",
+                    rf"HKCU\{key_path}",
+                    "/v",
+                    name,
+                    "/t",
+                    "REG_DWORD",
+                    "/d",
+                    str(int(value)),
+                    "/f",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            if fallback.returncode == 0:
+                # Logging analog zu _set_single_registry_value
+                setting_info = self.registry_explainer.get_setting_by_name(explanation_key)
+                self.logger.info(f"[Windows Current] {name} = {value} (via reg.exe)")
+                self.applied_settings.append({
+                    "program": "Windows",
+                    "version": "Current",
+                    "key_path": key_path,
+                    "name": name,
+                    "value": int(value),
+                    "description": setting_info.description if setting_info else "Windows-Einstellung",
+                    "impact": setting_info.impact if setting_info else "Windows UI-Verhalten",
+                    "category": setting_info.category if setting_info else "Windows - Explorer",
+                })
+                return True
+
+            # Falls Schreiben blockiert ist, aber der Zielwert bereits gesetzt ist,
+            # darf dies nicht als Fehler gewertet werden.
+            current_value = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, name)
+            if current_value == int(value):
+                self.logger.info(
+                    f"[Windows Current] {name} bereits korrekt gesetzt ({value}); "
+                    "Schreibversuch war nicht erforderlich/zulässig."
+                )
+                return True
+
+            stderr = (fallback.stderr or "").strip()
+            self.logger.warning(f"reg.exe-Fallback fehlgeschlagen für {name}: {stderr}")
+            return False
+
+    def _set_windows_extra_value_with_fallback(self, key_path, name, value):
+        """Setzt einen zusätzlichen Windows-Wert mit WinReg und reg.exe-Fallback."""
+        try:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, int(value))
+            self.logger.info(f"[Windows Current] {name} = {value}")
+            self.applied_settings.append({
+                "program": "Windows",
+                "version": "Current",
+                "key_path": key_path,
+                "name": name,
+                "value": int(value),
+                "description": "Zusätzliche Explorer-Option",
+                "impact": "Verbessert Sichtbarkeit im Explorer",
+                "category": "Windows - Explorer",
+            })
+            return True
+        except Exception as e:
+            self.logger.warning(f"WinReg-Setzen fehlgeschlagen für {name}: {e}. Versuche reg.exe-Fallback...")
+            fallback = subprocess.run(
+                [
+                    "reg",
+                    "add",
+                    rf"HKCU\{key_path}",
+                    "/v",
+                    name,
+                    "/t",
+                    "REG_DWORD",
+                    "/d",
+                    str(int(value)),
+                    "/f",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if fallback.returncode == 0:
+                self.logger.info(f"[Windows Current] {name} = {value} (via reg.exe)")
+                self.applied_settings.append({
+                    "program": "Windows",
+                    "version": "Current",
+                    "key_path": key_path,
+                    "name": name,
+                    "value": int(value),
+                    "description": "Zusätzliche Explorer-Option",
+                    "impact": "Verbessert Sichtbarkeit im Explorer",
+                    "category": "Windows - Explorer",
+                })
+                return True
+
+            # Bereits korrekt gesetzter Wert => kein Fehler
+            current_value = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, name)
+            if current_value == int(value):
+                self.logger.info(
+                    f"[Windows Current] {name} bereits korrekt gesetzt ({value}); "
+                    "Schreibversuch war nicht erforderlich/zulässig."
+                )
+                return True
+
+            stderr = (fallback.stderr or "").strip()
+            self.logger.warning(f"reg.exe-Fallback fehlgeschlagen für {name}: {stderr}")
+            return False
+
+    def _read_dword_registry_value(self, hive, key_path, value_name):
+        """Liest einen DWORD-Wert aus der Registry, sonst None."""
+        try:
+            with winreg.OpenKey(hive, key_path, 0, winreg.KEY_READ) as key:
+                value, reg_type = winreg.QueryValueEx(key, value_name)
+                if reg_type == winreg.REG_DWORD:
+                    return int(value)
+                return None
+        except Exception:
+            return None
     
     def _set_registry_values_with_explanation(self, hive, key_path, values, program, version):
         """Registry-Werte setzen mit detaillierten Erläuterungen"""
