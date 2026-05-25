@@ -28,9 +28,9 @@ class SafeOfficeConfigurator:
         
         # Template-Pfade
         self.source_templates = {
-            'normal_dotm': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm",
-            'mappe_xltx': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Mappe.xltx",
-            'normal_email_dotm': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
+            'normal_dotm': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm",
+            'mappe_xltx': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Mappe.xltx",
+            'normal_email_dotm': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
         }
         
         # Benutzer Template-Pfade

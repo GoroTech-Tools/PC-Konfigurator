@@ -1,4 +1,4 @@
-# Dokumentation_Technik
+# DOKUMENTATION_TECHNIK
 
 ## 1. Architekturüberblick
 
@@ -7,25 +7,26 @@
 - **GUI/Orchestrierung** (`src/main.py`)
 - **Office-/System-Konfiguration** (mehrere Module im `src/`-Verzeichnis)
 - **Template-Schutz** (`SafeTemplateProcessor`, ZIP-Integritätsprüfung)
-- **Build/Release-Automation** (`setup.ps1`, `build.ps1`, `publish_release.ps1`)
+- **Build/Release-Automation** (`setup.ps1`, `build.ps1`, `src/publish_release.ps1`)
 
 Ziel ist eine robuste, portable Auslieferung als Windows-EXE (`onedir`) inklusive
-externer Assets (`Fonts`, `Datei-Vorlagen`, Dokumentation).
+externer Assets aus `data/` (`data/Fonts`, `data/Datei-Vorlagen`) und Dokumentation.
 
 ## 2. Wichtige Projektstruktur
 
 ```text
 PC-Konfigurator-Portable/
 ├── src/                       # Python-Anwendung + Module
-├── Fonts/                     # Schriftarten (familienweise strukturiert)
-├── Datei-Vorlagen/            # Office-Vorlagen und Arbeitsdateien
+├── data/
+│   ├── Fonts/                 # Schriftarten (familienweise strukturiert)
+│   └── Datei-Vorlagen/        # Office-Vorlagen und Arbeitsdateien
 ├── docs/                      # Projektdokumentation
 ├── build.ps1                  # Build-Orchestrierung + Versionierung
 ├── setup.ps1                  # venv-Setup + Dependencies
-├── publish_release.ps1        # Veröffentlichung von ZIP-Artefakten
-├── PC-Konfigurator-Portable.spec
+├── src/publish_release.ps1    # Veröffentlichung von ZIP-Artefakten
+├── src/PC-Konfigurator-Portable.spec
 ├── README.md
-└── BUILD-INFO.txt
+└── src/BUILD-INFO.txt
 ```
 
 ## 3. Laufzeitfluss
@@ -57,11 +58,11 @@ PC-Konfigurator-Portable/
 
 Kopiert und validiert:
 
-- `Fonts/`
-- `Datei-Vorlagen/`
+- `data/Fonts/`
+- `data/Datei-Vorlagen/`
 - `docs/`
 - `README.md`
-- `BUILD-INFO.txt`
+- `src/BUILD-INFO.txt`
 
 Besonderheiten:
 
@@ -72,7 +73,7 @@ Besonderheiten:
 ## 5. CI/CD und Releases
 
 - Release-Artefakte liegen in `release/`
-- Veröffentlichung über `publish_release.ps1`
+- Veröffentlichung über `src/publish_release.ps1`
 - GitHub-Release-Integration ist über Repo-Workflow möglich (je nach Projektstand)
 
 ## 6. Versionsmanagement
@@ -84,8 +85,8 @@ Single Source of Truth zur Build-Version:
 `build.ps1` synchronisiert daraus:
 
 - `README.md`
-- `docs/Dokumentation_Anwender.md`
-- `BUILD-INFO.txt`
+- `docs/DOKUMENTATION_ANWENDER.md`
+- `src/BUILD-INFO.txt`
 
 ## 7. Risiken und Randbedingungen
 

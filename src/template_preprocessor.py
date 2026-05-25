@@ -32,7 +32,7 @@ class TemplatePreprocessor:
             self.logger.setLevel(logging.INFO)
         
         # Quellverzeichnis für Templates (NIEMALS BEARBEITEN!)
-        self.source_dir = self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards"
+        self.source_dir = self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards"
         
         # Template-Pfade im Quellverzeichnis (READ-ONLY!)
         self.source_normal_dotm = self.source_dir / "Normal.dotm"

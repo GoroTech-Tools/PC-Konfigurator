@@ -55,8 +55,7 @@ FONT_OPTIONS: dict[str, str] = {
 
 APP_NAME = "PC-Konfigurator-Portable"
 RUNTIME_FOLDERS = [
-    "Datei-Vorlagen",
-    "Fonts",
+    "data",
     "docs",
     "pcconfig",
 ]
@@ -118,7 +117,7 @@ def prepare_runtime_bundle() -> Path:
     runtime_root.mkdir(parents=True, exist_ok=True)
 
     marker = runtime_root / ".bundle-ready"
-    critical_template = runtime_root / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm"
+    critical_template = runtime_root / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm"
     if marker.exists() and critical_template.exists():
         return runtime_root
 
@@ -147,7 +146,7 @@ class PCKonfiguratorGUI:
 
     def _get_fonts_dir(self) -> Path:
         """Liefert das Fonts-Verzeichnis der Anwendung."""
-        return self.app_dir / "Fonts"
+        return self.app_dir / "data" / "Fonts"
 
     def _load_available_font_families(self):
         """Liefert die feste Auswahlliste der unterstützten Schriftarten."""
@@ -603,12 +602,12 @@ class PCKonfiguratorGUI:
             on_run_office=self.execute_office_only,
             on_check_system=self.check_system_requirements,
             on_restart_explorer=self.restart_windows_explorer,
-            on_open_folder_templates=lambda: self.open_runtime_folder("Datei-Vorlagen"),
-            on_open_folder_fonts=lambda: self.open_runtime_folder("Fonts"),
+            on_open_folder_templates=lambda: self.open_runtime_folder("data\\Datei-Vorlagen"),
+            on_open_folder_fonts=lambda: self.open_runtime_folder("data\\Fonts"),
             on_open_folder_docs=lambda: self.open_runtime_folder("docs"),
             on_open_folder_logs=lambda: self.open_runtime_folder("logs"),
-            on_open_doc_user=lambda: self.open_documentation("Dokumentation_Anwender.md"),
-            on_open_doc_tech=lambda: self.open_documentation("Dokumentation_Technik.md"),
+            on_open_doc_user=lambda: self.open_documentation("DOKUMENTATION_ANWENDER.md"),
+            on_open_doc_tech=lambda: self.open_documentation("DOKUMENTATION_TECHNIK.md"),
             on_show_execution=lambda: self._switch_to_tab("Ausführung"),
         )
         

@@ -60,9 +60,9 @@ class OfficeTemplateManager:
         # Template-Pfade definieren
         try:
             self.source_templates = {
-                'normal_dotm': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm",
-                'mappe_xltx': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Mappe.xltx",
-                'normal_email_dotm': self.app_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
+                'normal_dotm': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Normal.dotm",
+                'mappe_xltx': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Mappe.xltx",
+                'normal_email_dotm': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
             }
         except Exception as e:
             self.logger.error(f"Fehler bei source_templates-Initialisierung: {e}")

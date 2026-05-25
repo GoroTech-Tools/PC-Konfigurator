@@ -1,10 +1,10 @@
 param(
-    [string]$SourceDir = (Join-Path $PSScriptRoot 'release'),
+    [string]$SourceDir = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'release'),
     [string]$TargetDir = $(
         if ($env:OneDrive) {
             Join-Path $env:OneDrive 'Releases\PC-Konfigurator-Portable'
         } else {
-            Join-Path $PSScriptRoot 'release-published'
+            Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'release-published'
         }
     ),
     [switch]$LatestOnly,

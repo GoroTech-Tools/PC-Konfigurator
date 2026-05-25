@@ -8,7 +8,7 @@ Komplette portable Anwendung für Windows-PC-Konfiguration.
 
 Dies ist die portable Version des PC-Konfigurators mit erweiterter
 Windows-Systemkonfiguration, sicherer Template-Verarbeitung und dynamischer
-Schriftfamilien-Auswahl aus dem Ordner `Fonts`.
+Schriftfamilien-Auswahl aus dem Ordner `data/Fonts`.
 
 Die Anwendung konfiguriert automatisch Office-Programme, Windows-Einstellungen,
 Office-Vorlagen und benutzerspezifische Schriftarten.
@@ -35,7 +35,7 @@ Office-Vorlagen und benutzerspezifische Schriftarten.
 ### Office-Konfiguration
 
 - Word, Excel und Outlook automatisch konfigurieren
-- Template-Management aus `Datei-Vorlagen/Sonstiges/Standards`
+- Template-Management aus `data/Datei-Vorlagen/Sonstiges/Standards`
 - Standard-Schriftarten sicher setzen
 - Entwicklertools und Benutzeroberfläche optimieren
 - Zentrale Word-Autokorrektur-Optionen per Registry deaktivieren:
@@ -47,7 +47,7 @@ Office-Vorlagen und benutzerspezifische Schriftarten.
 
 ### Schriftart-Management
 
-- Font-Familien werden dynamisch aus dem Ordner `Fonts` erkannt
+- Font-Familien werden dynamisch aus dem Ordner `data/Fonts` erkannt
 - Die gewählte Familie wird ins Benutzerprofil installiert
 - Die gewählte Familie wird anschließend Templates und Office-Einstellungen zugeordnet
 - Windows Font API und Benutzer-Registry werden genutzt
@@ -60,20 +60,21 @@ PC-Konfigurator-Portable-v3.2.5/
 ├── README.md
 ├── docs/
 │   ├── README.md
-│   ├── Dokumentation_Anwender.md
-│   ├── Dokumentation_Technik.md
-│   └── Dokumentation_Checkliste.md
-├── BUILD-INFO.txt
-├── Datei-Vorlagen/
-│   └── Sonstiges/Standards/
-│       ├── Normal.dotm
-│       ├── Mappe.xltx
-│       └── NormalEmail.dotm
-├── Fonts/
-│   ├── Aptos/
-│   ├── Futura/
-│   ├── Montserrat/
-│   └── ...
+│   ├── DOKUMENTATION_ANWENDER.md
+│   ├── DOKUMENTATION_TECHNIK.md
+│   └── DOKUMENTATION_CHECKLISTE.md
+├── src/BUILD-INFO.txt
+├── data/
+│   ├── Datei-Vorlagen/
+│   │   └── Sonstiges/Standards/
+│   │       ├── Normal.dotm
+│   │       ├── Mappe.xltx
+│   │       └── NormalEmail.dotm
+│   └── Fonts/
+│       ├── Aptos/
+│       ├── Futura/
+│       ├── Montserrat/
+│       └── ...
 ├── logs/          # versteckt
 └── _internal/     # versteckt
 ```
@@ -108,13 +109,16 @@ PC-Konfigurator-Portable-v3.2.5/
 
 ```bash
 # Python-Umgebung einrichten
-pip install -r requirements.txt
+.\src\setup.ps1
+
+# alternativ direkt per pip
+pip install -r src/requirements.txt
 
 # Anwendung aus Source ausführen
 python src/main.py
 
 # Neues Build erstellen
-python -m PyInstaller PC-Konfigurator-Portable.spec
+.\src\build.ps1 -NoVersionBump
 ```
 
 Der Post-Build ergänzt automatisch:
@@ -144,7 +148,7 @@ Der Post-Build ergänzt automatisch:
 ### Aktuelle Statistiken
 
 - 3 Template-Typen vollständig unterstützt
-- 15 dynamisch erkannte Font-Familien im aktuellen Fonts-Bestand
+- 15 dynamisch erkannte Font-Familien im aktuellen Bestand `data/Fonts`
 - 55 Schriftart-Dateien im Build
 - 173 Vorlagen-Dateien im Build
 
@@ -161,14 +165,14 @@ Der Post-Build ergänzt automatisch:
 
 - Registry-UX deutlich verbessert (übersichtlichere Darstellung, Erklärungen)
 - Word-Startverhalten wiederhergestellt (Dokument beim Start nicht automatisch öffnen)
-- `publish_release.ps1` für automatisiertes Release-Packaging hinzugefügt
+- `src/publish_release.ps1` für automatisiertes Release-Packaging hinzugefügt
 - `SafeTemplateProcessor` erweitert
 - `office_configurator.py` überarbeitet
 - Build-Skript (`build.ps1`) verbessert
 
 ### v3.0.0 (26. April 2026)
 
-- Dynamische Font-Familien-Auswahl aus dem Ordner `Fonts`
+- Dynamische Font-Familien-Auswahl aus dem Ordner `data/Fonts`
 - Gewählte Font-Familie wird gezielt ins Benutzerprofil installiert
 - Zuordnung der gewählten Familie zu Templates und Office-Konfiguration verbessert
 - EXE- und Fenster-Icon korrigiert
@@ -198,11 +202,21 @@ Der Post-Build ergänzt automatisch:
 ### Dokumentation
 
 - `docs/README.md` – Dokumentations-Einstieg
-- `docs/Dokumentation_Anwender.md` – Detaillierte Benutzeranleitung
-- `docs/Dokumentation_Technik.md` – Technische Dokumentation
-- `docs/Dokumentation_Checkliste.md` – Doku-Qualitätscheckliste
+- `docs/DOKUMENTATION_ANWENDER.md` – Detaillierte Benutzeranleitung
+- `docs/DOKUMENTATION_TECHNIK.md` – Technische Dokumentation
+- `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
+
+## Markdown-Regel (verbindlich)
+
+Für Markdown-Dateien gelten im Repository verbindlich:
+
+- **MD022**: Vor und nach Überschriften eine Leerzeile.
+- **MD032**: Vor und nach Listen eine Leerzeile.
+
+Die Regeln sind in `.markdownlint.json` hinterlegt und bilden die Standardroutine
+für die Beseitigung von MD-Fehlern bei Doku-Änderungen.
 
 ---
 

@@ -134,15 +134,15 @@ def copy_external_directories():
         print(f"Target-Verzeichnis: {target_dir}")
         
         # Quellverzeichnisse
-        fonts_src = script_dir / "Fonts"
-        templates_src = script_dir / "Datei-Vorlagen"
+        fonts_src = script_dir / "data" / "Fonts"
+        templates_src = script_dir / "data" / "Datei-Vorlagen"
         docs_src = script_dir / "docs"
         readme_src = script_dir / "README.md"
-        buildinfo_src = script_dir / "BUILD-INFO.txt"
+        buildinfo_src = script_dir / "src" / "BUILD-INFO.txt"
         
         # Zielverzeichnisse
-        fonts_dest = target_dir / "Fonts"
-        templates_dest = target_dir / "Datei-Vorlagen"
+        fonts_dest = target_dir / "data" / "Fonts"
+        templates_dest = target_dir / "data" / "Datei-Vorlagen"
         docs_dest = target_dir / "docs"
         font_failures: list[tuple[Path, str]] = []
         tpl_failures: list[tuple[Path, str]] = []

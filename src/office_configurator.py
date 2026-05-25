@@ -206,14 +206,14 @@ class OfficeConfigurator:
                     base_dir = Path(__file__).parent.parent.parent
 
             source_candidates = [
-                base_dir / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
+                base_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
             ]
 
             # Fallback: direkt aus dem PyInstaller-Bundle lesen, falls Runtime-Datei gesperrt ist
             import sys
             meipass = getattr(sys, '_MEIPASS', None)
             if meipass:
-                source_candidates.append(Path(meipass) / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm")
+                source_candidates.append(Path(meipass) / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm")
 
             target_path = outlook_templates_dir / "NormalEmail.dotm"
             target_path.parent.mkdir(parents=True, exist_ok=True)

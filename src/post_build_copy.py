@@ -9,8 +9,7 @@ internal_dir = build_dir / '_internal'
 
 # Liste der zu kopierenden Ordner/Dateien
 TO_COPY = [
-    'Fonts',
-    'Datei-Vorlagen',
+    'data',
     'docs',
     'README.md',
     'BUILD-INFO.txt',

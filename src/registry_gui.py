@@ -247,7 +247,7 @@ class RegistryExplanationWindow:
             elif setting_name in font_size_excel_keys and current_size_excel:
                 display_value = f"{current_size_excel} pt"
             elif setting_name in datei_vorlagen_path_keys and current_path:
-                display_value = str(Path(current_path) / "Datei-Vorlagen")
+                display_value = str(Path(current_path) / "data" / "Datei-Vorlagen")
             elif setting_name in path_keys and current_path:
                 display_value = current_path
             elif setting_name in clear_keys:

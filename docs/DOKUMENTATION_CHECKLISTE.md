@@ -1,4 +1,4 @@
-# Dokumentation_Checkliste
+# DOKUMENTATION_CHECKLISTE
 
 Diese Checkliste dient als Qualitäts- und Freigabegrundlage für die Projektdokumentation.
 

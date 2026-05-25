@@ -8,8 +8,8 @@ LINE_SPACING = 1.15  # Einfach = 1.0, 1.15-fach = 1.15
 SPACE_AFTER = 6  # Punkt
 
 # Pfade
-SOURCE_DOCX = r"Datei-Vorlagen/Sonstiges/Standards/Normal.docx"  # Vorlage als docx
-TARGET_DOTM = r"Datei-Vorlagen/Sonstiges/Standards/Normal.dotm"   # Ziel-Datei
+SOURCE_DOCX = r"data/Datei-Vorlagen/Sonstiges/Standards/Normal.docx"  # Vorlage als docx
+TARGET_DOTM = r"data/Datei-Vorlagen/Sonstiges/Standards/Normal.dotm"   # Ziel-Datei
 
 def update_normal_style(docx_path, dotm_path):
     doc = Document(docx_path)

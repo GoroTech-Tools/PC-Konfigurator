@@ -115,7 +115,7 @@ function Write-Host {
 
 # Schritt 0: Versionsnummer automatisch erhöhen (optional überspringbar)
 $buildInfoPath = Join-Path $PSScriptRoot 'src/build_info.py'
-$buildInfoTxtPath = Join-Path $PSScriptRoot 'BUILD-INFO.txt'
+$buildInfoTxtPath = Join-Path $PSScriptRoot 'src\BUILD-INFO.txt'
 $newVersion = $null
 if (Test-Path $buildInfoPath) {
     $content = Get-Content $buildInfoPath -Raw
@@ -147,9 +147,9 @@ if (Test-Path $buildInfoPath) {
             Set-Content $buildInfoPath $content -Encoding UTF8
             Write-Host "Neue Version: $newVersion (build_info.py aktualisiert)" -ForegroundColor Cyan
 
-            # --- README.md und docs/Dokumentation_Anwender.md automatisch aktualisieren ---
+            # --- README.md und docs/DOKUMENTATION_ANWENDER.md automatisch aktualisieren ---
             $readmePath = Join-Path $PSScriptRoot 'README.md'
-            $anwenderDocPath = Join-Path $PSScriptRoot 'docs\Dokumentation_Anwender.md'
+            $anwenderDocPath = Join-Path $PSScriptRoot 'docs\DOKUMENTATION_ANWENDER.md'
             $pythonVersionShort = $null
             if ($content -match "'python_version': '([^']+)'") {
                 $pythonVersionShort = $matches[1] -replace ' \(.*', ''
@@ -164,15 +164,15 @@ if (Test-Path $buildInfoPath) {
                 Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
-            # docs/Dokumentation_Anwender.md: **Version:** 3.2.7 (29.04.2026)
+            # docs/DOKUMENTATION_ANWENDER.md: **Version:** 3.2.7 (29.04.2026)
             if (Test-Path $anwenderDocPath) {
                 $anwenderDoc = Get-Content $anwenderDocPath -Raw
                 $anwenderDoc = [regex]::Replace($anwenderDoc, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
                 Set-Content $anwenderDocPath $anwenderDoc -Encoding UTF8
-                Write-Host "docs/Dokumentation_Anwender.md automatisch aktualisiert." -ForegroundColor Cyan
+                Write-Host "docs/DOKUMENTATION_ANWENDER.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
-            # --- BUILD-INFO.txt automatisch aktualisieren ---
+            # --- src/BUILD-INFO.txt automatisch aktualisieren ---
             $pythonVersion = $null
             $platform = $null
             if ($content -match "'python_version': '([^']+)'") { $pythonVersion = $matches[1] }
@@ -195,7 +195,7 @@ if (Test-Path $buildInfoPath) {
             $buildInfoTxt += "- **EXE-Name:** PC-Konfigurator-Portable.exe"
             $buildInfoTxt += ""
             Set-Content $buildInfoTxtPath $buildInfoTxt -Encoding UTF8
-            Write-Host "BUILD-INFO.txt automatisch aktualisiert." -ForegroundColor Cyan
+            Write-Host "src/BUILD-INFO.txt automatisch aktualisiert." -ForegroundColor Cyan
         }
     } else {
         Write-Host "Konnte Versionsnummer nicht erkennen!" -ForegroundColor Red
@@ -280,7 +280,7 @@ Write-Host "`n1. PyInstaller Build wird erstellt..." -ForegroundColor Yellow
 $pyInstallerLog = Join-Path $PSScriptRoot 'build\last-pyinstaller.log'
 # Workpath außerhalb von OneDrive, damit der OneDrive-Sync die Intermediate-Dateien nicht sperrt
 $pyiWorkPath = Join-Path $env:TEMP 'pyi-build-pc-konfigurator'
-$specPath = Join-Path $PSScriptRoot 'PC-Konfigurator-Portable.spec'
+$specPath = Join-Path $PSScriptRoot 'src\PC-Konfigurator-Portable.spec'
 $specOffline = $false
 if (Test-Path $specPath) {
     try {
@@ -299,7 +299,6 @@ if (Test-Path $specPath) {
     Write-Host "Hinweis: Spec-Datei nicht gefunden. Fallback ohne .spec wird verwendet." -ForegroundColor Yellow
 }
 
-$buildName = if ($newVersion) { "PC-Konfigurator-Portable-v$newVersion" } else { "PC-Konfigurator-Portable-vmanual" }
 $entryScript = Join-Path $PSScriptRoot 'src\main.py'
 $iconPath = Join-Path $PSScriptRoot 'src\app_icon.ico'
 
@@ -308,13 +307,13 @@ if ($Quiet) {
     if (-not $specOffline) {
         & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath *> $pyInstallerLog
     } else {
-        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\Datei-Vorlagen;Datei-Vorlagen" --add-data "$PSScriptRoot\Fonts;Fonts" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript *> $pyInstallerLog
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript *> $pyInstallerLog
     }
 } else {
     if (-not $specOffline) {
         & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath
     } else {
-        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\Datei-Vorlagen;Datei-Vorlagen" --add-data "$PSScriptRoot\Fonts;Fonts" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript
     }
 }
 
@@ -364,14 +363,14 @@ if (-not (Test-Path $docsSource)) {
 
 Copy-Item -Path $docsSource -Destination $docsTarget -Recurse -Force
 
-$anleitungSource = Join-Path $PSScriptRoot 'docs\Dokumentation_Anwender.md'
-$anleitungTarget = Join-Path $buildDirPath 'ANLEITUNG.md'
-if (-not (Test-Path $anleitungSource)) {
-    Write-Host "Anleitung fehlt: $anleitungSource" -ForegroundColor Red
+$dataSource = Join-Path $PSScriptRoot 'data'
+$dataTarget = Join-Path $buildDirPath 'data'
+if (-not (Test-Path $dataSource)) {
+    Write-Host "data-Verzeichnis fehlt: $dataSource" -ForegroundColor Red
     exit 1
 }
 
-Copy-Item -Path $anleitungSource -Destination $anleitungTarget -Force
+Copy-Item -Path $dataSource -Destination $dataTarget -Recurse -Force
 
 $buildDir = Get-Item $buildDirPath
 
@@ -452,7 +451,7 @@ if ($buildDir) {
 
             $exeEntryCount = @(Get-ChildItem $extractRoot -Recurse -File -Filter 'PC-Konfigurator-Portable.exe' -ErrorAction SilentlyContinue).Count
             $docsEntryCount = @(Get-ChildItem (Join-Path $extractRoot 'docs') -Recurse -File -ErrorAction SilentlyContinue).Count
-            $anleitungEntryCount = @(Get-ChildItem $extractRoot -Recurse -File -Filter 'ANLEITUNG.md' -ErrorAction SilentlyContinue).Count
+            $dataEntryCount = @(Get-ChildItem (Join-Path $extractRoot 'data') -Recurse -File -ErrorAction SilentlyContinue).Count
 
             if ($exeEntryCount -le 0) {
                 throw "ZIP-Sanity-Check fehlgeschlagen: EXE nicht gefunden." 
@@ -460,8 +459,8 @@ if ($buildDir) {
             if ($docsEntryCount -le 0) {
                 throw "ZIP-Sanity-Check fehlgeschlagen: docs-Verzeichnis nicht gefunden."
             }
-            if ($anleitungEntryCount -le 0) {
-                throw "ZIP-Sanity-Check fehlgeschlagen: ANLEITUNG.md nicht gefunden."
+            if ($dataEntryCount -le 0) {
+                throw "ZIP-Sanity-Check fehlgeschlagen: data-Verzeichnis nicht gefunden."
             }
 
             $null = New-ReleaseNotesFile `
@@ -479,10 +478,10 @@ if ($buildDir) {
             
             if ($Quiet) {
                 Microsoft.PowerShell.Utility\Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
-                Microsoft.PowerShell.Utility\Write-Host "ZIP-Check: EXE=$exeEntryCount, docs=$docsEntryCount, ANLEITUNG=$anleitungEntryCount" -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host "ZIP-Check: EXE=$exeEntryCount, docs=$docsEntryCount, data=$dataEntryCount" -ForegroundColor White
             } else {
                 Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
-                Write-Host "ZIP-Check: EXE=$exeEntryCount, docs=$docsEntryCount, ANLEITUNG=$anleitungEntryCount" -ForegroundColor White
+                Write-Host "ZIP-Check: EXE=$exeEntryCount, docs=$docsEntryCount, data=$dataEntryCount" -ForegroundColor White
             }
         } catch {
             Write-Host "ZIP-Release konnte nicht erstellt werden: $_" -ForegroundColor Red
