@@ -18,8 +18,8 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   Einheitliche Auswertungsvorlage für die Rückmeldungen aus den EXE-Tests
 - **[GUI_REGRESSION_CHECKLISTE.md](./GUI_REGRESSION_CHECKLISTE.md)**  
   Regression-Checkliste für GUI-Änderungen im Rahmen der AP1-Angleichung
-- **[Migrationsplan_GUI_Angleichung_AP1.md](./Migrationsplan_GUI_Angleichung_AP1.md)**  
-  Konkreter Schritt-für-Schritt-Plan zur GUI-Angleichung an den AP1-Konfigurator
+- **[Migrationsplan_GUI_Angleichung_AP1.md](./_archive/Migrationsplan_GUI_Angleichung_AP1.md)** *(archiviert)*  
+  Abgeschlossener Migrationsplan zur GUI-Angleichung an den AP1-Konfigurator (Stand 31.05.2026)
 
 ## Empfohlener Einstieg
 
