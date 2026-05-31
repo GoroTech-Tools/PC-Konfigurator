@@ -46,32 +46,81 @@ function New-ReleaseNotesFile {
 
     $notesPath = Join-Path $ReleaseDir "RELEASE_NOTES_v$Version.md"
     $buildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    $displayDate = (Get-Date).ToString('yyyy-MM-dd')
 
-    $zipLine = if ($ZipFileName) {
-        "- release/$ZipFileName"
+    $zipArtifactLine = if ($ZipFileName) {
+        "- Release-ZIP: release/$ZipFileName"
     } else {
-        "- *(noch nicht erstellt - Build wurde mit -SkipZip ausgefuehrt)*"
+        "- Release-ZIP: *(noch nicht erstellt - Build wurde mit -SkipZip ausgefuehrt)*"
     }
 
-    $content = @(
-        "# PC-Konfigurator v$Version",
+    $qualityZipLine = if ($ZipFileName) {
+        "- ZIP-Artefakt erstellt und im Release-Ordner abgelegt."
+    } else {
+        "- ZIP-Artefakt in diesem Lauf nicht erstellt (-SkipZip)."
+    }
+
+    $recentCommits = @()
+    try {
+        $gitLog = git log --oneline --no-decorate -5 2>$null
+        foreach ($entry in $gitLog) {
+            if ([string]::IsNullOrWhiteSpace($entry)) {
+                continue
+            }
+            $parts = $entry -split ' ', 2
+            if ($parts.Count -eq 2) {
+                $recentCommits += "- ``$($parts[0])`` $($parts[1])"
+            } else {
+                $recentCommits += "- $entry"
+            }
+        }
+    } catch {
+        # Fallback weiter unten
+    }
+
+    if (-not $recentCommits -or $recentCommits.Count -eq 0) {
+        $recentCommits = @("- *(Commitliste konnte automatisch nicht ermittelt werden.)*")
+    }
+
+    $contentLines = @(
+        "# Release Notes v$Version",
         "",
-        "## Build-Informationen",
+        "Datum: $displayDate",
         "",
-        "- Erzeugt am: $buildDate",
-        "- Build-Modus: Onefile (--onefile --windowed)",
-        "- EXE: $ExeName",
+        "## Highlights",
+        "",
+        "- Namens-, Build- und Doku-Anpassungen wurden in diesem Release-Stand konsolidiert.",
+        "- Das Build wurde als Onefile-EXE erzeugt und für die Verteilung aufbereitet.",
+        "- Bitte Highlights bei Bedarf projektspezifisch ergänzen.",
+        "",
+        "## Qualitätsstatus",
+        "",
+        "- Release-Build erfolgreich erzeugt.",
+        "$qualityZipLine",
+        "- Automatische Basisprüfung (Build/Packaging) im Skript durchlaufen.",
         "",
         "## Artefakte",
         "",
-        "- dist/$BuildDirName/",
-        "$zipLine",
+        "- Build-Verzeichnis: dist/$BuildDirName/",
+        "- EXE: dist/$BuildDirName/$ExeName",
+        "$zipArtifactLine",
         "",
-        "## Hinweis",
-        "",
-        "Diese Release-Notes werden automatisch bei jedem Build erzeugt und bei ZIP-Erstellung aktualisiert.",
+        "## Enthaltene Commits (aktuelle Historie)",
         ""
-    ) -join "`r`n"
+    )
+
+    $contentLines += $recentCommits
+
+    $contentLines += @(
+        "",
+        "## Technische Build-Informationen",
+        "",
+        "- Build-Datum: $buildDate",
+        "- Build-Modus: --onefile --windowed",
+        "- EXE-Name: $ExeName"
+    )
+
+    $content = $contentLines -join "`r`n"
 
     Set-Content -Path $notesPath -Value $content -Encoding UTF8
     Write-Host "Release-Notes erstellt/aktualisiert: $notesPath" -ForegroundColor Green
