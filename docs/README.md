@@ -12,6 +12,8 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   Vollständige Praxis-Checkliste für EXE-Tests durch Kollegium und Teilnehmende
 - **[ANWENDERPRUEFUNG_KURZCHECKLISTE.md](./ANWENDERPRUEFUNG_KURZCHECKLISTE.md)**  
   Kompakter 5–10-Minuten-Schnellcheck für die EXE-Variante
+- **[ANWENDERPRUEFUNG_AUSWERTUNG.md](./ANWENDERPRUEFUNG_AUSWERTUNG.md)**  
+  Einheitliche Auswertungsvorlage für die Rückmeldungen aus den EXE-Tests
 - **[Migrationsplan_GUI_Angleichung_AP1.md](./Migrationsplan_GUI_Angleichung_AP1.md)**  
   Konkreter Schritt-für-Schritt-Plan zur GUI-Angleichung an den AP1-Konfigurator
 

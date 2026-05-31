@@ -203,6 +203,7 @@ Der Build-Prozess ergänzt automatisch:
 - `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
 - `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` – Vollständige EXE-Testcheckliste
 - `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` – 5–10-Minuten-Kurzcheck
+- `docs/ANWENDERPRUEFUNG_AUSWERTUNG.md` – Auswertungsvorlage für Testfeedback
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
 

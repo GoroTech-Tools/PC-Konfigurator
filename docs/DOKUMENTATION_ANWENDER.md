@@ -130,6 +130,7 @@ verwenden:
 
 - `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` (vollständige Testdurchläufe)
 - `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` (Schnelltest 5–10 Minuten)
+- `docs/ANWENDERPRUEFUNG_AUSWERTUNG.md` (zentrale Zusammenfassung der Ergebnisse)
 
 Bitte Rückmeldungen strukturiert dokumentieren (Umgebung, Schritte, Ergebnis,
 Fehlerbild, Verbesserungsvorschläge).
