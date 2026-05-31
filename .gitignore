@@ -9,6 +9,7 @@ build/
 dist/
 data/
 logs/
+**/_archive/
 release/*.zip
 *.spec
 !src/PC-Konfigurator.spec
