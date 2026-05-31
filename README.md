@@ -217,6 +217,11 @@ Für Markdown-Dateien gelten im Repository verbindlich:
 Die Regeln sind in `.markdownlint.json` hinterlegt und bilden die Standardroutine
 für die Beseitigung von MD-Fehlern bei Doku-Änderungen.
 
+Prüfroutinen:
+
+- Manuell: `tools/lint-markdown.ps1`
+- Automatisch im Build: `build.ps1` (abschaltbar mit `-SkipMarkdownLint`)
+
 ---
 
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0

@@ -4,6 +4,7 @@
 param(
     [switch]$NoVersionBump,
     [switch]$SkipZip,
+    [switch]$SkipMarkdownLint,
     [switch]$Help,
     [switch]$Quiet,
     [ValidateSet('.venv', '.venv-bfw')]
@@ -21,9 +22,10 @@ function Show-Usage {
     Microsoft.PowerShell.Utility\Write-Host "  -Help          : Nur diese Hilfe anzeigen und beenden" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -NoVersionBump : Versionsnummer/README/docs/BUILD-INFO nicht aktualisieren" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -SkipZip       : ZIP-Erstellung im release-Ordner überspringen" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -SkipMarkdownLint : Markdownlint-Prüfung vor dem Build überspringen" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -Quiet         : Kompakte Ausgabe (nur Fehler + Kurzfazit)" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -PreferredVenv : Bevorzugte venv wählen (.venv oder .venv-bfw)" -ForegroundColor DarkGray
-    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv-bfw -Quiet | .\build.ps1 -PreferredVenv .venv" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv-bfw -Quiet | .\build.ps1 -PreferredVenv .venv | .\build.ps1 -SkipMarkdownLint" -ForegroundColor DarkGray
 }
 
 function New-ReleaseNotesFile {
@@ -133,6 +135,23 @@ if (-not $Quiet -or $Help) {
 
 if ($Help) {
     exit 0
+}
+
+# Vorab: Markdownlint als Standard-Dokuroutine ausführen
+if ($SkipMarkdownLint) {
+    Write-Host "Markdownlint-Prüfung übersprungen (-SkipMarkdownLint)." -ForegroundColor Yellow
+} else {
+    $mdLintScript = Join-Path $PSScriptRoot 'tools\lint-markdown.ps1'
+    if (Test-Path $mdLintScript) {
+        Write-Host "Markdownlint-Prüfung läuft..." -ForegroundColor Cyan
+        & $mdLintScript -Quiet:$Quiet
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Build abgebrochen: Markdownlint-Fehler erkannt." -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "Hinweis: Markdownlint-Skript nicht gefunden, Prüfung wird übersprungen: $mdLintScript" -ForegroundColor Yellow
+    }
 }
 
 $script:QuietMode = $Quiet
