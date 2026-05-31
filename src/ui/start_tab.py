@@ -49,6 +49,12 @@ def build_start_tab(
     action_box = ctk.CTkFrame(start_frame)
     action_box.pack(fill="x", padx=12, pady=(0, 8))
     ctk.CTkLabel(action_box, text="Aktionen", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=12, pady=(10, 4))
+    ctk.CTkLabel(
+        action_box,
+        text="Hier können die empfohlenen Standardeinstellungen direkt gestartet werden. "
+             "Für Details konsultieren Sie bitte die Tabs 'Vorlagen/Ablage' und Registry.",
+        justify="left",
+    ).pack(anchor="w", padx=12, pady=(0, 8))
 
     action_row = ctk.CTkFrame(action_box)
     action_row.pack(fill="x", padx=12, pady=(0, 10))
