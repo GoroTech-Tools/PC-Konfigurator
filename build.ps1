@@ -351,7 +351,32 @@ if (Test-Path $buildDirPath) {
 
 New-Item -ItemType Directory -Path $buildDirPath -Force | Out-Null
 $targetExe = Join-Path $buildDirPath 'PC-Konfigurator.exe'
-Move-Item -Path $builtExe -Destination $targetExe -Force
+
+$moved = $false
+for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+        Move-Item -Path $builtExe -Destination $targetExe -Force -ErrorAction Stop
+        $moved = $true
+        break
+    } catch {
+        if ($attempt -lt 3) {
+            Write-Host "EXE ist noch gesperrt (Versuch $attempt/3). Neuer Versuch..." -ForegroundColor Yellow
+            Start-Sleep -Milliseconds 700
+        }
+    }
+}
+
+if (-not $moved) {
+    try {
+        Write-Host "Move fehlgeschlagen, versuche Copy-Fallback..." -ForegroundColor Yellow
+        Copy-Item -Path $builtExe -Destination $targetExe -Force -ErrorAction Stop
+        Remove-Item -Path $builtExe -Force -ErrorAction SilentlyContinue
+        $moved = $true
+    } catch {
+        Write-Host "Konnte EXE weder verschieben noch kopieren: $_" -ForegroundColor Red
+        exit 1
+    }
+}
 
 # Zusätzliche Release-Artefakte neben der EXE bereitstellen
 $docsSource = Join-Path $PSScriptRoot 'docs'

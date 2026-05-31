@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.1 (Build: 23.05.2026, Python 3.13.7)
+**Version:** 3.3.2 (Build: 31.05.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -219,3 +219,4 @@ für die Beseitigung von MD-Fehlern bei Doku-Änderungen.
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
+
