@@ -4,6 +4,8 @@ from typing import Iterable
 
 import customtkinter as ctk
 
+from ui.sizing import apply_uniform_tab_sizes
+
 TAB_OVERVIEW = "Übersicht"
 TAB_START = "Start"
 TAB_CONFIG = "Vorlagen/Ablage"
@@ -28,6 +30,8 @@ def build_main_layout(
     tabs: Iterable[str] = DEFAULT_TABS,
 ):
     """Erstellt den gemeinsamen Hauptrahmen inklusive Tab-Container."""
+    tabs = tuple(tabs)
+
     main_frame = ctk.CTkFrame(root)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -42,6 +46,8 @@ def build_main_layout(
 
     for tab_name in tabs:
         tabview.add(tab_name)
+
+    apply_uniform_tab_sizes(tabview)
 
     return {
         "main_frame": main_frame,

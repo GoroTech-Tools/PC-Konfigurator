@@ -12,6 +12,7 @@ from tkinter import messagebox
 from typing import Dict, List, Tuple
 
 from registry_explainer import RegistryExplainer, RegistrySettingInfo
+from ui.sizing import apply_uniform_button_sizes, apply_uniform_tab_sizes
 
 
 class RegistryExplanationWindow:
@@ -76,6 +77,8 @@ class RegistryExplanationWindow:
         self._populate_settings_tab("Outlook", "Outlook-Einstellungen", "📧")
         self._populate_settings_tab("Windows", "Windows-Einstellungen", "🪟")
 
+        apply_uniform_tab_sizes(self.tabview)
+
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x", padx=10, pady=10)
 
@@ -100,6 +103,8 @@ class RegistryExplanationWindow:
             command=self.close_window,
             height=40,
         ).pack(side="right", padx=10, pady=10)
+
+        apply_uniform_button_sizes(self.window)
 
     def create_overview_tab(self):
         if self.tabview is None:

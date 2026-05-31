@@ -65,6 +65,7 @@ from ui.logs_panel import (
     clear_logs_view,
     save_logs_view,
 )
+from ui.sizing import apply_uniform_button_sizes
 from ui.system_status import (
     start_system_requirements_check,
     apply_system_status,
@@ -356,6 +357,8 @@ class PCKonfiguratorGUI:
         self.create_registry_info_tab()
         self.create_execution_tab()
         self.create_logs_tab()
+
+        apply_uniform_button_sizes(self.root)
 
     def _switch_to_tab(self, tab_name: str):
         """Wechselt robust auf den gewünschten Tab."""
