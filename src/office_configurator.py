@@ -326,7 +326,9 @@ class OfficeConfigurator:
             failed_values: list[str] = []
 
             start_menu_settings = [
+                ("Start_Layout", 1, "windows_startmenu_list_layout"),
                 ("Start_TrackProgs", 1, "windows_startmenu_list_view"),
+                ("Start_TrackDocs", 1, "windows_startmenu_track_documents"),
                 ("Start_ShowDocuments", 1, "windows_startmenu_show_documents"),
                 ("Start_ShowDownloads", 1, "windows_startmenu_show_downloads"),
                 ("Start_ShowNetwork", 1, "windows_startmenu_show_network"),
@@ -342,6 +344,17 @@ class OfficeConfigurator:
             for name, value, explanation_key in start_menu_settings:
                 if not self._set_windows_value_with_fallback(key_path, name, value, explanation_key):
                     failed_values.append(name)
+
+            # Moderne Windows-Builds steuern die im Start sichtbaren Ordner teils über
+            # den Binary-Wert "VisiblePlaces" im Start-Zweig. Dieser Wert ist
+            # systemspezifisch kodiert und wird hier bewusst nicht blind überschrieben.
+            start_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Start"
+            visible_places_exists = self._read_registry_value(winreg.HKEY_CURRENT_USER, start_key_path, "VisiblePlaces") is not None
+            if visible_places_exists:
+                self.logger.info(
+                    "Startmenü-Ordnersymbole werden auf diesem System zusätzlich über "
+                    "'CurrentVersion\\Start\\VisiblePlaces' gesteuert (Build-spezifisch)."
+                )
 
             # Zusatzwerte ohne RegistryExplainer-Mapping
             extra_values = {
@@ -565,6 +578,15 @@ class OfficeConfigurator:
                 if reg_type == winreg.REG_DWORD:
                     return int(value)
                 return None
+        except Exception:
+            return None
+
+    def _read_registry_value(self, hive, key_path, value_name):
+        """Liest einen beliebigen Registry-Wert, sonst None."""
+        try:
+            with winreg.OpenKey(hive, key_path, 0, winreg.KEY_READ) as key:
+                value, _ = winreg.QueryValueEx(key, value_name)
+                return value
         except Exception:
             return None
     
