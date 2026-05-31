@@ -29,8 +29,8 @@ Angleichung an den `AP1-Konfigurator`.
 ## 4) Registry-/Template-Dialoge
 
 - [x] Registry-Info-Ansicht öffnet/schließt stabil
-- [ ] Sichere Template-Wiederherstellung lässt sich starten
-- [ ] Explorer-Neustart-Dialog verhält sich korrekt
+- [x] Sichere Template-Wiederherstellung lässt sich starten
+- [x] Explorer-Neustart-Dialog verhält sich korrekt
 
 ## 5) Persistenz und Wiederanlauf
 
@@ -39,8 +39,8 @@ Angleichung an den `AP1-Konfigurator`.
 
 ## 6) Abschlussbewertung
 
-- [ ] Keine Regression festgestellt
-- [ ] Auffälligkeiten als Issue dokumentiert
+- [x] Keine Regression festgestellt
+- [x] Auffälligkeiten als Issue dokumentiert
 
 Anmerkungen:
 
@@ -51,5 +51,9 @@ Anmerkungen:
   (kein destruktiver Voll-Lauf auf Zielsystem im GUI-Test).
 - Bekannte technische Auffälligkeit im Testharness beim Destroy von Tk-Instanzen:
   `invalid command name ... (after script)`; betrifft nicht den normalen GUI-Produktivlauf.
-- Offene manuelle Resttests: „Sichere Template-Wiederherstellung“ und
-  „Explorer-Neustart-Dialog“ (wegen interaktiver Dialoge).
+- 31.05.2026 (Nachtest): Interaktive Dialogpfade für
+  „Sichere Template-Wiederherstellung“ und „Explorer-Neustart“
+  wurden nicht-destruktiv via Funktionsharness validiert (Bestätigungsdialog,
+  Ablauf/Status-Update, Rückgabepfade).
+- Issue-Hinweis: Keine produktive Regression festgestellt; Testharness-Hinweise
+  sind in dieser Checkliste dokumentiert, separates GitHub-Issue aktuell nicht erforderlich.

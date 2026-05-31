@@ -33,8 +33,63 @@ class RegistryExplainer:
         settings: Dict[str, RegistrySettingInfo] = {}
         settings.update(self._get_word_settings())
         settings.update(self._get_excel_settings())
+        settings.update(self._get_outlook_settings())
         settings.update(self._get_general_office_settings())
         return settings
+
+    def _get_outlook_settings(self) -> Dict[str, RegistrySettingInfo]:
+        return {
+            "outlook_new_mail_font": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options",
+                value_name="NewMailFont",
+                value_type="REG_SZ",
+                default_value="Aptos",
+                description="Standard-Schriftart für neue E-Mails in Outlook.",
+                impact="Neue E-Mails verwenden diese Schriftfamilie.",
+                category="Outlook - Schriftarten",
+                office_versions=["14.0", "15.0", "16.0"],
+            ),
+            "outlook_new_mail_font_size": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options",
+                value_name="NewMailFontSize",
+                value_type="REG_DWORD",
+                default_value=11,
+                description="Standard-Schriftgröße für neue E-Mails in Outlook.",
+                impact="Neue E-Mails starten mit dieser Schriftgröße.",
+                category="Outlook - Schriftarten",
+                office_versions=["14.0", "15.0", "16.0"],
+            ),
+            "outlook_reply_forward_font": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options",
+                value_name="ReplyForwardFont",
+                value_type="REG_SZ",
+                default_value="Aptos",
+                description="Standard-Schriftart für Antworten und Weiterleitungen.",
+                impact="Antwort-/Weiterleitungsfenster nutzen diese Schriftfamilie.",
+                category="Outlook - Schriftarten",
+                office_versions=["14.0", "15.0", "16.0"],
+            ),
+            "outlook_reply_forward_font_size": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options",
+                value_name="ReplyForwardFontSize",
+                value_type="REG_DWORD",
+                default_value=11,
+                description="Standard-Schriftgröße für Antworten und Weiterleitungen.",
+                impact="Antwort-/Weiterleitungsfenster nutzen diese Schriftgröße.",
+                category="Outlook - Schriftarten",
+                office_versions=["14.0", "15.0", "16.0"],
+            ),
+            "outlook_default_mail_font_legacy": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options",
+                value_name="DefaultMailFont",
+                value_type="REG_SZ",
+                default_value="Aptos",
+                description="Kompatibilitätswert für ältere Outlook-Schriftvorgaben.",
+                impact="Sichert Schriftkonsistenz in älteren/abweichenden Outlook-Setups.",
+                category="Outlook - Schriftarten",
+                office_versions=["14.0", "15.0", "16.0"],
+            ),
+        }
 
     def _get_word_settings(self) -> Dict[str, RegistrySettingInfo]:
         return {

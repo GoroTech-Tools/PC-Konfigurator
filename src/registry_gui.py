@@ -67,11 +67,13 @@ class RegistryExplanationWindow:
         self.tabview.add("Übersicht")
         self.tabview.add("Word-Einstellungen")
         self.tabview.add("Excel-Einstellungen")
+        self.tabview.add("Outlook-Einstellungen")
         self.tabview.add("Windows-Einstellungen")
 
         self.create_overview_tab()
         self._populate_settings_tab("Word", "Word-Einstellungen", "📝")
         self._populate_settings_tab("Excel", "Excel-Einstellungen", "📊")
+        self._populate_settings_tab("Outlook", "Outlook-Einstellungen", "📧")
         self._populate_settings_tab("Windows", "Windows-Einstellungen", "🪟")
 
         button_frame = ctk.CTkFrame(main_frame)
@@ -228,7 +230,16 @@ class RegistryExplanationWindow:
             "word_startup_path", "word_doc_path", "excel_path",
         }
         font_keys = {"word_default_font", "word_font_override", "excel_default_font", "excel_font_override"}
+        outlook_font_keys = {
+            "outlook_new_mail_font",
+            "outlook_reply_forward_font",
+            "outlook_default_mail_font_legacy",
+        }
         font_size_word_keys = {"word_default_font_size"}
+        outlook_font_size_keys = {
+            "outlook_new_mail_font_size",
+            "outlook_reply_forward_font_size",
+        }
         font_size_excel_keys = {"excel_default_font_size"}
         clear_keys = {"word_font_substitutes"}
         excel_font_display_keys = {"excel_font_override"}
@@ -242,7 +253,11 @@ class RegistryExplanationWindow:
                 display_value = f"{current_font},{current_size_excel}" if current_size_excel else current_font
             elif setting_name in font_keys and current_font:
                 display_value = current_font
+            elif setting_name in outlook_font_keys and current_font:
+                display_value = current_font
             elif setting_name in font_size_word_keys and current_size_word:
+                display_value = f"{current_size_word} pt"
+            elif setting_name in outlook_font_size_keys and current_size_word:
                 display_value = f"{current_size_word} pt"
             elif setting_name in font_size_excel_keys and current_size_excel:
                 display_value = f"{current_size_excel} pt"
