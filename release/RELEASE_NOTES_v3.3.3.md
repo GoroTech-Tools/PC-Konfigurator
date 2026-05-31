@@ -6,7 +6,14 @@ Datum: 2026-05-31
 
 - Namens-, Build- und Doku-Anpassungen wurden in diesem Release-Stand konsolidiert.
 - Das Build wurde als Onefile-EXE erzeugt und für die Verteilung aufbereitet.
-- Bitte Highlights bei Bedarf projektspezifisch ergänzen.
+- Nachpflege: Mermaid-Diagramme in README/Anwender-/Technikdoku ergänzt und als SVG + `.mmd` unter `docs/diagramme/` bereitgestellt.
+
+## Nachträgliche Release-Pflege (31.05.2026)
+
+- Dokumentationsdiagramme nach dem Release ergänzt, analog zu den Schwesterprojekten.
+- Neue Datei: `docs/DOKUMENTATION_DIAGRAMME.md` als zentrale Übersicht.
+- Neue Diagrammquellen: `docs/diagramme/*.mmd`.
+- Neue Diagrammgrafiken: `docs/diagramme/*.svg`.
 
 ## Qualitätsstatus
 
