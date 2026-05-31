@@ -9,6 +9,21 @@
 Der `PC-Konfigurator` wird als portable Windows-Anwendung ausgeliefert und kann
 ohne klassische Installation direkt gestartet werden.
 
+## Ablauf auf einen Blick
+
+```mermaid
+flowchart LR
+  A[Programm starten] --> B[Konfiguration wählen]
+  B --> C[Optional Windows-Einstellungen festlegen]
+  C --> D[Ausführung starten]
+  D --> E[Office und Templates werden angepasst]
+  E --> F[Status und Logs prüfen]
+```
+
+![Ablauf Dokumentation Anwender](diagramme/anwender_ablauf.svg)
+
+_Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
+
 ### 1. Programm starten
 
 - Doppelklick auf `PC-Konfigurator.exe`
@@ -138,4 +153,3 @@ Fehlerbild, Verbesserungsvorschläge).
 ---
 
 **Stand:** 25.05.2026
-

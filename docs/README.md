@@ -8,6 +8,8 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   Architektur, Build/Release, CI/CD, Wartung und technische Details
 - **[DOKUMENTATION_CHECKLISTE.md](./DOKUMENTATION_CHECKLISTE.md)**  
   Qualitäts- und Freigabecheck für die Projektdokumentation
+- **[DOKUMENTATION_DIAGRAMME.md](./DOKUMENTATION_DIAGRAMME.md)**  
+  Übersicht der Mermaid-Quellen und erzeugten SVG-Diagramme
 - **[ANWENDERPRUEFUNG_CHECKLISTE.md](./ANWENDERPRUEFUNG_CHECKLISTE.md)**  
   Vollständige Praxis-Checkliste für EXE-Tests durch Kollegium und Teilnehmende
 - **[ANWENDERPRUEFUNG_KURZCHECKLISTE.md](./ANWENDERPRUEFUNG_KURZCHECKLISTE.md)**  

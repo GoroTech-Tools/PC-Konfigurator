@@ -13,6 +13,22 @@ Schriftfamilien-Auswahl aus dem Ordner `data/Fonts`.
 Die Anwendung konfiguriert automatisch Office-Programme, Windows-Einstellungen,
 Office-Vorlagen und benutzerspezifische Schriftarten.
 
+## Ablauf auf einen Blick
+
+```mermaid
+flowchart LR
+  A[PC-Konfigurator starten] --> B[System prüfen]
+  B --> C[Schriftart und Optionen wählen]
+  C --> D[Vollständige oder Office-Konfiguration starten]
+  D --> E[Registry und Office konfigurieren]
+  E --> F[Templates sicher anpassen]
+  F --> G[Ergebnis und Logs prüfen]
+```
+
+![Ablaufübersicht PC-Konfigurator](docs/diagramme/anwender_ablauf.svg)
+
+_Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
+
 ## Hauptfunktionen
 
 ### Template-Verarbeitung
@@ -201,6 +217,7 @@ Der Build-Prozess ergänzt automatisch:
 - `docs/DOKUMENTATION_ANWENDER.md` – Detaillierte Benutzeranleitung
 - `docs/DOKUMENTATION_TECHNIK.md` – Technische Dokumentation
 - `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
+- `docs/DOKUMENTATION_DIAGRAMME.md` – Mermaid-Quellen und SVG-Grafiken
 - `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` – Vollständige EXE-Testcheckliste
 - `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` – 5–10-Minuten-Kurzcheck
 - `docs/ANWENDERPRUEFUNG_AUSWERTUNG.md` – Auswertungsvorlage für Testfeedback
@@ -227,4 +244,3 @@ Prüfroutinen:
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
-

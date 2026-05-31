@@ -1,0 +1,6 @@
+flowchart LR
+    A[setup.ps1] --> B[build.ps1]
+    B --> C[PyInstaller Onefile]
+    C --> D[dist PC-Konfigurator-vX.Y.Z]
+    D --> E[release ZIP + Release Notes]
+    E --> F[Git Tag und GitHub Release]

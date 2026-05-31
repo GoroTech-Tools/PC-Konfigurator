@@ -1,0 +1,7 @@
+flowchart LR
+    A[GUI main.py] --> B[UI-Module src/ui]
+    A --> C[Laufzeit-Module src/runtime]
+    B --> D[Office und Registry-Konfiguration]
+    C --> E[Asset-Bundle und Laufzeitpfade]
+    D --> F[SafeTemplateProcessor]
+    F --> G[Word Excel Outlook Templates]

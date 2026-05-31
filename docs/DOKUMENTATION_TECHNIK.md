@@ -12,6 +12,20 @@
 Ziel ist eine robuste, portable Auslieferung als Windows-EXE (`onefile`) inklusive
 externer Assets aus `data/` (`data/Fonts`, `data/Datei-Vorlagen`) und Dokumentation.
 
+```mermaid
+flowchart LR
+   A[GUI main.py] --> B[UI-Module src/ui]
+   A --> C[Laufzeit-Module src/runtime]
+   B --> D[Office und Registry-Konfiguration]
+   C --> E[Asset-Bundle und Laufzeitpfade]
+   D --> F[SafeTemplateProcessor]
+   F --> G[Word Excel Outlook Templates]
+```
+
+![Systemüberblick Dokumentation Technik](diagramme/technik_systemuebersicht.svg)
+
+_Mermaid-Quelle: `docs/diagramme/technik_systemuebersicht.mmd`_
+
 ## 2. Wichtige Projektstruktur
 
 ```text
@@ -39,6 +53,20 @@ PC-Konfigurator/
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung
 4. Logging und Ergebnisanzeige in der Oberfläche
+
+```mermaid
+flowchart TD
+   A[Start Konfiguration] --> B[Parameter aus GUI]
+   B --> C[Registry und Office-Schritte]
+   C --> D[Template-Backup]
+   D --> E[Template-Anpassung]
+   E --> F[Template-Deployment]
+   F --> G[Statusausgabe und Logs]
+```
+
+![Datenfluss Dokumentation Technik](diagramme/technik_datenfluss.svg)
+
+_Mermaid-Quelle: `docs/diagramme/technik_datenfluss.mmd`_
 
 ## 4. Build-Pipeline (lokal)
 
@@ -75,6 +103,19 @@ Besonderheiten:
 - Release-Artefakte liegen in `release/`
 - Veröffentlichung über `src/publish_release.ps1`
 - GitHub-Release-Integration ist über Repo-Workflow möglich (je nach Projektstand)
+
+```mermaid
+flowchart LR
+   A[setup.ps1] --> B[build.ps1]
+   B --> C[PyInstaller Onefile]
+   C --> D[dist PC-Konfigurator-vX.Y.Z]
+   D --> E[release ZIP + Release Notes]
+   E --> F[Git Tag und GitHub Release]
+```
+
+![Build-Release-Pipeline](diagramme/release_pipeline.svg)
+
+_Mermaid-Quelle: `docs/diagramme/release_pipeline.mmd`_
 
 ## 6. Versionsmanagement
 
