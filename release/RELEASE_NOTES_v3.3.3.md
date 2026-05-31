@@ -15,6 +15,18 @@ Datum: 2026-05-31
 - Neue Diagrammquellen: `docs/diagramme/*.mmd`.
 - Neue Diagrammgrafiken: `docs/diagramme/*.svg`.
 
+## Nachträgliche Release-Pflege (31.05.2026, funktional)
+
+- Abgeschlossenen GUI-Migrationsplan nach `docs/_archive/` verschoben; Dokumentationsverweise angepasst.
+- `.gitignore` um `**/_archive/` ergänzt.
+- Windows-Registry-Defaults erweitert (Explorer + Startmenü inkl. Fallback-Strategie für build-/policy-abhängige Keys).
+- Technische Doku um Registry-Sonder-Smoke-Check ergänzt.
+- GUI-Regression-Checkliste aktualisiert und abgeschlossen.
+- Registry-Fenster erweitert: neuer Tab `Outlook-Einstellungen` mit Tabellen- und Detailansicht.
+- Start-Tab ergänzt: zusätzlicher Hinweistext im Bereich `Aktionen`.
+- GUI-Layout vereinheitlicht: konsistente Größen für Tabs und Schaltflächen.
+- Start-Tab-Buttons visuell angepasst (blassere Darstellung).
+
 ## Qualitätsstatus
 
 - Release-Build erfolgreich erzeugt.
