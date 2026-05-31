@@ -321,16 +321,30 @@ class OfficeConfigurator:
                 ("TaskbarDa", 0, "windows_hide_widgets"),
                 ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
+                ("Hidden", 1, "windows_explorer_show_hidden_items"),
             ]
             failed_values: list[str] = []
+
+            start_menu_settings = [
+                ("Start_TrackProgs", 1, "windows_startmenu_list_view"),
+                ("Start_ShowDocuments", 1, "windows_startmenu_show_documents"),
+                ("Start_ShowDownloads", 1, "windows_startmenu_show_downloads"),
+                ("Start_ShowNetwork", 1, "windows_startmenu_show_network"),
+                ("Start_ShowFileExplorer", 1, "windows_startmenu_show_file_explorer"),
+                ("Start_ShowSettings", 1, "windows_startmenu_show_settings"),
+                ("Start_ShowPowerButton", 1, "windows_startmenu_show_power"),
+            ]
 
             for name, value, explanation_key in windows_settings:
                 if not self._set_windows_value_with_fallback(key_path, name, value, explanation_key):
                     failed_values.append(name)
 
+            for name, value, explanation_key in start_menu_settings:
+                if not self._set_windows_value_with_fallback(key_path, name, value, explanation_key):
+                    failed_values.append(name)
+
             # Zusatzwerte ohne RegistryExplainer-Mapping
             extra_values = {
-                "Hidden": 1,         # Versteckte Dateien anzeigen
                 "ShowSuperHidden": 1 # Geschützte Systemdateien anzeigen
             }
             for name, value in extra_values.items():
@@ -380,7 +394,16 @@ class OfficeConfigurator:
 
                 # TaskbarDa (Widgets) ist optional und kann in einigen Umgebungen
                 # per Richtlinie gesperrt sein, ohne die Kernziele zu blockieren.
-                optional_values = {"TaskbarDa"}
+                optional_values = {
+                    "TaskbarDa",
+                    "Start_TrackProgs",
+                    "Start_ShowDocuments",
+                    "Start_ShowDownloads",
+                    "Start_ShowNetwork",
+                    "Start_ShowFileExplorer",
+                    "Start_ShowSettings",
+                    "Start_ShowPowerButton",
+                }
                 blocking_failed = [name for name in unique_failed if name not in optional_values]
 
                 if not blocking_failed:
