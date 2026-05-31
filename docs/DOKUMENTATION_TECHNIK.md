@@ -144,6 +144,22 @@ Single Source of Truth zur Build-Version:
 3. Konfiguration mit Standardwerten durchführen
 4. Logausgabe auf Fehler/Warnungen prüfen
 
+### Sonder-Smoke-Check (31.05.2026): Explorer-/Startmenü-Registry
+
+Durchgeführter Verifikationstest der neu ergänzten Windows-Registry-Werte
+(`Hidden`, `Start_Layout`, `Start_TrackProgs`, `Start_TrackDocs`,
+`Start_Show*`) auf dem Zielsystem:
+
+- Systemstand: `Windows 10 Pro`, Build `26100.8524`
+- Ergebnis Konfigurationslauf: `success = true`
+- Vorher/Nachher-Vergleich der relevanten Explorer-Keys: stabil auf Zielwerten (`1`)
+- Start-Zweig erkannt: `VisiblePlaces` ist vorhanden (build-spezifische Start-Ordnermatrix)
+- Hinweis: `TaskbarDa` meldete lokal Zugriff verweigert, ist jedoch als optionaler Wert
+   klassifiziert und blockiert den Lauf nicht
+
+Damit ist die neue Registry-Logik für „Ausgeblendete Elemente anzeigen“ sowie die
+Startmenü-Fallback-Werte technisch verifiziert.
+
 ### Regression
 
 - je eine Ausführung pro wichtiger Font-Familie
