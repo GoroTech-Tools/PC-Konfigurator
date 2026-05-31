@@ -26,6 +26,14 @@ def build_start_tab(
     """Erzeugt den AP1-ähnlichen Start-Tab und gibt relevante Widget-Referenzen zurück."""
     start_frame = tabview.tab("Start")
 
+    pale_button_style = {
+        "fg_color": ("#DCE3EA", "#4A5562"),
+        "hover_color": ("#CBD4DE", "#5A6674"),
+        "text_color": ("#253040", "#ECF1F7"),
+        "border_width": 1,
+        "border_color": ("#B8C3CF", "#6A7683"),
+    }
+
     ctk.CTkLabel(
         start_frame,
         text=f"PC-Konfigurator • v{version}",
@@ -43,8 +51,8 @@ def build_start_tab(
 
     config_actions = ctk.CTkFrame(config_box)
     config_actions.pack(fill="x", padx=12, pady=(0, 10))
-    ctk.CTkButton(config_actions, text="Konfiguration öffnen", command=on_open_config).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(config_actions, text="Registry-Info öffnen", command=on_open_registry_info).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(config_actions, text="Konfiguration öffnen", command=on_open_config, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(config_actions, text="Registry-Info öffnen", command=on_open_registry_info, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
 
     action_box = ctk.CTkFrame(start_frame)
     action_box.pack(fill="x", padx=12, pady=(0, 8))
@@ -64,10 +72,11 @@ def build_start_tab(
         command=on_run_full,
         font=ctk.CTkFont(weight="bold"),
         height=38,
+        **pale_button_style,
     ).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(action_row, text="Nur Office konfigurieren", command=on_run_office, height=38).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(action_row, text="System prüfen", command=on_check_system, height=38).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(action_row, text="Explorer neu starten", command=on_restart_explorer, height=38).pack(side="left", pady=6)
+    ctk.CTkButton(action_row, text="Nur Office konfigurieren", command=on_run_office, height=38, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(action_row, text="System prüfen", command=on_check_system, height=38, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(action_row, text="Explorer neu starten", command=on_restart_explorer, height=38, **pale_button_style).pack(side="left", pady=6)
 
     access_box = ctk.CTkFrame(start_frame)
     access_box.pack(fill="x", padx=12, pady=(0, 8))
@@ -75,15 +84,15 @@ def build_start_tab(
 
     folder_row = ctk.CTkFrame(access_box)
     folder_row.pack(fill="x", padx=12, pady=(0, 6))
-    ctk.CTkButton(folder_row, text="Datei-Vorlagen", command=on_open_folder_templates).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(folder_row, text="Fonts", command=on_open_folder_fonts).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(folder_row, text="Dokumentation", command=on_open_folder_docs).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(folder_row, text="Logs", command=on_open_folder_logs).pack(side="left", pady=6)
+    ctk.CTkButton(folder_row, text="Datei-Vorlagen", command=on_open_folder_templates, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(folder_row, text="Fonts", command=on_open_folder_fonts, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(folder_row, text="Dokumentation", command=on_open_folder_docs, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(folder_row, text="Logs", command=on_open_folder_logs, **pale_button_style).pack(side="left", pady=6)
 
     docs_row = ctk.CTkFrame(access_box)
     docs_row.pack(fill="x", padx=12, pady=(0, 10))
-    ctk.CTkButton(docs_row, text="Anwender-Doku", command=on_open_doc_user).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(docs_row, text="Technik-Doku", command=on_open_doc_tech).pack(side="left", padx=(0, 8), pady=6)
-    ctk.CTkButton(docs_row, text="Ausführung anzeigen", command=on_show_execution).pack(side="left", pady=6)
+    ctk.CTkButton(docs_row, text="Anwender-Doku", command=on_open_doc_user, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(docs_row, text="Technik-Doku", command=on_open_doc_tech, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
+    ctk.CTkButton(docs_row, text="Ausführung anzeigen", command=on_show_execution, **pale_button_style).pack(side="left", pady=6)
 
     return {}
