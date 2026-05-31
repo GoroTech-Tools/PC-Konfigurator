@@ -1,4 +1,4 @@
-# Build-Skript für PC-Konfigurator-Portable
+# Build-Skript für PC-Konfigurator
 # Erstellt automatisch das Build und führt Post-Build-Aktionen aus
 
 param(
@@ -54,7 +54,7 @@ function New-ReleaseNotesFile {
     }
 
     $content = @(
-        "# PC-Konfigurator-Portable v$Version",
+        "# PC-Konfigurator v$Version",
         "",
         "## Build-Informationen",
         "",
@@ -156,7 +156,7 @@ if (Test-Path $buildInfoPath) {
             }
             $dateForMd = (Get-Date).ToString('dd.MM.yyyy')
 
-            # README.md: **Version:** 3.2.5 (Build: 28.04.2026, Python 3.13.7)
+            # README.md: **Version:** 3.3.1 (Build: 23.05.2026, Python 3.13.7)
             if (Test-Path $readmePath) {
                 $readme = Get-Content $readmePath -Raw
                 $readme = [regex]::Replace($readme, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \(Build: [0-9]{2}\.[0-9]{2}\.[0-9]{4}, Python [0-9.]+\)', "**Version:** $newVersion (Build: $dateForMd, Python $pythonVersionShort)")
@@ -164,7 +164,7 @@ if (Test-Path $buildInfoPath) {
                 Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
-            # docs/DOKUMENTATION_ANWENDER.md: **Version:** 3.2.7 (29.04.2026)
+            # docs/DOKUMENTATION_ANWENDER.md: **Version:** 3.3.1 (25.05.2026)
             if (Test-Path $anwenderDocPath) {
                 $anwenderDoc = Get-Content $anwenderDocPath -Raw
                 $anwenderDoc = [regex]::Replace($anwenderDoc, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
@@ -180,7 +180,7 @@ if (Test-Path $buildInfoPath) {
             $buildInfoTxt = @()
             $buildInfoTxt += "# Build-Informationen"
             $buildInfoTxt += ""
-            $buildInfoTxt += "**Build:** PC-Konfigurator-Portable"
+            $buildInfoTxt += "**Build:** PC-Konfigurator"
             $buildInfoTxt += "**Datum:** $newDate"
             $buildInfoTxt += "**Version:** $newVersion (Release)"
             $buildInfoTxt += ""
@@ -192,7 +192,7 @@ if (Test-Path $buildInfoPath) {
             $buildInfoTxt += "- **Build-Datum:** $newDate"
             $buildInfoTxt += "- **Build-Version:** $newVersion"
             $buildInfoTxt += "- **Plattform:** $platform"
-            $buildInfoTxt += "- **EXE-Name:** PC-Konfigurator-Portable.exe"
+            $buildInfoTxt += "- **EXE-Name:** PC-Konfigurator.exe"
             $buildInfoTxt += ""
             Set-Content $buildInfoTxtPath $buildInfoTxt -Encoding UTF8
             Write-Host "src/BUILD-INFO.txt automatisch aktualisiert." -ForegroundColor Cyan
@@ -205,7 +205,7 @@ if (Test-Path $buildInfoPath) {
 }
 
 Write-Host "PC-Konfigurator Build-Prozess" -ForegroundColor Green
-Write-Host "=============================" -ForegroundColor Green
+Write-Host "============================" -ForegroundColor Green
 
 # Python-Interpreter bestimmen (unterstützt .venv ODER .venv-bfw)
 $pythonExe = $null
@@ -256,7 +256,7 @@ if (Test-Path dist) {
 }
 
 if ($NoVersionBump -and $newVersion) {
-    $reuseBuildDir = Join-Path $PSScriptRoot "dist/PC-Konfigurator-Portable-v$newVersion"
+    $reuseBuildDir = Join-Path $PSScriptRoot "dist/PC-Konfigurator-v$newVersion"
     if (Test-Path $reuseBuildDir) {
         Write-Host "Vorhandenen Build-Ordner für -NoVersionBump bereinigen: $reuseBuildDir" -ForegroundColor Yellow
         try {
@@ -280,7 +280,7 @@ Write-Host "`n1. PyInstaller Build wird erstellt..." -ForegroundColor Yellow
 $pyInstallerLog = Join-Path $PSScriptRoot 'build\last-pyinstaller.log'
 # Workpath außerhalb von OneDrive, damit der OneDrive-Sync die Intermediate-Dateien nicht sperrt
 $pyiWorkPath = Join-Path $env:TEMP 'pyi-build-pc-konfigurator'
-$specPath = Join-Path $PSScriptRoot 'src\PC-Konfigurator-Portable.spec'
+$specPath = Join-Path $PSScriptRoot 'src\PC-Konfigurator.spec'
 $specOffline = $false
 if (Test-Path $specPath) {
     try {
@@ -307,13 +307,13 @@ if ($Quiet) {
     if (-not $specOffline) {
         & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath *> $pyInstallerLog
     } else {
-        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript *> $pyInstallerLog
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript *> $pyInstallerLog
     }
 } else {
     if (-not $specOffline) {
         & $pythonExe -m PyInstaller $specPath --noconfirm --workpath $pyiWorkPath
     } else {
-        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator-Portable' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript
+        & $pythonExe -m PyInstaller --noconfirm --workpath $pyiWorkPath --specpath $pyiWorkPath --onefile --windowed --name 'PC-Konfigurator' --icon $iconPath --paths (Join-Path $PSScriptRoot 'src') --hidden-import pythoncom --collect-submodules win32com --add-data "$PSScriptRoot\data;data" --add-data "$PSScriptRoot\docs;docs" --add-data "$PSScriptRoot\src\pcconfig;pcconfig" --add-data "$PSScriptRoot\src\BUILD-INFO.txt;." --add-data "$PSScriptRoot\README.md;." --add-data "$PSScriptRoot\src\app_icon.ico;." $entryScript
     }
 }
 
@@ -331,13 +331,13 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "`n2. Onefile-Ausgabe wird vorbereitet..." -ForegroundColor Yellow
 
 $distRoot = Join-Path $PSScriptRoot 'dist'
-$builtExe = Join-Path $distRoot 'PC-Konfigurator-Portable.exe'
+$builtExe = Join-Path $distRoot 'PC-Konfigurator.exe'
 if (-not (Test-Path $builtExe)) {
     Write-Host "Build-EXE nicht gefunden: $builtExe" -ForegroundColor Red
     exit 1
 }
 
-$buildDirName = if ($newVersion) { "PC-Konfigurator-Portable-v$newVersion" } else { "PC-Konfigurator-Portable-vmanual" }
+$buildDirName = if ($newVersion) { "PC-Konfigurator-v$newVersion" } else { "PC-Konfigurator-vmanual" }
 $buildDirPath = Join-Path $distRoot $buildDirName
 
 if (Test-Path $buildDirPath) {
@@ -350,7 +350,7 @@ if (Test-Path $buildDirPath) {
 }
 
 New-Item -ItemType Directory -Path $buildDirPath -Force | Out-Null
-$targetExe = Join-Path $buildDirPath 'PC-Konfigurator-Portable.exe'
+$targetExe = Join-Path $buildDirPath 'PC-Konfigurator.exe'
 Move-Item -Path $builtExe -Destination $targetExe -Force
 
 # Zusätzliche Release-Artefakte neben der EXE bereitstellen
@@ -405,7 +405,7 @@ if ($buildDir) {
             Write-Host "EXE-Datei: $($exeFile.Name) (${sizeInMB} MB)" -ForegroundColor White
         }
     }
-    
+
     if ($Quiet) {
         Microsoft.PowerShell.Utility\Write-Host "Ausgabe: Onefile-EXE (keine externe _internal-Struktur)" -ForegroundColor White
     } else {
@@ -449,12 +449,12 @@ if ($buildDir) {
             New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
             Expand-Archive -Path $zipPath -DestinationPath $extractRoot -Force
 
-            $exeEntryCount = @(Get-ChildItem $extractRoot -Recurse -File -Filter 'PC-Konfigurator-Portable.exe' -ErrorAction SilentlyContinue).Count
+            $exeEntryCount = @(Get-ChildItem $extractRoot -Recurse -File -Filter 'PC-Konfigurator.exe' -ErrorAction SilentlyContinue).Count
             $docsEntryCount = @(Get-ChildItem (Join-Path $extractRoot 'docs') -Recurse -File -ErrorAction SilentlyContinue).Count
             $dataEntryCount = @(Get-ChildItem (Join-Path $extractRoot 'data') -Recurse -File -ErrorAction SilentlyContinue).Count
 
             if ($exeEntryCount -le 0) {
-                throw "ZIP-Sanity-Check fehlgeschlagen: EXE nicht gefunden." 
+                throw "ZIP-Sanity-Check fehlgeschlagen: EXE nicht gefunden."
             }
             if ($docsEntryCount -le 0) {
                 throw "ZIP-Sanity-Check fehlgeschlagen: docs-Verzeichnis nicht gefunden."
@@ -475,7 +475,7 @@ if ($buildDir) {
             } catch {
                 Write-Host "Warnung: Konnte temporären ZIP-Check-Ordner nicht entfernen: $_" -ForegroundColor Yellow
             }
-            
+
             if ($Quiet) {
                 Microsoft.PowerShell.Utility\Write-Host "ZIP-Release erstellt: $zipPath" -ForegroundColor Green
                 Microsoft.PowerShell.Utility\Write-Host "ZIP-Check: EXE=$exeEntryCount, docs=$docsEntryCount, data=$dataEntryCount" -ForegroundColor White

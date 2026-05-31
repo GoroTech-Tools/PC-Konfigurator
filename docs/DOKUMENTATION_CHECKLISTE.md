@@ -4,9 +4,9 @@ Diese Checkliste dient als Qualitäts- und Freigabegrundlage für die Projektdok
 
 ## Metadaten
 
-- Projektname: `PC-Konfigurator-Portable`
-- Version/Stand: `3.2.7`
-- Datum der Prüfung: `22.05.2026`
+- Projektname: `PC-Konfigurator`
+- Version/Stand: `3.3.1`
+- Datum der Prüfung: `31.05.2026`
 - Geprüft von: `____________________`
 
 ## A) Struktur und Ablage

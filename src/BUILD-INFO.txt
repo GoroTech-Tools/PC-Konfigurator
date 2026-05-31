@@ -1,6 +1,6 @@
 # Build-Informationen
 
-**Build:** PC-Konfigurator-Portable
+**Build:** PC-Konfigurator
 **Datum:** 2026-05-23T16:01:25
 **Version:** 3.3.1 (Release)
 
@@ -12,5 +12,5 @@
 - **Build-Datum:** 2026-05-23T16:01:25
 - **Build-Version:** 3.3.1
 - **Plattform:** win32
-- **EXE-Name:** PC-Konfigurator-Portable.exe
+- **EXE-Name:** PC-Konfigurator.exe
 

@@ -2,20 +2,20 @@
 
 ## 1. Architekturüberblick
 
-`PC-Konfigurator-Portable` besteht aus folgenden Schichten:
+`PC-Konfigurator` besteht aus folgenden Schichten:
 
 - **GUI/Orchestrierung** (`src/main.py`)
 - **Office-/System-Konfiguration** (mehrere Module im `src/`-Verzeichnis)
 - **Template-Schutz** (`SafeTemplateProcessor`, ZIP-Integritätsprüfung)
 - **Build/Release-Automation** (`setup.ps1`, `build.ps1`, `src/publish_release.ps1`)
 
-Ziel ist eine robuste, portable Auslieferung als Windows-EXE (`onedir`) inklusive
+Ziel ist eine robuste, portable Auslieferung als Windows-EXE (`onefile`) inklusive
 externer Assets aus `data/` (`data/Fonts`, `data/Datei-Vorlagen`) und Dokumentation.
 
 ## 2. Wichtige Projektstruktur
 
 ```text
-PC-Konfigurator-Portable/
+PC-Konfigurator/
 ├── src/                       # Python-Anwendung + Module
 ├── data/
 │   ├── Fonts/                 # Schriftarten (familienweise strukturiert)
@@ -24,7 +24,7 @@ PC-Konfigurator-Portable/
 ├── build.ps1                  # Build-Orchestrierung + Versionierung
 ├── setup.ps1                  # venv-Setup + Dependencies
 ├── src/publish_release.ps1    # Veröffentlichung von ZIP-Artefakten
-├── src/PC-Konfigurator-Portable.spec
+├── src/PC-Konfigurator.spec
 ├── README.md
 └── src/BUILD-INFO.txt
 ```

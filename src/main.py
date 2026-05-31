@@ -53,7 +53,7 @@ FONT_OPTIONS: dict[str, str] = {
     "Raleway":            "Raleway",
 }
 
-APP_NAME = "PC-Konfigurator-Portable"
+APP_NAME = "PC-Konfigurator"
 RUNTIME_FOLDERS = [
     "data",
     "docs",

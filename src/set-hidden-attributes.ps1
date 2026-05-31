@@ -1,4 +1,4 @@
-# Post-Build-Skript für PC-Konfigurator-Portable
+# Post-Build-Skript für PC-Konfigurator
 # Setzt versteckte Attribute für technische Ordner
 
 param(

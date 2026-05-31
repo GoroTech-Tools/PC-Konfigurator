@@ -1,13 +1,13 @@
-# Migrationsplan: GUI-Angleichung an AP1-Konfigurator-Portable
+# Migrationsplan: GUI-Angleichung an AP1-Konfigurator
 
 Stand: 2026-05-23
-Projekt: `PC-Konfigurator-Portable`
-Referenz: `AP1-Konfigurator-Portable/src/main.py`
+Projekt: `PC-Konfigurator`
+Referenz: `AP1-Konfigurator/src/main.py`
 
 ## Ziel
 
-Die GUI von `PC-Konfigurator-Portable` soll sich in **Struktur, Bedienlogik und visueller Sprache** an
-`AP1-Konfigurator-Portable` anlehnen, ohne fachliche Funktionen zu verlieren.
+Die GUI von `PC-Konfigurator` soll sich in **Struktur, Bedienlogik und visueller Sprache** an
+`AP1-Konfigurator` anlehnen, ohne fachliche Funktionen zu verlieren.
 
 ## Ist-Analyse (Kurzfassung)
 

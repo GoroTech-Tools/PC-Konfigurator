@@ -28,7 +28,7 @@ def build_start_tab(
 
     ctk.CTkLabel(
         start_frame,
-        text=f"PC-Konfigurator-Portable • v{version}",
+        text=f"PC-Konfigurator • v{version}",
         font=ctk.CTkFont(size=20, weight="bold"),
     ).pack(anchor="w", padx=16, pady=(14, 8))
 

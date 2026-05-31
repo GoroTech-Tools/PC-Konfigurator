@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 # Zielverzeichnis (Build-Ordner)
-build_dir = Path(__file__).parent.parent / 'dist' / 'PC-Konfigurator-Portable-v2.0.26'
+build_dir = Path(__file__).parent.parent / 'dist' / 'PC-Konfigurator-v2.0.26'
 internal_dir = build_dir / '_internal'
 
 # Liste der zu kopierenden Ordner/Dateien

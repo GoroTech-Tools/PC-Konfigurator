@@ -6,9 +6,12 @@
 
 ## Schnellstart
 
+Der `PC-Konfigurator` wird als portable Windows-Anwendung ausgeliefert und kann
+ohne klassische Installation direkt gestartet werden.
+
 ### 1. Programm starten
 
-- Doppelklick auf `PC-Konfigurator-Portable.exe`
+- Doppelklick auf `PC-Konfigurator.exe`
 - Die Anwendung öffnet sich mit moderner Oberfläche und mehreren Tabs
 
 ### 2. Konfiguration auswählen

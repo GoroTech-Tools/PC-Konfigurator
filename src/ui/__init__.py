@@ -1,1 +1,1 @@
-"""UI-Helfermodule für den PC-Konfigurator-Portable."""
+"""UI-Helfermodule für den PC-Konfigurator."""

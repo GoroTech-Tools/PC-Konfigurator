@@ -1,4 +1,4 @@
-# Dokumentation – PC-Konfigurator-Portable
+# Dokumentation – PC-Konfigurator
 
 Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 
@@ -9,7 +9,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 - **[DOKUMENTATION_CHECKLISTE.md](./DOKUMENTATION_CHECKLISTE.md)**  
   Qualitäts- und Freigabecheck für die Projektdokumentation
 - **[Migrationsplan_GUI_Angleichung_AP1.md](./Migrationsplan_GUI_Angleichung_AP1.md)**  
-  Konkreter Schritt-für-Schritt-Plan zur GUI-Angleichung an den AP1-Konfigurator-Portable
+  Konkreter Schritt-für-Schritt-Plan zur GUI-Angleichung an den AP1-Konfigurator
 
 ## Empfohlener Einstieg
 
@@ -18,7 +18,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 
 ## Projektkontext
 
-`PC-Konfigurator-Portable` ist eine portable Windows-Anwendung zur automatisierten
+`PC-Konfigurator` ist eine portable Windows-Anwendung zur automatisierten
 Konfiguration von Office, Windows-Einstellungen, Vorlagen und Schriftarten.
 
 - GUI/Anwendungslogik: `src/main.py`

@@ -1,4 +1,4 @@
-# PC-Konfigurator-Portable
+# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
@@ -6,7 +6,7 @@ Komplette portable Anwendung für Windows-PC-Konfiguration.
 
 ## Übersicht
 
-Dies ist die portable Version des PC-Konfigurators mit erweiterter
+Dies ist der PC-Konfigurator als portable Windows-Anwendung mit erweiterter
 Windows-Systemkonfiguration, sicherer Template-Verarbeitung und dynamischer
 Schriftfamilien-Auswahl aus dem Ordner `data/Fonts`.
 
@@ -55,15 +55,15 @@ Office-Vorlagen und benutzerspezifische Schriftarten.
 ## Projektstruktur
 
 ```text
-PC-Konfigurator-Portable-v3.2.5/
-├── PC-Konfigurator-Portable.exe
+PC-Konfigurator-v3.3.1/
+├── PC-Konfigurator.exe
 ├── README.md
+├── BUILD-INFO.txt
 ├── docs/
 │   ├── README.md
 │   ├── DOKUMENTATION_ANWENDER.md
 │   ├── DOKUMENTATION_TECHNIK.md
 │   └── DOKUMENTATION_CHECKLISTE.md
-├── src/BUILD-INFO.txt
 ├── data/
 │   ├── Datei-Vorlagen/
 │   │   └── Sonstiges/Standards/
@@ -75,8 +75,7 @@ PC-Konfigurator-Portable-v3.2.5/
 │       ├── Futura/
 │       ├── Montserrat/
 │       └── ...
-├── logs/          # versteckt
-└── _internal/     # versteckt
+└── logs/          # wird bei Bedarf erstellt
 ```
 
 ## Template-Verarbeitung im Detail
@@ -100,7 +99,7 @@ PC-Konfigurator-Portable-v3.2.5/
 ### Schnellstart
 
 1. Keine Installation erforderlich.
-2. Doppelklick auf `PC-Konfigurator-Portable.exe`.
+2. Doppelklick auf `PC-Konfigurator.exe`.
 3. Gewünschte Schriftfamilie auswählen.
 4. `Vollständige Konfiguration starten` für die komplette Einrichtung wählen.
 5. Templates werden automatisch sicher angepasst und kopiert.
@@ -109,24 +108,21 @@ PC-Konfigurator-Portable-v3.2.5/
 
 ```bash
 # Python-Umgebung einrichten
-.\src\setup.ps1
-
-# alternativ direkt per pip
-pip install -r src/requirements.txt
+.\setup.ps1
 
 # Anwendung aus Source ausführen
 python src/main.py
 
 # Neues Build erstellen
-.\src\build.ps1 -NoVersionBump
+.\build.ps1 -NoVersionBump
 ```
 
-Der Post-Build ergänzt automatisch:
+Der Build-Prozess ergänzt automatisch:
 
 - Fonts
 - Templates
 - Dokumentation
-- Hidden-Attribute für `_internal` und `logs`
+- Hidden-Attribute für `logs`
 
 ## Technische Details
 

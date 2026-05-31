@@ -124,7 +124,7 @@ def copy_external_directories():
         dist_dir = script_dir / "dist"
         
         # Finde den neuesten Build-Ordner (enthält Version im Namen)
-        build_folders = [f for f in dist_dir.iterdir() if f.is_dir() and "PC-Konfigurator-Portable-v" in f.name]
+        build_folders = [f for f in dist_dir.iterdir() if f.is_dir() and "PC-Konfigurator-v" in f.name]
         if not build_folders:
             print("ERROR: Kein Build-Ordner gefunden!")
             return False

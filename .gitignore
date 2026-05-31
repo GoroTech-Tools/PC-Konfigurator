@@ -10,6 +10,7 @@ dist/
 logs/
 release/*.zip
 *.spec
+!src/PC-Konfigurator.spec
 
 # IDE
 .vscode/
