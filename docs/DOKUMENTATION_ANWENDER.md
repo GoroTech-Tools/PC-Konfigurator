@@ -123,7 +123,17 @@ Ja, insbesondere bei Templates über die Backup-/Restore-Mechanik.
 **Funktioniert es auch ohne Office?**  
 Ja, die Schriftart-Installation und Windows-Einstellungen funktionieren unabhängig.
 
+## Anwenderprüfung der EXE (Feedback erwünscht)
+
+Für die aktuell laufende Praxisprüfung der EXE-Variante bitte folgende Checklisten
+verwenden:
+
+- `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` (vollständige Testdurchläufe)
+- `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` (Schnelltest 5–10 Minuten)
+
+Bitte Rückmeldungen strukturiert dokumentieren (Umgebung, Schritte, Ergebnis,
+Fehlerbild, Verbesserungsvorschläge).
+
 ---
 
 **Stand:** 25.05.2026
-

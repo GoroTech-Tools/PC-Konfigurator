@@ -8,6 +8,10 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   Architektur, Build/Release, CI/CD, Wartung und technische Details
 - **[DOKUMENTATION_CHECKLISTE.md](./DOKUMENTATION_CHECKLISTE.md)**  
   Qualitäts- und Freigabecheck für die Projektdokumentation
+- **[ANWENDERPRUEFUNG_CHECKLISTE.md](./ANWENDERPRUEFUNG_CHECKLISTE.md)**  
+  Vollständige Praxis-Checkliste für EXE-Tests durch Kollegium und Teilnehmende
+- **[ANWENDERPRUEFUNG_KURZCHECKLISTE.md](./ANWENDERPRUEFUNG_KURZCHECKLISTE.md)**  
+  Kompakter 5–10-Minuten-Schnellcheck für die EXE-Variante
 - **[Migrationsplan_GUI_Angleichung_AP1.md](./Migrationsplan_GUI_Angleichung_AP1.md)**  
   Konkreter Schritt-für-Schritt-Plan zur GUI-Angleichung an den AP1-Konfigurator
 

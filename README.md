@@ -201,6 +201,8 @@ Der Build-Prozess ergänzt automatisch:
 - `docs/DOKUMENTATION_ANWENDER.md` – Detaillierte Benutzeranleitung
 - `docs/DOKUMENTATION_TECHNIK.md` – Technische Dokumentation
 - `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
+- `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` – Vollständige EXE-Testcheckliste
+- `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` – 5–10-Minuten-Kurzcheck
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
 
@@ -219,4 +221,3 @@ für die Beseitigung von MD-Fehlern bei Doku-Änderungen.
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
-
