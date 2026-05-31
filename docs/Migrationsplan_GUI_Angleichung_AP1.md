@@ -1,6 +1,6 @@
 # Migrationsplan: GUI-Angleichung an AP1-Konfigurator
 
-Stand: 2026-05-23
+Stand: 2026-05-31
 Projekt: `PC-Konfigurator`
 Referenz: `AP1-Konfigurator/src/main.py`
 
@@ -25,10 +25,10 @@ Die GUI von `PC-Konfigurator` soll sich in **Struktur, Bedienlogik und visueller
 
 ### PC aktuell (`customtkinter`)
 
-- Tab-basiertes UI (`Übersicht`, `Konfiguration`, `Registry-Info`, `Ausführung`, `Logs`)
+- Tab-basiertes UI mit AP1-orientiertem Startbereich (`Übersicht`, `Start`, `Vorlagen/Ablage`, `Registry`, `Ausführung`, `Logs`)
 - Sehr großer Funktionsumfang in `src/main.py`
 - Viele Dialoge/Unterfenster (z. B. Registry-Details)
-- Kein durchgängiger einheitlicher Fortschritts-Workflow über alle Aktionen
+- Fortschritts-Workflow über `ExecutionRunController` vereinheitlicht
 
 ## Leitplanken
 
@@ -51,46 +51,75 @@ Die GUI von `PC-Konfigurator` soll sich in **Struktur, Bedienlogik und visueller
 
 ## Phasenplan (inkrementell)
 
+## Status 2026-05-31
+
+Bereits umgesetzt:
+
+- AP1-ähnlicher Start-Tab mit zentralen Aktionen und Schnellzugriffen
+- Einheitlicher Ausführungs-/Fortschrittsfluss via `ExecutionRunController`
+- Persistente GUI-Einstellungen via `GuiStateStore`
+- UI in Teilmodule aufgeteilt (`start_tab`, `execution_tab`, `execution_flow`, `overview_tab`, `configuration_tab`, `registry_info_tab`, `layout`, `registry_dialogs`, `template_dialogs`, `tools_dialogs`, `logs_panel`, `system_status`, `explorer_actions`, `office_configuration_flow`, `status_output`, `runtime.runtime_bundle`, `file_actions`)
+- Template-Status-Rendering zusätzlich ausgelagert nach `ui/template_status.py`
+- Regression-Checkliste ergänzt: `docs/GUI_REGRESSION_CHECKLISTE.md`
+
+Noch offen:
+
+- Optionaler Theme-/Appearance-Abgleich mit AP1
+
+## Abschlussstand (31.05.2026)
+
+Die geplante GUI-Angleichung wurde strukturell umgesetzt. Der Kern der Migration ist
+abgeschlossen:
+
+- AP1-ähnlicher Bedienfluss ist implementiert
+- Fortschritts- und Run-Workflow ist vereinheitlicht
+- `src/main.py` wurde in fachlich getrennte Module entkoppelt
+
+Offen bleiben bewusst nur:
+
+- optionaler Theme-/Appearance-Abgleich (UX-Feinschliff)
+- abschließende manuelle Smoke-Checks (siehe Checkliste unten)
+
 ## Phase 1 – UI-Rahmen harmonisieren (ohne Funktionsänderung)
 
-- [ ] Neues Hauptlayout in `src/main.py` vorbereiten:
-  - [ ] Header (Name + Version)
-  - [ ] Konfigurationsbereich (kompakt)
-  - [ ] Aktionsbereich (2–4 Hauptbuttons)
-  - [ ] Fortschrittsbereich (Status + Log)
-- [ ] Tab-Logik intern beibehalten, aber visuell in AP1-ähnliche Sektionen überführen
-- [ ] Einheitliche Benennungen und Button-Hierarchie einführen
+- [x] Neues Hauptlayout in `src/main.py` vorbereiten:
+  - [x] Header (Name + Version)
+  - [x] Konfigurationsbereich (kompakt)
+  - [x] Aktionsbereich (2–4 Hauptbuttons)
+  - [x] Fortschrittsbereich (Status + Log)
+- [x] Tab-Logik intern beibehalten, aber visuell in AP1-ähnliche Sektionen überführen
+- [x] Einheitliche Benennungen und Button-Hierarchie einführen
 
 **Akzeptanzkriterium:** Nutzer erkennt auf den ersten Blick denselben Bedienfluss wie in AP1.
 
 ## Phase 2 – Fortschritts- und Run-Workflow vereinheitlichen
 
-- [ ] Zentralen Run-Controller ergänzen (Start/Busy/Done/Failed)
-- [ ] Konsistente Statusarten (`info`, `success`, `warning`, `error`)
-- [ ] Schritt-Checkliste analog AP1 für:
-  - [ ] Systemcheck
-  - [ ] Font-Installation
-  - [ ] Office/Registry-Konfiguration
-  - [ ] Template-Verarbeitung
-  - [ ] Abschluss
-- [ ] Live-Protokoll in einem einheitlichen Widget bündeln
+- [x] Zentralen Run-Controller ergänzen (Start/Busy/Done/Failed)
+- [x] Konsistente Statusarten (`info`, `success`, `warning`, `error`)
+- [x] Schritt-Checkliste analog AP1 für:
+  - [x] Systemcheck
+  - [x] Font-Installation
+  - [x] Office/Registry-Konfiguration
+  - [x] Template-Verarbeitung
+  - [x] Abschluss
+- [x] Live-Protokoll in einem einheitlichen Widget bündeln
 
 **Akzeptanzkriterium:** Jede Ausführung zeigt nachvollziehbaren Fortschritt statt nur verstreuter Textausgaben.
 
 ## Phase 3 – Zustands- und UX-Polish
 
-- [ ] GUI-State-Datei einführen (z. B. Theme, gewählte Fonts, Zielpfad)
-- [ ] Konsistente Fehlerdialoge + Erfolgsmeldungen
-- [ ] „Letztes Ergebnis“-Panel inkl. „Log öffnen“
+- [x] GUI-State-Datei einführen (z. B. Theme, gewählte Fonts, Zielpfad)
+- [x] Konsistente Fehlerdialoge + Erfolgsmeldungen
+- [x] „Letztes Ergebnis“-Panel inkl. „Log öffnen“
 - [ ] Optional: Hell/Dunkel-Umschaltung wie AP1
 
 **Akzeptanzkriterium:** Wiederholte Nutzung wirkt stabil, vorhersehbar und schnell.
 
 ## Phase 4 – Aufräumen & Entkoppeln
 
-- [ ] Große `src/main.py` in UI-Teilmodule aufteilen (z. B. `ui/layout.py`, `ui/run_controller.py`)
-- [ ] Registry-/Template-Dialoge sauber kapseln
-- [ ] Regression-Checklist für GUI aufnehmen
+- [x] Große `src/main.py` weiter in UI-Teilmodule aufteilen (u. a. `ui/layout.py`, `ui/run_controller.py`)
+- [x] Registry-/Template-Dialoge sauber kapseln
+- [x] Regression-Checklist für GUI aufnehmen
 
 **Akzeptanzkriterium:** Wartbarkeit verbessert, weniger Merge-Konflikte, klarere Zuständigkeiten.
 

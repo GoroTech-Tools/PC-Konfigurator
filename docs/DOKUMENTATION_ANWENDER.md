@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.2 (31.05.2026)
+**Version:** 3.3.3 (31.05.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -138,3 +138,4 @@ Fehlerbild, Verbesserungsvorschläge).
 ---
 
 **Stand:** 25.05.2026
+
