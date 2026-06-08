@@ -7,7 +7,7 @@ param(
     [switch]$SkipMarkdownLint,
     [switch]$Help,
     [switch]$Quiet,
-    [ValidateSet('.venv', '.venv-bfw')]
+    [ValidateSet('.venv')]
     [string]$PreferredVenv
 )
 
@@ -24,8 +24,8 @@ function Show-Usage {
     Microsoft.PowerShell.Utility\Write-Host "  -SkipZip       : ZIP-Erstellung im release-Ordner überspringen" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -SkipMarkdownLint : Markdownlint-Prüfung vor dem Build überspringen" -ForegroundColor DarkGray
     Microsoft.PowerShell.Utility\Write-Host "  -Quiet         : Kompakte Ausgabe (nur Fehler + Kurzfazit)" -ForegroundColor DarkGray
-    Microsoft.PowerShell.Utility\Write-Host "  -PreferredVenv : Bevorzugte venv wählen (.venv oder .venv-bfw)" -ForegroundColor DarkGray
-    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv-bfw -Quiet | .\build.ps1 -PreferredVenv .venv | .\build.ps1 -SkipMarkdownLint" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  -PreferredVenv : Bevorzugte venv wählen (.venv)" -ForegroundColor DarkGray
+    Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv -Quiet | .\build.ps1 -PreferredVenv .venv | .\build.ps1 -SkipMarkdownLint" -ForegroundColor DarkGray
 }
 
 function New-ReleaseNotesFile {
@@ -275,33 +275,18 @@ if (Test-Path $buildInfoPath) {
 Write-Host "PC-Konfigurator Build-Prozess" -ForegroundColor Green
 Write-Host "============================" -ForegroundColor Green
 
-# Python-Interpreter bestimmen (unterstützt .venv ODER .venv-bfw)
+# Python-Interpreter bestimmen (unterstützt .venv)
 $pythonExe = $null
 $venvPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
-$venvBfwPython = Join-Path $PSScriptRoot '.venv-bfw\Scripts\python.exe'
 
-if ($PreferredVenv -eq '.venv-bfw') {
-    if (Test-Path $venvBfwPython) {
-        $pythonExe = $venvBfwPython
-        Write-Host "Verwende Python aus .venv-bfw (explizit gewählt)" -ForegroundColor Cyan
-    } elseif (Test-Path $venvPython) {
-        $pythonExe = $venvPython
-        Write-Host ".venv-bfw nicht gefunden, fallback auf .venv" -ForegroundColor Yellow
-    }
-} elseif ($PreferredVenv -eq '.venv') {
+if ($PreferredVenv -eq '.venv') {
     if (Test-Path $venvPython) {
         $pythonExe = $venvPython
         Write-Host "Verwende Python aus .venv (explizit gewählt)" -ForegroundColor Cyan
-    } elseif (Test-Path $venvBfwPython) {
-        $pythonExe = $venvBfwPython
-        Write-Host ".venv nicht gefunden, fallback auf .venv-bfw" -ForegroundColor Yellow
     }
 } elseif (Test-Path $venvPython) {
     $pythonExe = $venvPython
     Write-Host "Verwende Python aus .venv" -ForegroundColor Cyan
-} elseif (Test-Path $venvBfwPython) {
-    $pythonExe = $venvBfwPython
-    Write-Host "Verwende Python aus .venv-bfw" -ForegroundColor Cyan
 } else {
     $pythonExe = 'py'
     Write-Host "Keine lokale venv gefunden, verwende py-Launcher" -ForegroundColor Yellow

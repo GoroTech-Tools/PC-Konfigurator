@@ -86,7 +86,7 @@ _Mermaid-Quelle: `docs/diagramme/technik_datenfluss.mmd`_
 
 ### 4.1 Setup
 
-`setup.ps1` erstellt/aktualisiert virtuelle Umgebungen (`.venv` oder `.venv-bfw`) und installiert Abhängigkeiten.
+`setup.ps1` erstellt/aktualisiert die virtuelle Umgebung (`.venv`) und installiert Abhängigkeiten.
 
 ### 4.2 Build (`build.ps1`)
 
