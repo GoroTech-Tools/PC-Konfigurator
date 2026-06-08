@@ -133,6 +133,26 @@ class RegistryExplainer:
                 category="Word - Autokorrektur",
                 office_versions=["15.0", "16.0"],
             ),
+            "word_capitalize_table_cells": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="AutoFormatCapitalizeTableCells",
+                value_type="REG_DWORD",
+                default_value=0,
+                description="Beginnt Tabellenzeilen automatisch mit einem Großbuchstaben.",
+                impact="Wenn deaktiviert, korrigiert Word die Großschreibung in Tabellenzellen nicht automatisch.",
+                category="Word - Autokorrektur",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_picture_insert_inline": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="PictureInsertLayout",
+                value_type="REG_DWORD",
+                default_value=1,
+                description="Standard-Layout für eingefügte Bilder.",
+                impact="1 bedeutet 'Mit Text in Zeile' (Inline) beim Einfügen von Bildern.",
+                category="Word - Bilder",
+                office_versions=["15.0", "16.0"],
+            ),
             "word_smart_quotes": RegistrySettingInfo(
                 key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
                 value_name="AutoFormatAsYouTypeReplaceQuotes",
@@ -141,6 +161,31 @@ class RegistryExplainer:
                 description="Gerade Anführungszeichen durch typografische ersetzen.",
                 impact="Wenn aktiviert, werden \" und ' in typografische Anführungszeichen umgewandelt.",
                 category="Word - Autokorrektur",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_paste_other_app": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="PasteFormattingOtherApp",
+                value_type="REG_DWORD",
+                default_value=2,
+                description="Standard-Einfügeverhalten für Inhalte aus anderen Anwendungen.",
+                impact="Steuert, ob Formatierungen beim Einfügen aus externen Quellen übernommen werden.",
+                category="Word - Einfügen",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_paste_text_only_keep_lists": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="PasteFormattingTwoDocumentsNoStyles",
+                value_type="REG_DWORD",
+                default_value=1,
+                description=(
+                    "Einfügeverhalten bei 'Nur den Text übernehmen' zwischen Dokumenten ohne Styles."
+                ),
+                impact=(
+                    "Bei 1 bleibt die Einfügung textnah; Aufzählungen/Nummerierungen werden nicht automatisch "
+                    "als volle Quellformatierung übernommen."
+                ),
+                category="Word - Einfügen",
                 office_versions=["15.0", "16.0"],
             ),
             "word_developer_tools": RegistrySettingInfo(
@@ -329,6 +374,16 @@ class RegistryExplainer:
                 description="Intervall für AutoWiederherstellen in Minuten.",
                 impact="Verringert Datenverlust bei Abstürzen.",
                 category="Excel - Autowiederherstellen",
+                office_versions=["15.0", "16.0"],
+            ),
+            "excel_correct_sentence_cap": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Excel\\Options",
+                value_name="CorrectSentenceCap",
+                value_type="REG_DWORD",
+                default_value=0,
+                description="Beginnt Sätze in Excel-Eingaben automatisch mit Großbuchstaben.",
+                impact="Wenn deaktiviert, bleibt die automatische Großschreibung in Excel aus.",
+                category="Excel - Autokorrektur",
                 office_versions=["15.0", "16.0"],
             ),
             "excel_default_font": RegistrySettingInfo(

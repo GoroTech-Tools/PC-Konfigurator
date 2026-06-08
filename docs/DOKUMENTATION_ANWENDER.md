@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.3 (31.05.2026)
+**Version:** 3.3.5 (08.06.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -68,6 +68,11 @@ Im Bereich „Individuelle Einstellungen“ stehen zur Verfügung:
   - Automatische Aufzählung
   - Automatische Nummerierung
   - Ersten Buchstaben groß schreiben
+
+**Aktueller Status:**
+
+- Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und „Bilder einfügen" = „Mit Text in Zeile" sind im `PC-Konfigurator` inzwischen als Standardkonfiguration hinterlegt.
+- Der praktische Nachweis auf einem echten Testclient wird weiterhin in `docs/OFFENE_OFFICE_PUNKTE.md` dokumentiert.
 
 **Excel-Optimierungen:**
 
@@ -153,3 +158,4 @@ Fehlerbild, Verbesserungsvorschläge).
 ---
 
 **Stand:** 25.05.2026
+

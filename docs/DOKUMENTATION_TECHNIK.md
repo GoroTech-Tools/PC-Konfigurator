@@ -54,6 +54,20 @@ PC-Konfigurator/
    - Font-Installation und Zuweisung
 4. Logging und Ergebnisanzeige in der Oberfläche
 
+### Aktueller Status: offene Word-Detailpunkte
+
+Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und
+„Bilder einfügen" = „Mit Text in Zeile" sind inzwischen als Standardwerte in
+der Office-Registry-Konfiguration des `PC-Konfigurator` hinterlegt.
+
+Der technische Prüfpfad dafür ist:
+
+- `tools/check-office-registry.ps1`
+- `docs/OFFENE_OFFICE_PUNKTE.md`
+
+Der fachliche Praxisnachweis auf einem realen Testclient bleibt als separate
+Abnahmeaufgabe bestehen.
+
 ```mermaid
 flowchart TD
    A[Start Konfiguration] --> B[Parameter aus GUI]

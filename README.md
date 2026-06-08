@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.3 (Build: 31.05.2026, Python 3.13.7)
+**Version:** 3.3.5 (Build: 08.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -244,3 +244,4 @@ Prüfroutinen:
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
+

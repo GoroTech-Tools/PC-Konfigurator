@@ -52,6 +52,14 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Lauf endet ohne Absturz/Freeze
 - [ ] Ergebnisstatus und Logs passen zusammen
 
+### D1) Office-Detailcheck (Registry + GUI)
+
+- [ ] `tools/check-office-registry.ps1` ausgeführt
+- [ ] Registry-Sollwerte für Word/Excel plausibel (`IsCompliant = True`) geprüft
+- [ ] Offener Punkt in Word geprüft: „Jede Tabellenzeile mit einem Großbuchstaben beginnen" deaktiviert
+- [ ] Offener Punkt in Word geprüft: „Bilder einfügen = Mit Text in Zeile"
+- [ ] Auffälligkeiten inkl. Office-Version im Feedback dokumentiert
+
 ## E) Template- und Font-Handling
 
 - [ ] `Normal.dotm`, `Mappe.xltx`, `NormalEmail.dotm` werden verarbeitet

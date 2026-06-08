@@ -107,6 +107,11 @@ class OfficeConfigurator:
                 "CorrectSentenceCaps": (0, "word_correct_sentence_caps"),
                 "AutoFormatAsYouTypeApplyBulletedLists": (0, "word_auto_bullets"),
                 "AutoFormatAsYouTypeApplyNumberedLists": (0, "word_auto_numbering"),
+                "AutoFormatCapitalizeTableCells": (0, "word_capitalize_table_cells"),
+                "PictureInsertLayout": (1, "word_picture_insert_inline"),
+                "AutoFormatAsYouTypeReplaceQuotes": (1, "word_smart_quotes"),
+                "PasteFormattingOtherApp": (2, "word_paste_other_app"),
+                "PasteFormattingTwoDocumentsNoStyles": (1, "word_paste_text_only_keep_lists"),
                 # Schriftart-Anzeige und Ersetzungen:
                 "Font": (font_name, "word_font_override"),
                 "Fontsubstitutes": ("", "word_font_substitutes"),
@@ -161,6 +166,9 @@ class OfficeConfigurator:
                 "PersonalTemplates": (self._get_datei_vorlagen_path(target_path), "excel_personal_templates"),
                 # Alternative Startup-Verzeichnis für Templates:
                 "AltStartupPath": (self._get_datei_vorlagen_path(target_path), "excel_xlstart_info"),
+                # Autokorrektur / AutoWiederherstellen:
+                "CorrectSentenceCap": (0, "excel_correct_sentence_cap"),
+                "AutoSaveInterval": (5, "excel_autosave_interval"),
             }
             
             # Schriftart-Einstellungen
