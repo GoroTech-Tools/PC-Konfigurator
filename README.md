@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.5 (Build: 08.06.2026, Python 3.13.7)
+**Version:** 3.3.6 (Build: 08.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -228,6 +228,7 @@ Der Build-Prozess ergänzt automatisch:
 
 Für Markdown-Dateien gelten im Repository verbindlich:
 
+- **MD012**: Keine mehrfachen Leerzeilen hintereinander.
 - **MD022**: Vor und nach Überschriften eine Leerzeile.
 - **MD032**: Vor und nach Listen eine Leerzeile.
 
