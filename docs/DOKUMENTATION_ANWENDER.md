@@ -158,4 +158,3 @@ Fehlerbild, Verbesserungsvorschläge).
 ---
 
 **Stand:** 25.05.2026
-

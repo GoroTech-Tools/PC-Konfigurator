@@ -26,6 +26,9 @@ class PictureCandidateInfo {
 
 class OfficeRegistrySummary {
     [string]$Timestamp
+    [string]$CurrentUser
+    [string]$CurrentUserSid
+    [bool]$IsElevated
     [string[]]$OfficeVersionsChecked
     [int]$TotalChecks
     [int]$CompliantChecks
@@ -33,6 +36,18 @@ class OfficeRegistrySummary {
     [RegistryValueInfo[]]$Checks
     [PictureCandidateInfo[]]$PictureCandidateValues
     [string[]]$Notes
+}
+
+function Get-ExecutionContextInfo {
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+    $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    return [pscustomobject]@{
+        CurrentUser = $identity.Name
+        CurrentUserSid = $identity.User.Value
+        IsElevated = [bool]$isElevated
+    }
 }
 
 function Get-RegistryValueInfo {
@@ -117,13 +132,16 @@ $checks = @()
 $pictureCandidates = @()
 
 foreach ($version in $OfficeVersions) {
-    $wordOptionsPath = "Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Office\\$version\\Word\\Options"
-    $excelOptionsPath = "Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Office\\$version\\Excel\\Options"
+    $wordOptionsPath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office\$version\Word\Options"
+    $excelOptionsPath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office\$version\Excel\Options"
+    $outlookOptionsPath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office\$version\Outlook\Options"
 
     # Word: aktive Sollwerte aus PC-Konfigurator + offene Punkte
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'CorrectSentenceCaps' -Expected 0 -Group "Word"
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatAsYouTypeApplyBulletedLists' -Expected 0 -Group "Word"
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatAsYouTypeApplyNumberedLists' -Expected 0 -Group "Word"
+    $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatApplyBulletedLists' -Expected 0 -Group "Word"
+    $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatApplyNumberedLists' -Expected 0 -Group "Word"
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatCapitalizeTableCells' -Expected 0 -Group "Word"
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'PictureInsertLayout' -Expected 1 -Group "Word"
     $checks += Get-RegistryValueInfo -Path $wordOptionsPath -Name 'AutoFormatAsYouTypeReplaceQuotes' -Expected 1 -Group "Word"
@@ -137,12 +155,23 @@ foreach ($version in $OfficeVersions) {
     $checks += Get-RegistryValueInfo -Path $excelOptionsPath -Name 'CorrectSentenceCap' -Expected 0 -Group "Excel"
     $checks += Get-RegistryValueInfo -Path $excelOptionsPath -Name 'AutoSaveInterval' -Expected 5 -Group "Excel"
 
+    # Outlook
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'NewMailFont' -Expected 'Aptos' -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'NewMailFontSize' -Expected 11 -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'ReplyForwardFont' -Expected 'Aptos' -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'ReplyForwardFontSize' -Expected 11 -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'DefaultMailFont' -Expected 'Aptos' -Group "Outlook"
+
     # Bild-Layout ist jetzt im Konfigurator hinterlegt; die Kandidatensuche bleibt ergänzend.
     $pictureCandidates += Get-OpenPointPictureCandidates -Path $wordOptionsPath
 }
 
 $summary = [OfficeRegistrySummary]::new()
+$contextInfo = Get-ExecutionContextInfo
 $summary.Timestamp = (Get-Date).ToString("s")
+$summary.CurrentUser = [string]$contextInfo.CurrentUser
+$summary.CurrentUserSid = [string]$contextInfo.CurrentUserSid
+$summary.IsElevated = [bool]$contextInfo.IsElevated
 $summary.OfficeVersionsChecked = $OfficeVersions
 $summary.TotalChecks = $checks.Count
 $summary.CompliantChecks = @($checks | Where-Object { $_.Expected -ne $null -and $_.IsCompliant }).Count
@@ -151,7 +180,7 @@ $summary.Checks = @($checks)
 $summary.PictureCandidateValues = @($pictureCandidates)
 $summary.Notes = @(
     "CorrectTableCells und Bild-Einfügeoption sind als offene Validierungspunkte markiert.",
-    "Für 'Bilder einfügen: Mit Text in Zeile' gibt es im Projekt derzeit keinen belastbar bestätigten Registry-Key."
+    "PictureInsertLayout wird im Konfigurator aktiv gesetzt; finale Verifikation weiterhin zusätzlich in der Office-GUI vornehmen."
 )
 
 if ($AsJson) {
@@ -161,6 +190,9 @@ if ($AsJson) {
 
 Write-Host "=== Office Registry Check (PC-Konfigurator) ==="
 Write-Host "Zeit: $($summary.Timestamp)"
+Write-Host "Benutzer: $($summary.CurrentUser)"
+Write-Host "SID: $($summary.CurrentUserSid)"
+Write-Host "Erhöht gestartet: $($summary.IsElevated)"
 Write-Host "Versionen: $($OfficeVersions -join ', ')"
 Write-Host ""
 

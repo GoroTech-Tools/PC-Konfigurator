@@ -173,6 +173,13 @@ Der Build-Prozess ergänzt automatisch:
 
 ## Changelog
 
+### v3.3.6 (08. Juni 2026)
+
+- Office-Konfiguration robuster: Registry + COM-Synchronisierung für Word, Excel und Outlook.
+- Word-Kompatibilitätskeys ergänzt (u. a. für buildabhängige UI-Zuordnungen).
+- COM-Health vereinheitlicht in Log und Live-Status (`[COM-HEALTH] OK|DEGRADED`, Präfix `COM:`).
+- Registry-Prüfung erweitert (Kontext mit User/SID/Elevation sowie Outlook-/Kompatibilitätskeys).
+
 ### v3.2.5 (28. April 2026)
 
 - Registry-UX deutlich verbessert (übersichtlichere Darstellung, Erklärungen)
@@ -243,6 +250,4 @@ Prüfroutinen:
 ---
 
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
-
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
-

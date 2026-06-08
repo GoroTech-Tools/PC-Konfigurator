@@ -52,6 +52,10 @@ def run_full_configuration_flow(
                 append_status("   Erfolg: Office-Einstellungen angewendet\n")
             if result.get("word_start_screen_disabled"):
                 append_status("   ✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
+            if result.get("com_sync_ok", True):
+                append_status("   ✅ COM: [COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert\n")
+            elif result.get("com_sync_warning"):
+                append_status(f"   ⚠️ COM: [COM-HEALTH] DEGRADED | {result['com_sync_warning']}\n")
             if result.get("outlook_warning"):
                 append_status(f"   ⚠️ Outlook-Vorlage: {result['outlook_warning']}\n")
             if result.get("windows_warning"):
@@ -149,6 +153,10 @@ def run_office_configuration_flow(
                 append_status("Erfolg: Office-Einstellungen angewendet\n")
             if result.get("word_start_screen_disabled"):
                 append_status("✅ Word-Startbildschirm deaktiviert (Start mit leerem Dokument)\n")
+            if result.get("com_sync_ok", True):
+                append_status("✅ COM: [COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert\n")
+            elif result.get("com_sync_warning"):
+                append_status(f"⚠️ COM: [COM-HEALTH] DEGRADED | {result['com_sync_warning']}\n")
             if result.get("outlook_warning"):
                 append_status(f"⚠️ Outlook-Vorlage: {result['outlook_warning']}\n")
             advance_step("3. Abschluss...\n")

@@ -56,13 +56,31 @@ class OfficeConfigurator:
             excel_result = self.configure_excel(font_name, font_size_excel, target_path)
             if not excel_result["success"]:
                 return excel_result
+
+            # Outlook konfigurieren (Registry + COM-Sync, soweit verfügbar)
+            outlook_result = self.configure_outlook(font_name, font_size_word)
+            if not outlook_result["success"]:
+                return outlook_result
+
+            sync_warnings: list[str] = []
+            for label, section in (("Word", word_result), ("Excel", excel_result), ("Outlook", outlook_result)):
+                warning_text = section.get("com_warning")
+                if warning_text:
+                    sync_warnings.append(f"{label}: {warning_text}")
                 
             # Outlook-Vorlagen kopieren
-            outlook_result = self.copy_outlook_templates()
             outlook_warning = None
-            if not outlook_result["success"]:
-                outlook_warning = outlook_result.get("error", "Outlook-Vorlage nicht gefunden")
+            template_result = self.copy_outlook_templates()
+            if not template_result["success"]:
+                outlook_warning = template_result.get("error", "Outlook-Vorlage nicht gefunden")
                 self.logger.warning(f"Outlook-Konfiguration fehlgeschlagen: {outlook_warning}")
+
+            if outlook_result.get("com_warning"):
+                warning_text = outlook_result.get("com_warning")
+                if outlook_warning:
+                    outlook_warning = f"{outlook_warning}; {warning_text}"
+                else:
+                    outlook_warning = warning_text
 
             windows_result = {"success": True, "message": "Windows-Einstellungen übersprungen"}
             windows_warning = None
@@ -75,6 +93,11 @@ class OfficeConfigurator:
                         "Windows-Einstellungen konnten nicht vollständig gesetzt werden."
                     )
                     self.logger.warning(f"Windows-Konfiguration teilweise fehlgeschlagen: {windows_warning}")
+
+            if sync_warnings:
+                self.logger.warning("[COM-HEALTH] DEGRADED | " + " | ".join(sync_warnings))
+            else:
+                self.logger.info("[COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert")
             
             return {
                 "success": True,
@@ -84,6 +107,8 @@ class OfficeConfigurator:
                 "outlook_warning": outlook_warning,
                 "windows_configured": bool(windows_result.get("success", False)),
                 "windows_warning": windows_warning,
+                "com_sync_ok": len(sync_warnings) == 0,
+                "com_sync_warning": "; ".join(sync_warnings) if sync_warnings else None,
             }
             
         except Exception as e:
@@ -107,7 +132,10 @@ class OfficeConfigurator:
                 "CorrectSentenceCaps": (0, "word_correct_sentence_caps"),
                 "AutoFormatAsYouTypeApplyBulletedLists": (0, "word_auto_bullets"),
                 "AutoFormatAsYouTypeApplyNumberedLists": (0, "word_auto_numbering"),
+                "AutoFormatApplyBulletedLists": (0, "word_auto_bullets_compat"),
+                "AutoFormatApplyNumberedLists": (0, "word_auto_numbering_compat"),
                 "AutoFormatCapitalizeTableCells": (0, "word_capitalize_table_cells"),
+                "CorrectTableCells": (0, "word_capitalize_table_cells_compat"),
                 "PictureInsertLayout": (1, "word_picture_insert_inline"),
                 "AutoFormatAsYouTypeReplaceQuotes": (1, "word_smart_quotes"),
                 "PasteFormattingOtherApp": (2, "word_paste_other_app"),
@@ -128,6 +156,11 @@ class OfficeConfigurator:
             # Registry-Einstellungen anwenden
             self._apply_word_registry_settings(word_settings, font_settings)
 
+            # Build-/Profilabhängig ignoriert Word einzelne DWORD-Werte aus \Word\Options
+            # und verwendet stattdessen interne Optionen (Word.Options / Data\Settings).
+            # Deshalb zusätzlich per COM setzen und in Normal.dotm persistieren.
+            com_warning = self._apply_word_options_via_com()
+
             # Word-Startbildschirm deaktivieren (direkt in leeres Dokument starten)
             for version in ["16.0", "15.0"]:
                 general_key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\General"
@@ -146,6 +179,7 @@ class OfficeConfigurator:
                 "success": True,
                 "message": "Word erfolgreich konfiguriert",
                 "word_start_screen_disabled": True,
+                "com_warning": com_warning,
             }
             
         except Exception as e:
@@ -179,14 +213,55 @@ class OfficeConfigurator:
             
             # Registry-Einstellungen anwenden
             self._apply_excel_registry_settings(excel_settings, font_settings)
+
+            # Registry-Werte zusätzlich mit Excel-COM synchronisieren
+            com_warning = self._apply_excel_options_via_com(font_name, font_size)
             
             # Angewandte Einstellungen protokollieren
             self._log_applied_settings("Excel")
             
-            return {"success": True, "message": "Excel erfolgreich konfiguriert"}
+            result = {"success": True, "message": "Excel erfolgreich konfiguriert"}
+            if com_warning:
+                result["com_warning"] = com_warning
+            return result
             
         except Exception as e:
             self.logger.error(f"Fehler bei Excel-Konfiguration: {e}")
+            return {"success": False, "error": str(e)}
+
+    def configure_outlook(self, font_name="Aptos", font_size=11):
+        """Outlook-spezifische Registry/COM-Einstellungen konfigurieren."""
+        try:
+            self.logger.info(f"Outlook konfigurieren: Schriftart={font_name}, Größe={font_size}")
+
+            outlook_settings = {
+                "NewMailFont": (font_name, "outlook_new_mail_font"),
+                "NewMailFontSize": (int(font_size), "outlook_new_mail_font_size"),
+                "ReplyForwardFont": (font_name, "outlook_reply_forward_font"),
+                "ReplyForwardFontSize": (int(font_size), "outlook_reply_forward_font_size"),
+                "DefaultMailFont": (font_name, "outlook_default_mail_font_legacy"),
+            }
+
+            office_versions = ["16.0", "15.0"]
+            for version in office_versions:
+                key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options"
+                self._set_registry_values_with_explanation(
+                    winreg.HKEY_CURRENT_USER,
+                    key_path,
+                    outlook_settings,
+                    "Outlook",
+                    version,
+                )
+
+            com_warning = self._apply_outlook_options_via_com(font_name, int(font_size))
+            self._log_applied_settings("Outlook")
+
+            result = {"success": True, "message": "Outlook erfolgreich konfiguriert"}
+            if com_warning:
+                result["com_warning"] = com_warning
+            return result
+        except Exception as e:
+            self.logger.error(f"Fehler bei Outlook-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
     
 
@@ -291,6 +366,129 @@ class OfficeConfigurator:
         except Exception as e:
             self.logger.error(f"Fehler bei Word Registry-Einstellungen: {e}")
             raise
+
+    def _apply_word_options_via_com(self) -> str | None:
+        """Setzt kritische Word-AutoFormat-Optionen direkt über COM.
+
+        Hintergrund: Auf manchen Office-Builds (insb. mit Roaming-Profilen) spiegelt
+        die UI diese Optionen nicht aus den einfachen DWORD-Keys unter
+        HKCU\\...\\Word\\Options, sondern aus internen Word-Optionen.
+        """
+        try:
+            import win32com.client  # type: ignore
+
+            word = win32com.client.Dispatch("Word.Application")
+            try:
+                options = word.Options
+                options.AutoFormatAsYouTypeApplyBulletedLists = False
+                options.AutoFormatAsYouTypeApplyNumberedLists = False
+                options.AutoFormatApplyBulletedLists = False
+                options.AutoFormatApplyLists = False
+                options.AutoFormatAsYouTypeFormatListItemBeginning = False
+
+                try:
+                    word.NormalTemplate.Save()
+                except Exception as save_error:
+                    self.logger.warning(f"NormalTemplate konnte nicht gespeichert werden: {save_error}")
+
+                self.logger.info("Word AutoFormat-Optionen zusätzlich per COM synchronisiert")
+                return None
+            finally:
+                try:
+                    word.Quit()
+                except Exception:
+                    pass
+        except Exception as e:
+            # Nicht hart fehlschlagen lassen: Registry-Teil ist bereits gesetzt.
+            self.logger.warning(f"COM-Synchronisierung für Word-Optionen fehlgeschlagen: {e}")
+            return "Word-COM nicht verfügbar (Registry wurde dennoch gesetzt)."
+
+    def _apply_excel_options_via_com(self, font_name: str, font_size: int) -> str | None:
+        """Setzt kritische Excel-Optionen ergänzend per COM."""
+        try:
+            import win32com.client  # type: ignore
+
+            excel = win32com.client.Dispatch("Excel.Application")
+            try:
+                try:
+                    excel.StandardFont = font_name
+                    excel.StandardFontSize = int(font_size)
+                except Exception as font_error:
+                    self.logger.warning(f"Excel-Standardfont via COM nicht gesetzt: {font_error}")
+
+                try:
+                    autocorrect = excel.AutoCorrect
+                    autocorrect.CorrectSentenceCap = False
+                except Exception as autocorrect_error:
+                    self.logger.warning(f"Excel AutoCorrect via COM nicht gesetzt: {autocorrect_error}")
+
+                try:
+                    autorecover = excel.AutoRecover
+                    autorecover.Time = 5
+                    autorecover.Enabled = True
+                except Exception as autorecover_error:
+                    self.logger.warning(f"Excel AutoRecover via COM nicht gesetzt: {autorecover_error}")
+
+                self.logger.info("Excel-Optionen zusätzlich per COM synchronisiert")
+                return None
+            finally:
+                try:
+                    excel.Quit()
+                except Exception:
+                    pass
+        except Exception as e:
+            self.logger.warning(f"COM-Synchronisierung für Excel-Optionen fehlgeschlagen: {e}")
+            return "Excel-COM nicht verfügbar (Registry wurde dennoch gesetzt)."
+
+    def _apply_outlook_options_via_com(self, font_name: str, font_size: int) -> str | None:
+        """Versucht Outlook-Optionen zusätzlich per COM zu synchronisieren.
+
+        Gibt eine Warnung zurück, wenn COM auf dem System nicht verfügbar ist.
+        """
+        try:
+            import win32com.client  # type: ignore
+
+            outlook = win32com.client.Dispatch("Outlook.Application")
+            try:
+                options_obj = getattr(outlook, "Options", None)
+                if options_obj is None:
+                    self.logger.info("Outlook COM verfügbar, aber kein Options-Objekt gefunden")
+                    return "Outlook-COM ohne Options-Objekt (Registry wurde dennoch gesetzt)."
+
+                # Property-Namen variieren zwischen Outlook-Versionen stark.
+                candidates = {
+                    "NewMailFont": ["NewMailFont", "NewMailFontName"],
+                    "NewMailFontSize": ["NewMailFontSize"],
+                    "ReplyForwardFont": ["ReplyForwardFont", "ReplyForwardFontName"],
+                    "ReplyForwardFontSize": ["ReplyForwardFontSize"],
+                }
+                values = {
+                    "NewMailFont": font_name,
+                    "NewMailFontSize": int(font_size),
+                    "ReplyForwardFont": font_name,
+                    "ReplyForwardFontSize": int(font_size),
+                }
+
+                set_count = 0
+                for logical_name, prop_names in candidates.items():
+                    for prop_name in prop_names:
+                        try:
+                            setattr(options_obj, prop_name, values[logical_name])
+                            set_count += 1
+                            break
+                        except Exception:
+                            continue
+
+                self.logger.info(f"Outlook-Optionen per COM synchronisiert (gesetzte Properties: {set_count})")
+                return None
+            finally:
+                try:
+                    outlook.Quit()
+                except Exception:
+                    pass
+        except Exception as e:
+            self.logger.warning(f"COM-Synchronisierung für Outlook-Optionen fehlgeschlagen: {e}")
+            return "Outlook-COM auf diesem System nicht verfügbar (Registry wurde dennoch gesetzt)."
     
     def _apply_excel_registry_settings(self, excel_settings, font_settings):
         """Excel Registry-Einstellungen anwenden"""

@@ -133,6 +133,26 @@ class RegistryExplainer:
                 category="Word - Autokorrektur",
                 office_versions=["15.0", "16.0"],
             ),
+            "word_auto_bullets_compat": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="AutoFormatApplyBulletedLists",
+                value_type="REG_DWORD",
+                default_value=0,
+                description="Kompatibilitätsalias für automatische Aufzählungen (AutoFormat-Modus).",
+                impact="Einige Word-Builds binden die UI-Checkbox auf AutoFormatApplyBulletedLists statt AsYouType.",
+                category="Word - Autokorrektur",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_auto_numbering_compat": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="AutoFormatApplyNumberedLists",
+                value_type="REG_DWORD",
+                default_value=0,
+                description="Kompatibilitätsalias für automatische Nummerierung (AutoFormat-Modus).",
+                impact="Einige Word-Builds binden die UI-Checkbox auf AutoFormatApplyNumberedLists statt AsYouType.",
+                category="Word - Autokorrektur",
+                office_versions=["15.0", "16.0"],
+            ),
             "word_capitalize_table_cells": RegistrySettingInfo(
                 key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
                 value_name="AutoFormatCapitalizeTableCells",
@@ -140,6 +160,19 @@ class RegistryExplainer:
                 default_value=0,
                 description="Beginnt Tabellenzeilen automatisch mit einem Großbuchstaben.",
                 impact="Wenn deaktiviert, korrigiert Word die Großschreibung in Tabellenzellen nicht automatisch.",
+                category="Word - Autokorrektur",
+                office_versions=["15.0", "16.0"],
+            ),
+            "word_capitalize_table_cells_compat": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Word\\Options",
+                value_name="CorrectTableCells",
+                value_type="REG_DWORD",
+                default_value=0,
+                description="Kompatibilitätsalias für die Tabellen-Großschreibung in Word.",
+                impact=(
+                    "Einige Word-Builds spiegeln die GUI-Option eher über 'CorrectTableCells' "
+                    "als über 'AutoFormatCapitalizeTableCells'."
+                ),
                 category="Word - Autokorrektur",
                 office_versions=["15.0", "16.0"],
             ),
