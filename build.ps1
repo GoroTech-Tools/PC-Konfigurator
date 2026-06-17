@@ -47,6 +47,32 @@ function Set-GitOneDriveSafety {
     }
 }
 
+function Normalize-MarkdownTail {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        return
+    }
+
+    try {
+        $raw = Get-Content -Path $Path -Raw -Encoding UTF8
+        # Zeilenenden vereinheitlichen und trailing Leerzeilen entfernen
+        $normalized = $raw -replace "`r`n", "`n"
+        $normalized = $normalized -replace "`r", "`n"
+        $normalized = [regex]::Replace($normalized, '(?s)(?:\n[ \t]*)+$', '')
+        # Genau ein abschließender Zeilenumbruch (CRLF)
+        $normalized = ($normalized + "`n") -replace "`n", "`r`n"
+
+        Set-Content -Path $Path -Value $normalized -Encoding UTF8 -NoNewline
+    } catch {
+        Write-Host "Hinweis: Markdown-EOF-Normalisierung fehlgeschlagen für $Path : $_" -ForegroundColor Yellow
+    }
+}
+
 function New-ReleaseNotesFile {
     [CmdletBinding()]
     param(
@@ -144,6 +170,7 @@ function New-ReleaseNotesFile {
     $content = $contentLines -join "`r`n"
 
     Set-Content -Path $notesPath -Value $content -Encoding UTF8
+    Normalize-MarkdownTail -Path $notesPath
     Write-Host "Release-Notes erstellt/aktualisiert: $notesPath" -ForegroundColor Green
     return $notesPath
 }
@@ -158,6 +185,14 @@ if ($Help) {
 
 # OneDrive-Locks vermeiden: lokale Git-Autowartung im Repo deaktivieren
 Set-GitOneDriveSafety
+
+# Vorab: bekannte Markdown-Dateien auf sauberen EOF normalisieren
+foreach ($mdPath in @(
+    (Join-Path $PSScriptRoot 'README.md'),
+    (Join-Path $PSScriptRoot 'docs\DOKUMENTATION_ANWENDER.md')
+)) {
+    Normalize-MarkdownTail -Path $mdPath
+}
 
 # Vorab: Markdownlint als Standard-Dokuroutine ausführen
 if ($SkipMarkdownLint) {
@@ -251,6 +286,7 @@ if (Test-Path $buildInfoPath) {
                 $readme = Get-Content $readmePath -Raw
                 $readme = [regex]::Replace($readme, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \(Build: [0-9]{2}\.[0-9]{2}\.[0-9]{4}, Python [0-9.]+\)', "**Version:** $newVersion (Build: $dateForMd, Python $pythonVersionShort)")
                 Set-Content $readmePath $readme -Encoding UTF8
+                Normalize-MarkdownTail -Path $readmePath
                 Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
@@ -259,6 +295,7 @@ if (Test-Path $buildInfoPath) {
                 $anwenderDoc = Get-Content $anwenderDocPath -Raw
                 $anwenderDoc = [regex]::Replace($anwenderDoc, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
                 Set-Content $anwenderDocPath $anwenderDoc -Encoding UTF8
+                Normalize-MarkdownTail -Path $anwenderDocPath
                 Write-Host "docs/DOKUMENTATION_ANWENDER.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
