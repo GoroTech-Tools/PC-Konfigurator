@@ -79,7 +79,7 @@ from ui.file_actions import (
     open_runtime_folder_path,
     open_documentation_file,
 )
-from startmenu_guard import set_startmenu_mode
+from startmenu_guard import set_startmenu_mode, provision_startmenu_autostart
 from runtime.runtime_bundle import (
     get_bundle_root,
     prepare_runtime_bundle,
@@ -151,6 +151,18 @@ class PCKonfiguratorGUI:
                 )
             else:
                 self.logger.info("Startmenü-Guard: Keine Anpassung erforderlich (Modus '%s').", mode_label)
+
+            autostart_result = provision_startmenu_autostart(prefer_classic_mode=prefer_classic_mode)
+            if autostart_result.get("errors"):
+                self.logger.warning(
+                    "Startmenü-Autostart konnte nicht vollständig hinterlegt werden: %s",
+                    "; ".join(autostart_result.get("errors", [])),
+                )
+            else:
+                self.logger.info(
+                    "Startmenü-Autostart hinterlegt: %s",
+                    autostart_result.get("startup_cmd_path", "-"),
+                )
         except Exception as exc:
             self.logger.warning("Startmenü-Guard fehlgeschlagen: %s", exc)
 

@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.7 (17.06.2026)
+**Version:** 3.3.8 (17.06.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -49,6 +49,13 @@ Im Bereich „Individuelle Einstellungen“ stehen zur Verfügung:
 
 Hinweis: Der gewählte Startmenü-Modus wird dauerhaft gespeichert und beim nächsten
 Start automatisch angewendet (Benutzerkontext, ohne Adminrechte).
+
+Zusätzlich hinterlegt die Anwendung eine externe Autostart-Variante im Benutzerprofil,
+damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wird:
+
+- `%APPDATA%\\PC-Konfigurator\\startmenu-guard\\Ensure-StartmenuMode.ps1`
+- `%APPDATA%\\PC-Konfigurator\\startmenu-guard\\Ensure-StartmenuMode.cmd`
+- `%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\PC-Konfigurator-StartmenuGuard.cmd`
 
 ### 3.1 Sichtbarkeit der Registerkarten
 
