@@ -79,6 +79,7 @@ from ui.file_actions import (
     open_runtime_folder_path,
     open_documentation_file,
 )
+from startmenu_guard import set_startmenu_mode
 from runtime.runtime_bundle import (
     get_bundle_root,
     prepare_runtime_bundle,
@@ -113,6 +114,46 @@ GUI_STATE_FILE = "gui_state.json"
 
 
 class PCKonfiguratorGUI:
+    def _get_startmenu_mode_text(self) -> str:
+        """Liefert den anzuzeigenden Startmenü-Modus als Klartext."""
+        return "🟧 Klassisch (Fallback)" if self.startmenu_mode.get() == "classic" else "🟦 Windows 11 (empfohlen)"
+
+    def _update_startmenu_mode_label(self):
+        """Aktualisiert die Start-Tab-Anzeige für den aktiven Startmenü-Modus."""
+        label = getattr(self, "startmenu_mode_status_label", None)
+        if label is None:
+            return
+        try:
+            is_classic = self.startmenu_mode.get() == "classic"
+            color = ("#8A4B00", "#FFC37A") if is_classic else ("#114D8C", "#8EC5FF")
+            label.configure(
+                text=f"Aktueller Startmenü-Modus: {self._get_startmenu_mode_text()}",
+                text_color=color,
+            )
+        except Exception:
+            pass
+
+    def _run_startmenu_guard(self):
+        """Setzt beim Start den gewünschten Startmenü-Modus."""
+        try:
+            prefer_classic_mode = self.startmenu_mode.get() == "classic"
+            result = set_startmenu_mode(
+                prefer_classic_mode=prefer_classic_mode,
+                auto_restart_explorer=True,
+            )
+            mode_label = "klassisch" if prefer_classic_mode else "Windows 11"
+            if result.get("changed"):
+                self.logger.info(
+                    "Startmenü-Guard: Modus '%s' wurde gesetzt (%d Schlüssel angepasst, Explorer neu gestartet=%s)",
+                    mode_label,
+                    len(result.get("changed_keys", [])),
+                    result.get("explorer_restarted", False),
+                )
+            else:
+                self.logger.info("Startmenü-Guard: Keine Anpassung erforderlich (Modus '%s').", mode_label)
+        except Exception as exc:
+            self.logger.warning("Startmenü-Guard fehlgeschlagen: %s", exc)
+
     def _get_runtime_base_dir(self) -> Path:
         """Liefert das Basisverzeichnis der Laufzeitdaten."""
         return prepare_runtime_bundle(
@@ -150,6 +191,7 @@ class PCKonfiguratorGUI:
             "settings": {
                 "target_drive": self.target_drive.get(),
                 "use_documents": bool(self.use_documents.get()),
+                "startmenu_mode": self.startmenu_mode.get(),
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
@@ -176,6 +218,10 @@ class PCKonfiguratorGUI:
 
         self.use_documents.set(bool(settings.get("use_documents", False)))
 
+        startmenu_mode = str(settings.get("startmenu_mode", "win11")).strip().lower()
+        if startmenu_mode in ("win11", "classic"):
+            self.startmenu_mode.set(startmenu_mode)
+
         font_name = str(settings.get("font_name", "")).strip()
         if font_name in self.available_font_families:
             self.font_name.set(font_name)
@@ -194,6 +240,12 @@ class PCKonfiguratorGUI:
 
     def _on_setting_changed(self, *_args):
         self._save_gui_state()
+
+    def _on_startmenu_mode_changed(self, *_args):
+        """Persistiert den Modus und setzt ihn direkt im Benutzerkontext."""
+        self._save_gui_state()
+        self._run_startmenu_guard()
+        self._update_startmenu_mode_label()
 
     def _update_last_result_view(self):
         started_label = getattr(self, "last_result_started_label", None)
@@ -278,6 +330,7 @@ class PCKonfiguratorGUI:
         # Variablen für Konfiguration
         self.target_drive = tk.StringVar(value="Z:")
         self.use_documents = tk.BooleanVar(value=False)
+        self.startmenu_mode = tk.StringVar(value="win11")
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
@@ -287,17 +340,20 @@ class PCKonfiguratorGUI:
         self._last_run_status = "-"
         self._last_run_log_path = ""
         self.start_status_label = None
+        self.startmenu_mode_status_label = None
         self.template_status_frame = None
         self._logs_auto_refresh_job = None
         self._logs_auto_refresh_ms = 2000
 
         self._load_gui_state()
+        self._run_startmenu_guard()
         
         self.create_widgets()
 
         # Persistenz bei Änderungen
         self.target_drive.trace_add("write", self._on_setting_changed)
         self.use_documents.trace_add("write", self._on_setting_changed)
+        self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
         self.font_name.trace_add("write", self._on_setting_changed)
         self.font_size_word.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
@@ -321,8 +377,8 @@ class PCKonfiguratorGUI:
     def setup_main_window(self):
         """Hauptfenster konfigurieren"""
         self.root.title(f"PC-Konfigurator {self.version}")
-        self.root.geometry("1180x820")
-        self.root.minsize(1040, 720)
+        self.root.geometry("1180x900")
+        self.root.minsize(1040, 780)
         self.root.resizable(True, True)
         
         # Icon setzen (falls vorhanden)
@@ -380,6 +436,7 @@ class PCKonfiguratorGUI:
         refs = build_start_tab(
             self.tabview,
             version=self.version,
+            current_startmenu_mode_text=self._get_startmenu_mode_text(),
             on_open_config=lambda: self._switch_to_tab(TAB_CONFIG),
             on_open_registry_info=lambda: self._switch_to_tab(TAB_REGISTRY),
             on_run_full=self.execute_all_configurations,
@@ -394,6 +451,8 @@ class PCKonfiguratorGUI:
             on_open_doc_tech=lambda: self.open_documentation("DOKUMENTATION_TECHNIK.md"),
             on_show_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
         )
+        self.startmenu_mode_status_label = refs.get("startmenu_mode_label") if isinstance(refs, dict) else None
+        self._update_startmenu_mode_label()
         
     def create_overview_tab(self):
         """Übersicht-Tab erstellen"""
@@ -409,6 +468,7 @@ class PCKonfiguratorGUI:
             self.tabview,
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
+            startmenu_mode_var=self.startmenu_mode,
             font_name_var=self.font_name,
             font_size_word_var=self.font_size_word,
             font_size_excel_var=self.font_size_excel,

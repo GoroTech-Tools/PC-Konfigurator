@@ -28,6 +28,25 @@ function Show-Usage {
     Microsoft.PowerShell.Utility\Write-Host "  Beispiele: .\build.ps1 | .\build.ps1 -Help | .\build.ps1 -NoVersionBump | .\build.ps1 -NoVersionBump -SkipZip | .\build.ps1 -NoVersionBump -SkipZip -Quiet | .\build.ps1 -PreferredVenv .venv -Quiet | .\build.ps1 -PreferredVenv .venv | .\build.ps1 -SkipMarkdownLint" -ForegroundColor DarkGray
 }
 
+function Set-GitOneDriveSafety {
+    [CmdletBinding()]
+    param()
+
+    $gitDir = Join-Path $PSScriptRoot '.git'
+    if (-not (Test-Path $gitDir)) {
+        return
+    }
+
+    try {
+        $null = git -C $PSScriptRoot config --local gc.auto 0
+        $null = git -C $PSScriptRoot config --local gc.autoDetach false
+        $null = git -C $PSScriptRoot config --local maintenance.auto false
+        Write-Host "Git-OneDrive-Schutz aktiv: gc.auto=0, gc.autoDetach=false, maintenance.auto=false" -ForegroundColor DarkGray
+    } catch {
+        Write-Host "Hinweis: Git-OneDrive-Schutz konnte nicht vollständig gesetzt werden: $_" -ForegroundColor Yellow
+    }
+}
+
 function New-ReleaseNotesFile {
     [CmdletBinding()]
     param(
@@ -136,6 +155,9 @@ if (-not $Quiet -or $Help) {
 if ($Help) {
     exit 0
 }
+
+# OneDrive-Locks vermeiden: lokale Git-Autowartung im Repo deaktivieren
+Set-GitOneDriveSafety
 
 # Vorab: Markdownlint als Standard-Dokuroutine ausführen
 if ($SkipMarkdownLint) {

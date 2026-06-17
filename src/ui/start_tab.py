@@ -9,6 +9,7 @@ def build_start_tab(
     tabview,
     *,
     version: str,
+    current_startmenu_mode_text: str,
     on_open_config: Callable[[], None],
     on_open_registry_info: Callable[[], None],
     on_run_full: Callable[[], None],
@@ -48,6 +49,15 @@ def build_start_tab(
         text="Schriftarten, Zielpfad und Template-Optionen bearbeiten Sie im Tab 'Vorlagen/Ablage'.",
         justify="left",
     ).pack(anchor="w", padx=12, pady=(0, 8))
+
+    startmenu_mode_label = ctk.CTkLabel(
+        config_box,
+        text=f"Aktueller Startmenü-Modus: {current_startmenu_mode_text}",
+        justify="left",
+        font=ctk.CTkFont(size=11, weight="bold"),
+        text_color=("#2F3B52", "#D0DBF0"),
+    )
+    startmenu_mode_label.pack(anchor="w", padx=12, pady=(0, 8))
 
     config_actions = ctk.CTkFrame(config_box)
     config_actions.pack(fill="x", padx=12, pady=(0, 10))
@@ -95,4 +105,6 @@ def build_start_tab(
     ctk.CTkButton(docs_row, text="Technik-Doku", command=on_open_doc_tech, **pale_button_style).pack(side="left", padx=(0, 8), pady=6)
     ctk.CTkButton(docs_row, text="Ausführung anzeigen", command=on_show_execution, **pale_button_style).pack(side="left", pady=6)
 
-    return {}
+    return {
+        "startmenu_mode_label": startmenu_mode_label,
+    }

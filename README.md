@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.6 (Build: 08.06.2026, Python 3.13.7)
+**Version:** 3.3.7 (Build: 17.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -47,6 +47,7 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 - Klassisches Kontextmenü aktivieren
 - Taskleisten-Widgets ausblenden
 - Suchfeld in der Taskleiste ausblenden
+- Beim App-Start wird der gewünschte Startmenü-Modus automatisch gesetzt (Windows 11 oder optional klassisch als dauerhafter Fallback; Benutzerkontext, ohne Adminrechte)
 
 ### Office-Konfiguration
 
@@ -173,6 +174,13 @@ Der Build-Prozess ergänzt automatisch:
 
 ## Changelog
 
+### v3.3.7 (17. Juni 2026)
+
+- Startmenü-Guard erweitert: Modus ist nun in der GUI dauerhaft zwischen `🟦 Windows 11 (empfohlen)` und `🟧 Klassisch (Fallback)` umschaltbar.
+- Start-Tab zeigt den aktiven Startmenü-Modus inklusive Live-Aktualisierung und Farbcodierung.
+- Tab-Darstellung stabilisiert: problematische manuelle Tab-Skalierung entfernt (Hauptfenster + Registry-Detailfenster), Beschriftungen bleiben lesbar.
+- Fensterhöhe dezent erhöht, damit Einstellungen im Bereich `Vorlagen/Ablage` (u. a. Schriftgrößen) zuverlässig sichtbar sind.
+
 ### v3.3.6 (08. Juni 2026)
 
 - Office-Konfiguration robuster: Registry + COM-Synchronisierung für Word, Excel und Outlook.
@@ -251,3 +259,4 @@ Prüfroutinen:
 
 Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
+

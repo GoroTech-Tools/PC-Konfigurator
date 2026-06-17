@@ -4,8 +4,6 @@ from typing import Iterable
 
 import customtkinter as ctk
 
-from ui.sizing import apply_uniform_tab_sizes, bind_dynamic_tab_sizes
-
 TAB_OVERVIEW = "Übersicht"
 TAB_START = "Start"
 TAB_CONFIG = "Vorlagen/Ablage"
@@ -46,9 +44,6 @@ def build_main_layout(
 
     for tab_name in tabs:
         tabview.add(tab_name)
-
-    apply_uniform_tab_sizes(tabview)
-    bind_dynamic_tab_sizes(tabview, bind_to=root)
 
     return {
         "main_frame": main_frame,

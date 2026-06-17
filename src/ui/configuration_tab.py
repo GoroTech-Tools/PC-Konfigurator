@@ -10,6 +10,7 @@ def build_configuration_tab(
     *,
     use_documents_var,
     target_drive_var,
+    startmenu_mode_var,
     font_name_var,
     font_size_word_var,
     font_size_excel_var,
@@ -77,6 +78,36 @@ def build_configuration_tab(
         variable=use_documents_var,
         value=True,
     ).pack(anchor="w", padx=20, pady=(5, 15))
+
+    startmenu_section = ctk.CTkFrame(main_frame)
+    startmenu_section.pack(fill="x", padx=10, pady=5)
+
+    ctk.CTkLabel(
+        startmenu_section,
+        text="Startmenü-Modus:",
+        font=ctk.CTkFont(size=14, weight="bold"),
+    ).pack(anchor="w", padx=10, pady=(10, 0))
+
+    ctk.CTkLabel(
+        startmenu_section,
+        text="Wählen Sie, welcher Startmenü-Modus beim Start des PC-Konfigurators dauerhaft gesetzt werden soll.",
+        font=ctk.CTkFont(size=11),
+        text_color="gray",
+    ).pack(anchor="w", padx=10, pady=(0, 5))
+
+    ctk.CTkRadioButton(
+        startmenu_section,
+        text="Windows-11-Startmenü bevorzugen (empfohlen)",
+        variable=startmenu_mode_var,
+        value="win11",
+    ).pack(anchor="w", padx=20, pady=2)
+
+    ctk.CTkRadioButton(
+        startmenu_section,
+        text="Klassisches Startmenü dauerhaft aktivieren (Fallback)",
+        variable=startmenu_mode_var,
+        value="classic",
+    ).pack(anchor="w", padx=20, pady=(2, 12))
 
     font_section = ctk.CTkFrame(main_frame)
     font_section.pack(fill="x", padx=10, pady=5)

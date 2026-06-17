@@ -12,7 +12,7 @@ from tkinter import messagebox
 from typing import Dict, List, Tuple
 
 from registry_explainer import RegistryExplainer, RegistrySettingInfo
-from ui.sizing import apply_uniform_button_sizes, apply_uniform_tab_sizes, bind_dynamic_tab_sizes
+from ui.sizing import apply_uniform_button_sizes
 
 
 class RegistryExplanationWindow:
@@ -76,9 +76,6 @@ class RegistryExplanationWindow:
         self._populate_settings_tab("Excel", "Excel-Einstellungen", "📊")
         self._populate_settings_tab("Outlook", "Outlook-Einstellungen", "📧")
         self._populate_settings_tab("Windows", "Windows-Einstellungen", "🪟")
-
-        apply_uniform_tab_sizes(self.tabview)
-        bind_dynamic_tab_sizes(self.tabview, bind_to=self.window)
 
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x", padx=10, pady=10)

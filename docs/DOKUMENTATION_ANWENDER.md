@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.6 (08.06.2026)
+**Version:** 3.3.7 (17.06.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -45,6 +45,17 @@ Im Bereich „Individuelle Einstellungen“ stehen zur Verfügung:
 - **Klassisches Kontextmenü aktivieren** (Windows 11)
 - **Widgets in Taskleiste ausblenden**
 - **Suchfeld in Taskleiste ausblenden**
+- **Startmenü-Modus umschalten:** `Windows 11 (empfohlen)` oder `Klassisch (Fallback)`
+
+Hinweis: Der gewählte Startmenü-Modus wird dauerhaft gespeichert und beim nächsten
+Start automatisch angewendet (Benutzerkontext, ohne Adminrechte).
+
+### 3.1 Sichtbarkeit der Registerkarten
+
+- Die Registerkarten im Hauptfenster und im separaten Registry-Detailfenster
+  verwenden eine stabile Darstellung ohne aggressive Breiten-Skalierung.
+- Dadurch bleiben die Tab-Beschriftungen auch bei kleineren Fensterbreiten
+  zuverlässig lesbar.
 
 ### 4. Ausführung
 
@@ -158,3 +169,4 @@ Fehlerbild, Verbesserungsvorschläge).
 ---
 
 **Stand:** 25.05.2026
+

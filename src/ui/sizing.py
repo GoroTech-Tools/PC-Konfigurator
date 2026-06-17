@@ -78,7 +78,7 @@ def bind_dynamic_tab_sizes(
     tabview,
     *,
     bind_to=None,
-    min_button_width: int = 120,
+    min_button_width: int = 150,
     max_button_width: int = 260,
     button_height: int = DEFAULT_TAB_BUTTON_HEIGHT,
     extra_padding: int = 24,
@@ -100,7 +100,7 @@ def bind_dynamic_tab_sizes(
         if tab_count <= 0:
             return
 
-        available_width = 0
+        width_candidates: list[int] = []
         for candidate in (
             getattr(tabview, "winfo_width", lambda: 0)(),
             getattr(bound_widget, "winfo_width", lambda: 0)(),
@@ -111,8 +111,9 @@ def bind_dynamic_tab_sizes(
             except Exception:
                 continue
             if candidate_width > 1:
-                available_width = candidate_width
-                break
+                width_candidates.append(candidate_width)
+
+        available_width = max(width_candidates) if width_candidates else 0
 
         if available_width <= 1:
             return
