@@ -257,14 +257,6 @@ if (Test-Path $buildInfoPath) {
             $nextMajor = $major
             $nextMinor = $minor
             $nextPatch = $patch + 1
-            if ($nextPatch -ge 10) {
-                $nextPatch = 0
-                $nextMinor++
-                if ($nextMinor -ge 10) {
-                    $nextMinor = 0
-                    $nextMajor++
-                }
-            }
             $newVersion = "$nextMajor.$nextMinor.$nextPatch"
             $newDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
             $content = $content -replace "'version': '\d+\.\d+\.\d+'", "'version': '$newVersion'"

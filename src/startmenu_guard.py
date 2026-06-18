@@ -36,30 +36,38 @@ class StartmenuAutostartProvisionResult:
 
 
 def _set_dword_if_needed(root, path: str, name: str, value: int) -> bool:
-    key = winreg.CreateKeyEx(root, path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
+    reg = winreg
+    if reg is None:
+        raise RuntimeError("winreg nicht verfügbar")
+
+    key = reg.CreateKeyEx(root, path, 0, reg.KEY_READ | reg.KEY_WRITE)
     with key:
         try:
-            current, reg_type = winreg.QueryValueEx(key, name)
-            if reg_type == winreg.REG_DWORD and int(current) == int(value):
+            current, reg_type = reg.QueryValueEx(key, name)
+            if reg_type == reg.REG_DWORD and int(current) == int(value):
                 return False
         except FileNotFoundError:
             pass
 
-        winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, int(value))
+        reg.SetValueEx(key, name, 0, reg.REG_DWORD, int(value))
         return True
 
 
 def _set_sz_if_needed(root, path: str, name: str, value: str) -> bool:
-    key = winreg.CreateKeyEx(root, path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
+    reg = winreg
+    if reg is None:
+        raise RuntimeError("winreg nicht verfügbar")
+
+    key = reg.CreateKeyEx(root, path, 0, reg.KEY_READ | reg.KEY_WRITE)
     with key:
         try:
-            current, reg_type = winreg.QueryValueEx(key, name)
-            if reg_type == winreg.REG_SZ and str(current) == str(value):
+            current, reg_type = reg.QueryValueEx(key, name)
+            if reg_type == reg.REG_SZ and str(current) == str(value):
                 return False
         except FileNotFoundError:
             pass
 
-        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, str(value))
+        reg.SetValueEx(key, name, 0, reg.REG_SZ, str(value))
         return True
 
 
@@ -89,7 +97,8 @@ def set_startmenu_mode(prefer_classic_mode: bool, auto_restart_explorer: bool = 
     errors: list[str] = []
     mode_value = 1 if prefer_classic_mode else 0
 
-    if winreg is None:
+    reg = winreg
+    if reg is None:
         return asdict(
             StartmenuGuardResult(
                 changed=False,
@@ -101,13 +110,13 @@ def set_startmenu_mode(prefer_classic_mode: bool, auto_restart_explorer: bool = 
 
     targets = [
         (
-            winreg.HKEY_CURRENT_USER,
+            reg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
             "Start_ShowClassicMode",
             mode_value,
         ),
         (
-            winreg.HKEY_CURRENT_USER,
+            reg.HKEY_CURRENT_USER,
             r"Software\ExplorerPatcher",
             "Start_ShowClassicMode",
             mode_value,
@@ -125,7 +134,7 @@ def set_startmenu_mode(prefer_classic_mode: bool, auto_restart_explorer: bool = 
     try:
         if prefer_classic_mode:
             if _set_sz_if_needed(
-                winreg.HKEY_CURRENT_USER,
+                reg.HKEY_CURRENT_USER,
                 WIN11_CLASSIC_CONTEXTMENU_KEY,
                 "",
                 "",
@@ -134,13 +143,13 @@ def set_startmenu_mode(prefer_classic_mode: bool, auto_restart_explorer: bool = 
         else:
             removed = False
             try:
-                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_KEY)
+                reg.DeleteKey(reg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_KEY)
                 removed = True
             except FileNotFoundError:
                 pass
 
             try:
-                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_PARENT_KEY)
+                reg.DeleteKey(reg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_PARENT_KEY)
                 removed = True
             except FileNotFoundError:
                 pass
@@ -188,7 +197,23 @@ def _write_text_if_changed(path: Path, content: str) -> bool:
 
 def _build_guard_ps1(mode_value: int) -> str:
     return f"""# Auto-generiert durch PC-Konfigurator
-$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
+
+$logDir = Join-Path $env:LOCALAPPDATA 'PC-Konfigurator\\logs'
+$logFile = Join-Path $logDir 'startmenu-guard.log'
+
+function Write-GuardLog {{
+    param([Parameter(Mandatory)] [string]$Message)
+    try {{
+        if (-not (Test-Path $logDir)) {{
+            New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+        }}
+        $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        Add-Content -Path $logFile -Value "[$timestamp] $Message"
+    }} catch {{
+        # Logging darf den Guard nicht blockieren
+    }}
+}}
 
 function Set-DwordValue {{
     param(
@@ -216,52 +241,69 @@ function Set-DwordValue {{
     return $false
 }}
 
-$changed = $false
-$changed = (Set-DwordValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
-$changed = (Set-DwordValue -Path 'HKCU:\\Software\\ExplorerPatcher' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
+try {{
+    Write-GuardLog 'Startmenu-Guard gestartet.'
 
-$contextClassicPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}\\InprocServer32'
-$contextParentPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}'
+    $changed = $false
+    $changed = (Set-DwordValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
+    $changed = (Set-DwordValue -Path 'HKCU:\\Software\\ExplorerPatcher' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
 
-if ({mode_value} -eq 1) {{
-    if (-not (Test-Path $contextClassicPath)) {{
-        New-Item -Path $contextClassicPath -Force | Out-Null
-        $changed = $true
-    }}
-    try {{
-        $contextKey = Get-Item -Path $contextClassicPath -ErrorAction Stop
-        $defaultValue = $contextKey.GetValue('', $null)
-        if ($defaultValue -ne '') {{
-            $contextKey.SetValue('', '', [Microsoft.Win32.RegistryValueKind]::String)
+    $contextClassicPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}\\InprocServer32'
+    $contextParentPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}'
+
+    if ({mode_value} -eq 1) {{
+        if (-not (Test-Path $contextClassicPath)) {{
+            New-Item -Path $contextClassicPath -Force | Out-Null
             $changed = $true
         }}
-    }} catch {{
-        # unkritisch
-    }}
-}} else {{
-    if (Test-Path $contextClassicPath) {{
-        Remove-Item -Path $contextClassicPath -Force -ErrorAction SilentlyContinue
-        $changed = $true
-    }}
-    if (Test-Path $contextParentPath) {{
         try {{
-            Remove-Item -Path $contextParentPath -Force -ErrorAction Stop
-            $changed = $true
+            $contextKey = Get-Item -Path $contextClassicPath -ErrorAction Stop
+            $defaultValue = $contextKey.GetValue('', $null)
+            if ($defaultValue -ne '') {{
+                $contextKey.SetValue('', '', [Microsoft.Win32.RegistryValueKind]::String)
+                $changed = $true
+            }}
         }} catch {{
-            # Parent-Key kann noch Untereinträge haben; dann ignorieren
+            # unkritisch
+        }}
+    }} else {{
+        if (Test-Path $contextClassicPath) {{
+            Remove-Item -Path $contextClassicPath -Force -ErrorAction SilentlyContinue
+            $changed = $true
+        }}
+        if (Test-Path $contextParentPath) {{
+            try {{
+                Remove-Item -Path $contextParentPath -Force -ErrorAction Stop
+                $changed = $true
+            }} catch {{
+                # Parent-Key kann noch Untereinträge haben; dann ignorieren
+            }}
         }}
     }}
-}}
 
-if ($changed) {{
-    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-    Start-Process explorer.exe
+    if ($changed) {{
+        Write-GuardLog 'Änderungen erkannt, Explorer wird neu gestartet.'
+        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+        Start-Process explorer.exe
+    }} else {{
+        Write-GuardLog 'Keine Änderung erforderlich.'
+    }}
+
+    Write-GuardLog 'Startmenu-Guard erfolgreich beendet.'
+    exit 0
+}} catch {{
+    Write-GuardLog ("Fehler: " + $_.Exception.Message)
+    exit 1
 }}
 """
 
 
 def _build_guard_cmd() -> str:
-    return "@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File \"%~dp0Ensure-StartmenuMode.ps1\"\r\n"
+    return (
+        "@echo off\r\n"
+        "\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File \"%~dp0Ensure-StartmenuMode.ps1\"\r\n"
+        "exit /b %ERRORLEVEL%\r\n"
+    )
 
 
 def _build_startup_cmd(guard_cmd_path: Path) -> str:
