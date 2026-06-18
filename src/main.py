@@ -133,13 +133,19 @@ class PCKonfiguratorGUI:
         except Exception:
             pass
 
-    def _run_startmenu_guard(self):
-        """Setzt beim Start den gewünschten Startmenü-Modus."""
+    def _run_startmenu_guard(self, auto_restart_explorer: bool = True):
+        """Setzt den gewünschten Startmenü-Modus.
+
+        Args:
+            auto_restart_explorer: False beim App-Start (Explorer läuft bereits;
+                der Autostart-Guard greift beim nächsten Login). True bei
+                manueller Modus-Änderung über die GUI (sofortige Wirkung).
+        """
         try:
             prefer_classic_mode = self.startmenu_mode.get() == "classic"
             result = set_startmenu_mode(
                 prefer_classic_mode=prefer_classic_mode,
-                auto_restart_explorer=True,
+                auto_restart_explorer=auto_restart_explorer,
             )
             mode_label = "klassisch" if prefer_classic_mode else "Windows 11"
             if result.get("changed"):
@@ -256,7 +262,7 @@ class PCKonfiguratorGUI:
     def _on_startmenu_mode_changed(self, *_args):
         """Persistiert den Modus und setzt ihn direkt im Benutzerkontext."""
         self._save_gui_state()
-        self._run_startmenu_guard()
+        self._run_startmenu_guard(auto_restart_explorer=True)
         self._update_startmenu_mode_label()
 
     def _update_last_result_view(self):
@@ -358,8 +364,12 @@ class PCKonfiguratorGUI:
         self._logs_auto_refresh_ms = 2000
 
         self._load_gui_state()
-        self._run_startmenu_guard()
-        
+        # Beim Kaltstart keinen Explorer-Neustart auslösen: der Modus wird still
+        # in die Registry geschrieben; der Autostart-Guard (Startup-Ordner) sorgt
+        # beim nächsten Login für die Wirkung. Ein Explorer-Kill beim App-Start
+        # würde die Shell destabilisieren und folgende EXE-Starts stören.
+        self._run_startmenu_guard(auto_restart_explorer=False)
+
         self.create_widgets()
 
         # Persistenz bei Änderungen

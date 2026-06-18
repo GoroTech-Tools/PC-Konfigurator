@@ -1,4 +1,4 @@
-﻿# Release Notes v3.3.8
+﻿# Release Notes v3.3.9
 
 Datum: 2026-06-18
 
@@ -16,9 +16,9 @@ Datum: 2026-06-18
 
 ## Artefakte
 
-- Build-Verzeichnis: dist/PC-Konfigurator-v3.3.8/
-- EXE: dist/PC-Konfigurator-v3.3.8/PC-Konfigurator.exe
-- Release-ZIP: release/PC-Konfigurator-v3.3.8.zip
+- Build-Verzeichnis: dist/PC-Konfigurator-v3.3.9/
+- EXE: dist/PC-Konfigurator-v3.3.9/PC-Konfigurator.exe
+- Release-ZIP: release/PC-Konfigurator-v3.3.9.zip
 
 ## Enthaltene Commits (aktuelle Historie)
 
@@ -30,6 +30,6 @@ Datum: 2026-06-18
 
 ## Technische Build-Informationen
 
-- Build-Datum: 2026-06-18 20:39:27
+- Build-Datum: 2026-06-18 20:43:48
 - Build-Modus: --onefile --windowed
 - EXE-Name: PC-Konfigurator.exe

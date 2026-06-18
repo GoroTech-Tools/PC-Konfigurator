@@ -13,6 +13,11 @@ except Exception:  # pragma: no cover
     winreg = None  # type: ignore[assignment]
 
 
+WIN11_CLASSIC_CONTEXTMENU_CLSID = "{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}"
+WIN11_CLASSIC_CONTEXTMENU_KEY = rf"Software\Classes\CLSID\{WIN11_CLASSIC_CONTEXTMENU_CLSID}\InprocServer32"
+WIN11_CLASSIC_CONTEXTMENU_PARENT_KEY = rf"Software\Classes\CLSID\{WIN11_CLASSIC_CONTEXTMENU_CLSID}"
+
+
 @dataclass
 class StartmenuGuardResult:
     changed: bool
@@ -41,6 +46,20 @@ def _set_dword_if_needed(root, path: str, name: str, value: int) -> bool:
             pass
 
         winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, int(value))
+        return True
+
+
+def _set_sz_if_needed(root, path: str, name: str, value: str) -> bool:
+    key = winreg.CreateKeyEx(root, path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
+    with key:
+        try:
+            current, reg_type = winreg.QueryValueEx(key, name)
+            if reg_type == winreg.REG_SZ and str(current) == str(value):
+                return False
+        except FileNotFoundError:
+            pass
+
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, str(value))
         return True
 
 
@@ -101,6 +120,38 @@ def set_startmenu_mode(prefer_classic_mode: bool, auto_restart_explorer: bool = 
                 changed_keys.append(f"HKCU\\{path}::{name}")
         except Exception as exc:
             errors.append(f"{path}::{name}: {exc}")
+
+    # Windows-11-Kontextmenü: klassisch (Key vorhanden) vs. modern (Key entfernt)
+    try:
+        if prefer_classic_mode:
+            if _set_sz_if_needed(
+                winreg.HKEY_CURRENT_USER,
+                WIN11_CLASSIC_CONTEXTMENU_KEY,
+                "",
+                "",
+            ):
+                changed_keys.append(f"HKCU\\{WIN11_CLASSIC_CONTEXTMENU_KEY}::(Default)")
+        else:
+            removed = False
+            try:
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_KEY)
+                removed = True
+            except FileNotFoundError:
+                pass
+
+            try:
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, WIN11_CLASSIC_CONTEXTMENU_PARENT_KEY)
+                removed = True
+            except FileNotFoundError:
+                pass
+            except OSError:
+                # Nicht leer / anderweitig belegt -> unkritisch
+                pass
+
+            if removed:
+                changed_keys.append(f"HKCU\\{WIN11_CLASSIC_CONTEXTMENU_KEY}::(removed)")
+    except Exception as exc:
+        errors.append(f"{WIN11_CLASSIC_CONTEXTMENU_KEY}: {exc}")
 
     changed = len(changed_keys) > 0
     explorer_restarted = False
@@ -168,6 +219,39 @@ function Set-DwordValue {{
 $changed = $false
 $changed = (Set-DwordValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
 $changed = (Set-DwordValue -Path 'HKCU:\\Software\\ExplorerPatcher' -Name 'Start_ShowClassicMode' -Value {mode_value}) -or $changed
+
+$contextClassicPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}\\InprocServer32'
+$contextParentPath = 'HKCU:\\Software\\Classes\\CLSID\\{WIN11_CLASSIC_CONTEXTMENU_CLSID}'
+
+if ({mode_value} -eq 1) {{
+    if (-not (Test-Path $contextClassicPath)) {{
+        New-Item -Path $contextClassicPath -Force | Out-Null
+        $changed = $true
+    }}
+    try {{
+        $contextKey = Get-Item -Path $contextClassicPath -ErrorAction Stop
+        $defaultValue = $contextKey.GetValue('', $null)
+        if ($defaultValue -ne '') {{
+            $contextKey.SetValue('', '', [Microsoft.Win32.RegistryValueKind]::String)
+            $changed = $true
+        }}
+    }} catch {{
+        # unkritisch
+    }}
+}} else {{
+    if (Test-Path $contextClassicPath) {{
+        Remove-Item -Path $contextClassicPath -Force -ErrorAction SilentlyContinue
+        $changed = $true
+    }}
+    if (Test-Path $contextParentPath) {{
+        try {{
+            Remove-Item -Path $contextParentPath -Force -ErrorAction Stop
+            $changed = $true
+        }} catch {{
+            # Parent-Key kann noch Untereinträge haben; dann ignorieren
+        }}
+    }}
+}}
 
 if ($changed) {{
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue

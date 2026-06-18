@@ -158,6 +158,33 @@ Single Source of Truth zur Build-Version:
 3. Konfiguration mit Standardwerten durchführen
 4. Logausgabe auf Fehler/Warnungen prüfen
 
+### Behobene Fehler (v3.3.9)
+
+**1. `startmenu_guard.py` – SyntaxError beim Modulimport (f-String GUID)**
+
+Die GUID `{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}` war in `_build_guard_ps1()`
+direkt als Literal in einem f-String gesetzt. Python interpretierte `{86...}` als
+Formatierungsausdruck und warf `SyntaxError: invalid decimal literal` bereits beim
+Import, wodurch das gesamte Modul nicht geladen werden konnte. Kontextmenü-Klassik/
+Modern-Wechsel und Autostart-Hinterlegung waren damit funktionslos.
+
+**Fix:** Die Konstante `WIN11_CLASSIC_CONTEXTMENU_CLSID` wird jetzt per
+`{WIN11_CLASSIC_CONTEXTMENU_CLSID}` in den f-String interpoliert.
+
+**2. `main.py` – Explorer-Kill beim App-Start**
+
+`_run_startmenu_guard()` wurde beim Kaltstart der App immer mit
+`auto_restart_explorer=True` aufgerufen. Sobald der gespeicherte Modus nicht mit
+dem aktuellen Registry-Stand übereinstimmte (z. B. frische ZIP-Installation ohne
+vorhandene `gui_state.json`), wurde `taskkill /F /IM explorer.exe` ausgeführt. Das
+destabilisierte die Shell und verhinderte einen sofortigen zweiten EXE-Start
+(`Failed to load Python DLL`-Fehler aus `%TEMP%\_MEI...`).
+
+**Fix:** `_run_startmenu_guard()` erhält einen Parameter `auto_restart_explorer`.
+Beim Kaltstart wird `False` übergeben — der Autostart-Guard (Startup-Ordner) sorgt
+beim nächsten Login für die Wirkung. Nur bei manueller GUI-Modus-Änderung wird
+weiterhin `True` übergeben (sofortige sichtbare Wirkung gewünscht).
+
 ### Sonder-Smoke-Check (31.05.2026): Explorer-/Startmenü-Registry
 
 Durchgeführter Verifikationstest der neu ergänzten Windows-Registry-Werte

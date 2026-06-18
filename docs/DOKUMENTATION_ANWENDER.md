@@ -1,6 +1,6 @@
-# DOKUMENTATION_ANWENDER
+﻿# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.8 (17.06.2026)
+**Version:** 3.3.9 (18.06.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -48,7 +48,11 @@ Im Bereich „Individuelle Einstellungen“ stehen zur Verfügung:
 - **Startmenü-Modus umschalten:** `Windows 11 (empfohlen)` oder `Klassisch (Fallback)`
 
 Hinweis: Der gewählte Startmenü-Modus wird dauerhaft gespeichert und beim nächsten
-Start automatisch angewendet (Benutzerkontext, ohne Adminrechte).
+Start still in die Registry geschrieben (Benutzerkontext, ohne Adminrechte). Der
+Windows-Explorer wird dabei **nicht** neu gestartet — die Wirkung des gesetzten Modus
+tritt beim nächsten Windows-Login automatisch über den Autostart-Guard in Kraft.
+Wird der Modus manuell in der GUI umgeschaltet, startet der Explorer sofort neu,
+damit die Änderung sofort sichtbar wird.
 
 Zusätzlich hinterlegt die Anwendung eine externe Autostart-Variante im Benutzerprofil,
 damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wird:

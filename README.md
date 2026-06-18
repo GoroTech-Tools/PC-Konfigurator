@@ -1,8 +1,8 @@
-# PC-Konfigurator
+﻿# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.8 (Build: 17.06.2026, Python 3.13.7)
+**Version:** 3.3.9 (Build: 18.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -176,6 +176,23 @@ Der Build-Prozess ergänzt automatisch:
 ## Changelog
 
 ### v3.3.7 (17. Juni 2026)
+
+### v3.3.8 (17. Juni 2026)
+
+- Externer Startmenü-Autostart im Benutzerprofil hinterlegt:
+  `%APPDATA%\PC-Konfigurator\startmenu-guard` + Eintrag im Startup-Ordner.
+- Damit wird der gewählte Startmenü-Modus auch ohne manuellen App-Start
+  bei jeder Windows-Anmeldung automatisch angewendet.
+
+### v3.3.9 (18. Juni 2026)
+
+- **Bugfix `startmenu_guard.py`:** SyntaxError beim Modulimport behoben (GUID in
+  f-String war nicht korrekt escaped → `invalid decimal literal`). Kontextmenü-
+  klassisch/modern-Wechsel und Autostart-Hinterlegung sind jetzt funktionsfähig.
+- **Bugfix `main.py`:** App-Start killt nicht mehr den Windows-Explorer. Der
+  Startmenü-Guard schreibt den Modus beim Kaltstart still in die Registry
+  (`auto_restart_explorer=False`); der Explorer wird nur noch bei manuellem
+  Modus-Wechsel über die GUI neu gestartet.
 
 - Startmenü-Guard erweitert: Modus ist nun in der GUI dauerhaft zwischen `🟦 Windows 11 (empfohlen)` und `🟧 Klassisch (Fallback)` umschaltbar.
 - Start-Tab zeigt den aktiven Startmenü-Modus inklusive Live-Aktualisierung und Farbcodierung.
