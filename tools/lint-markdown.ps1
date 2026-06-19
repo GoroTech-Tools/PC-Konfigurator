@@ -40,18 +40,40 @@ if ($Fix) {
 
 $runner = $null
 
-if (Get-Command markdownlint -ErrorAction SilentlyContinue) {
-    $runner = 'markdownlint'
-    & markdownlint @commonArgs
+$globalNpmBin = Join-Path $env:APPDATA 'npm'
+$programFilesNodeBin = Join-Path $env:ProgramFiles 'nodejs'
+$originalPath = $env:PATH
+foreach ($extraPath in @($programFilesNodeBin, $globalNpmBin)) {
+    if ($extraPath -and (Test-Path $extraPath) -and ($env:PATH -notlike "*$extraPath*")) {
+        $env:PATH = "$extraPath;$env:PATH"
+    }
 }
-elseif (Get-Command npx -ErrorAction SilentlyContinue) {
+$candidateMarkdownlint = @(
+    (Get-Command markdownlint -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1),
+    (Join-Path $globalNpmBin 'markdownlint.cmd'),
+    (Join-Path $programFilesNodeBin 'markdownlint.cmd')
+) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+
+$candidateNpx = @(
+    (Get-Command npx -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1),
+    (Join-Path $globalNpmBin 'npx.cmd'),
+    (Join-Path $programFilesNodeBin 'npx.cmd')
+) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+
+if ($candidateMarkdownlint) {
+    $runner = 'markdownlint'
+    & $candidateMarkdownlint @commonArgs
+}
+elseif ($candidateNpx) {
     $runner = 'npx markdownlint-cli'
-    & npx --yes markdownlint-cli @commonArgs
+    & $candidateNpx --yes markdownlint-cli @commonArgs
 }
 else {
     Write-Host "Weder 'markdownlint' noch 'npx' gefunden. Bitte Node.js/npm installieren oder markdownlint-cli global bereitstellen." -ForegroundColor Red
     exit 1
 }
+
+$env:PATH = $originalPath
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Markdownlint-Fehler gefunden (Runner: $runner)." -ForegroundColor Red

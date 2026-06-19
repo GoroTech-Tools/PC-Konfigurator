@@ -1,8 +1,8 @@
-# PC-Konfigurator
+﻿# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.10 (Build: 18.06.2026, Python 3.13.7)
+**Version:** 3.3.15 (Build: 19.06.2026, Python 3.13.7)
 
 ## Übersicht
 

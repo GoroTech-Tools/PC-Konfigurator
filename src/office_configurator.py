@@ -24,6 +24,73 @@ class OfficeConfigurator:
         self.logger = logging.getLogger(__name__)
         self.registry_explainer = RegistryExplainer()
         self.applied_settings = []  # Track applied settings for logging
+
+    def _bootstrap_office_com(self) -> dict:
+        """Initialisiert COM einmal zentral und prüft Word, Excel und Outlook vorab.
+
+        Wenn ein Office-Teil nicht verfügbar ist, wird das nur als einmalige Info
+        zusammengefasst. Spätere Einzelwarnungen werden dann unterdrückt.
+        """
+        result = {
+            "ready": True,
+            "skip_com": False,
+            "summary": None,
+            "details": {},
+        }
+
+        try:
+            import pythoncom  # type: ignore
+            import win32com.client  # type: ignore
+
+            pythoncom.CoInitialize()
+            try:
+                probes = [
+                    ("Word", "Word.Application"),
+                    ("Excel", "Excel.Application"),
+                    ("Outlook", "Outlook.Application"),
+                ]
+                missing: list[str] = []
+
+                for label, prog_id in probes:
+                    try:
+                        app = win32com.client.DispatchEx(prog_id)
+                        try:
+                            if label in ("Word", "Excel"):
+                                try:
+                                    app.Visible = False
+                                except Exception:
+                                    pass
+                                try:
+                                    app.DisplayAlerts = 0 if label == "Word" else False
+                                except Exception:
+                                    pass
+                        finally:
+                            try:
+                                app.Quit()
+                            except Exception:
+                                pass
+                        result["details"][label] = "ok"
+                    except Exception as exc:
+                        missing.append(f"{label}: {exc}")
+                        result["details"][label] = str(exc)
+
+                if missing:
+                    result["ready"] = False
+                    result["skip_com"] = True
+                    result["summary"] = "; ".join(missing)
+                else:
+                    result["summary"] = "Word, Excel, Outlook COM vorab initialisiert."
+            finally:
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception:
+                    pass
+        except Exception as exc:
+            result["ready"] = False
+            result["skip_com"] = True
+            result["summary"] = f"COM-Vorabprüfung nicht möglich: {exc}"
+
+        return result
         
     def configure_all_settings(self, config, include_windows: bool = True):
         """Alle Office-Einstellungen konfigurieren"""
@@ -31,6 +98,18 @@ class OfficeConfigurator:
             self.logger.info("Konfiguration der Office-Einstellungen...")
             # Laufbezogenen Zähler zurücksetzen, damit applied_count pro Ausführung korrekt ist
             self.applied_settings = []
+
+            com_bootstrap = self._bootstrap_office_com()
+            if com_bootstrap.get("skip_com"):
+                self.logger.info(
+                    "[COM-HEALTH] PRECHECK | COM wird auf diesem System übersprungen: %s",
+                    com_bootstrap.get("summary", "unbekannt"),
+                )
+            else:
+                self.logger.info(
+                    "[COM-HEALTH] PRECHECK | %s",
+                    com_bootstrap.get("summary", "Word, Excel, Outlook COM vorab initialisiert."),
+                )
             
             font_name = config.get("font_name", "Aptos")
             font_size_word = config.get("font_size_word", 11)
@@ -48,17 +127,17 @@ class OfficeConfigurator:
                     target_path = config.get("target_path", "")
             
             # Word konfigurieren
-            word_result = self.configure_word(font_name, font_size_word, target_path)
+            word_result = self.configure_word(font_name, font_size_word, target_path, com_bootstrap=com_bootstrap)
             if not word_result["success"]:
                 return word_result
                 
             # Excel konfigurieren
-            excel_result = self.configure_excel(font_name, font_size_excel, target_path)
+            excel_result = self.configure_excel(font_name, font_size_excel, target_path, com_bootstrap=com_bootstrap)
             if not excel_result["success"]:
                 return excel_result
 
             # Outlook konfigurieren (Registry + COM-Sync, soweit verfügbar)
-            outlook_result = self.configure_outlook(font_name, font_size_word)
+            outlook_result = self.configure_outlook(font_name, font_size_word, com_bootstrap=com_bootstrap)
             if not outlook_result["success"]:
                 return outlook_result
 
@@ -70,10 +149,15 @@ class OfficeConfigurator:
                 
             # Outlook-Vorlagen kopieren
             outlook_warning = None
-            template_result = self.copy_outlook_templates()
+            template_result = self.copy_outlook_templates(com_bootstrap=com_bootstrap)
             if not template_result["success"]:
                 outlook_warning = template_result.get("error", "Outlook-Vorlage nicht gefunden")
                 self.logger.warning(f"Outlook-Konfiguration fehlgeschlagen: {outlook_warning}")
+            elif template_result.get("warning"):
+                outlook_warning = template_result.get("warning")
+                self.logger.warning(f"Outlook-Konfiguration mit Warnung: {outlook_warning}")
+            else:
+                self.logger.info("Outlook-Template-Schritt erfolgreich abgeschlossen (Kopie + Synchronisation).")
 
             if outlook_result.get("com_warning"):
                 warning_text = outlook_result.get("com_warning")
@@ -94,7 +178,10 @@ class OfficeConfigurator:
                     )
                     self.logger.warning(f"Windows-Konfiguration teilweise fehlgeschlagen: {windows_warning}")
 
-            if sync_warnings:
+            if com_bootstrap.get("skip_com"):
+                sync_warnings = []
+                self.logger.info("[COM-HEALTH] OK | COM optional nicht verfügbar; Registry/Template wurden dennoch gesetzt.")
+            elif sync_warnings:
                 self.logger.warning("[COM-HEALTH] DEGRADED | " + " | ".join(sync_warnings))
             else:
                 self.logger.info("[COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert")
@@ -108,14 +195,16 @@ class OfficeConfigurator:
                 "windows_configured": bool(windows_result.get("success", False)),
                 "windows_warning": windows_warning,
                 "com_sync_ok": len(sync_warnings) == 0,
-                "com_sync_warning": "; ".join(sync_warnings) if sync_warnings else None,
+                "com_sync_warning": None if com_bootstrap.get("skip_com") else ("; ".join(sync_warnings) if sync_warnings else None),
+                "com_precheck_summary": com_bootstrap.get("summary"),
+                "com_precheck_skipped": bool(com_bootstrap.get("skip_com")),
             }
             
         except Exception as e:
             self.logger.error(f"Fehler bei Office-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
     
-    def configure_word(self, font_name="Aptos", font_size=11, target_path=""):
+    def configure_word(self, font_name="Aptos", font_size=11, target_path="", com_bootstrap: dict | None = None):
         """Word-spezifische Einstellungen konfigurieren"""
         try:
             self.logger.info(f"Word konfigurieren: Schriftart={font_name}, Größe={font_size}")
@@ -159,7 +248,11 @@ class OfficeConfigurator:
             # Build-/Profilabhängig ignoriert Word einzelne DWORD-Werte aus \Word\Options
             # und verwendet stattdessen interne Optionen (Word.Options / Data\Settings).
             # Deshalb zusätzlich per COM setzen und in Normal.dotm persistieren.
-            com_warning = self._apply_word_options_via_com()
+            com_warning = None
+            if not (com_bootstrap or {}).get("skip_com"):
+                com_warning = self._apply_word_options_via_com()
+            else:
+                self.logger.info("Word-COM übersprungen (Precheck meldete COM nicht verfügbar).")
 
             # Word-Startbildschirm deaktivieren (direkt in leeres Dokument starten)
             for version in ["16.0", "15.0"]:
@@ -186,7 +279,7 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Word-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
     
-    def configure_excel(self, font_name="Aptos", font_size=10, target_path=""):
+    def configure_excel(self, font_name="Aptos", font_size=10, target_path="", com_bootstrap: dict | None = None):
         """Excel-spezifische Einstellungen konfigurieren"""
         try:
             self.logger.info(f"Excel konfigurieren: Schriftart={font_name}, Größe={font_size}")
@@ -215,7 +308,11 @@ class OfficeConfigurator:
             self._apply_excel_registry_settings(excel_settings, font_settings)
 
             # Registry-Werte zusätzlich mit Excel-COM synchronisieren
-            com_warning = self._apply_excel_options_via_com(font_name, font_size)
+            com_warning = None
+            if not (com_bootstrap or {}).get("skip_com"):
+                com_warning = self._apply_excel_options_via_com(font_name, font_size)
+            else:
+                self.logger.info("Excel-COM übersprungen (Precheck meldete COM nicht verfügbar).")
             
             # Angewandte Einstellungen protokollieren
             self._log_applied_settings("Excel")
@@ -229,7 +326,7 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Excel-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
 
-    def configure_outlook(self, font_name="Aptos", font_size=11):
+    def configure_outlook(self, font_name="Aptos", font_size=11, com_bootstrap: dict | None = None):
         """Outlook-spezifische Registry/COM-Einstellungen konfigurieren."""
         try:
             self.logger.info(f"Outlook konfigurieren: Schriftart={font_name}, Größe={font_size}")
@@ -253,7 +350,11 @@ class OfficeConfigurator:
                     version,
                 )
 
-            com_warning = self._apply_outlook_options_via_com(font_name, int(font_size))
+            com_warning = None
+            if not (com_bootstrap or {}).get("skip_com"):
+                com_warning = self._apply_outlook_options_via_com(font_name, int(font_size))
+            else:
+                self.logger.info("Outlook-COM übersprungen (Precheck meldete COM nicht verfügbar).")
             self._log_applied_settings("Outlook")
 
             result = {"success": True, "message": "Outlook erfolgreich konfiguriert"}
@@ -265,8 +366,8 @@ class OfficeConfigurator:
             return {"success": False, "error": str(e)}
     
 
-    def copy_outlook_templates(self):
-        """Outlook-Vorlagen kopieren"""
+    def copy_outlook_templates(self, com_bootstrap: dict | None = None):
+        """Outlook-Vorlagen kopieren und die Zielvorlage mit der registrierten Schrift synchronisieren."""
         try:
             self.logger.info("Outlook-Vorlagen werden kopiert...")
 
@@ -317,7 +418,18 @@ class OfficeConfigurator:
                     try:
                         shutil.copy2(source_template, target_path)
                         self.logger.info(f"Outlook-Vorlage kopiert: {source_template} -> {target_path}")
-                        return {"success": True, "message": "Outlook-Vorlagen erfolgreich kopiert"}
+                        self.logger.info("Outlook-Template wird nun mit der aktuell gesetzten Schrift synchronisiert...")
+                        sync_warning = self._sync_outlook_template_from_registry(
+                            target_path,
+                            allow_com_fallback=not (com_bootstrap or {}).get("skip_com"),
+                        )
+                        result = {"success": True, "message": "Outlook-Vorlagen erfolgreich kopiert"}
+                        if sync_warning:
+                            self.logger.warning(f"Outlook-Template-Synchronisation mit Hinweis: {sync_warning}")
+                            result["warning"] = sync_warning
+                        else:
+                            self.logger.info("Outlook-Template-Synchronisation erfolgreich abgeschlossen.")
+                        return result
                     except PermissionError as e:
                         last_error = e
                         self.logger.warning(
@@ -340,6 +452,93 @@ class OfficeConfigurator:
         except Exception as e:
             self.logger.error(f"Fehler beim Kopieren der Outlook-Vorlagen: {e}")
             return {"success": False, "error": str(e)}
+
+    def _get_outlook_font_from_registry(self):
+        """Liest die zuletzt konfigurierte Outlook-Schrift aus der Benutzer-Registry."""
+        candidates = ["16.0", "15.0", "14.0"]
+        font_value_names = ["NewMailFont", "DefaultMailFont", "ReplyForwardFont"]
+        size_value_names = ["NewMailFontSize", "ReplyForwardFontSize"]
+
+        for version in candidates:
+            key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options"
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ) as key:
+                    font_name = None
+                    font_size = None
+
+                    for value_name in font_value_names:
+                        try:
+                            current, reg_type = winreg.QueryValueEx(key, value_name)
+                            if reg_type == winreg.REG_SZ and str(current).strip():
+                                font_name = str(current).strip()
+                                break
+                        except FileNotFoundError:
+                            continue
+
+                    for value_name in size_value_names:
+                        try:
+                            current, reg_type = winreg.QueryValueEx(key, value_name)
+                            if reg_type == winreg.REG_DWORD:
+                                font_size = int(current)
+                                break
+                        except FileNotFoundError:
+                            continue
+
+                    if font_name and font_size:
+                        return font_name, font_size, version
+            except FileNotFoundError:
+                continue
+            except Exception as exc:
+                self.logger.debug(f"Outlook-Registry konnte nicht gelesen werden ({version}): {exc}")
+
+        return None, None, None
+
+    def _sync_outlook_template_from_registry(self, template_path: Path, allow_com_fallback: bool = True):
+        """Passt die Outlook-Vorlage an die eben gesetzte Schrift aus der Registry an."""
+        font_name, font_size, version = self._get_outlook_font_from_registry()
+        if not font_name or not font_size:
+            self.logger.warning("Outlook-Template-Synchronisation übersprungen: Schrift konnte aus der Registry nicht ermittelt werden.")
+            return "Outlook-Schrift konnte aus der Registry nicht ermittelt werden."
+
+        try:
+            from pcconfig.safe_template_processor import SafeTemplateProcessor
+
+            processor = SafeTemplateProcessor()
+            if processor.update_word_template_xml(template_path, font_name, font_size):
+                self.logger.info(
+                    "Outlook-Vorlage synchronisiert: %s → %s %dpt (Office %s)",
+                    template_path,
+                    font_name,
+                    font_size,
+                    version,
+                )
+                return None
+
+            if allow_com_fallback:
+                self.logger.warning(
+                    "XML-Synchronisierung für Outlook-Vorlage fehlgeschlagen, versuche COM-Fallback: %s",
+                    template_path,
+                )
+            else:
+                self.logger.info(
+                    "XML-Synchronisierung für Outlook-Vorlage fehlgeschlagen; COM-Fallback wird wegen Precheck übersprungen: %s",
+                    template_path,
+                )
+
+            if allow_com_fallback and processor.update_word_template_safely(template_path, font_name, font_size):
+                self.logger.info(
+                    "Outlook-Vorlage per COM synchronisiert: %s → %s %dpt (Office %s)",
+                    template_path,
+                    font_name,
+                    font_size,
+                    version,
+                )
+                return None
+
+            return None if not allow_com_fallback else f"Outlook-Vorlage konnte nicht auf {font_name} {font_size}pt aktualisiert werden."
+        except Exception as exc:
+            self.logger.warning(f"Outlook-Vorlagen-Synchronisierung fehlgeschlagen: {exc}")
+            return f"Outlook-Vorlagen-Synchronisierung fehlgeschlagen: {exc}"
     
     def _apply_word_registry_settings(self, word_settings, font_settings):
         """Word Registry-Einstellungen anwenden"""

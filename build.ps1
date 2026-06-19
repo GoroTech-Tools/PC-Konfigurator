@@ -73,6 +73,48 @@ function Normalize-MarkdownTail {
     }
 }
 
+function Copy-DirectoryRobust {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Source,
+        [Parameter(Mandatory = $true)]
+        [string]$Destination,
+        [string]$Label = 'Verzeichnis'
+    )
+
+    if (-not (Test-Path $Source)) {
+        throw "$Label fehlt: $Source"
+    }
+
+    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+
+    $sourceRoot = (Resolve-Path $Source).Path.TrimEnd('\') + '\'
+    $copied = 0
+    $skipped = 0
+
+    foreach ($item in Get-ChildItem -Path $Source -Recurse -File -ErrorAction SilentlyContinue) {
+        $relativePath = $item.FullName.Substring($sourceRoot.Length)
+        $targetFile = Join-Path $Destination $relativePath
+        $targetDir = Split-Path $targetFile -Parent
+
+        try {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            Copy-Item -LiteralPath $item.FullName -Destination $targetFile -Force -ErrorAction Stop
+            $copied++
+        } catch {
+            $skipped++
+            Write-Host "Warnung: $Label-Datei übersprungen: $relativePath ($_ )" -ForegroundColor Yellow
+        }
+    }
+
+    Write-Host "$Label kopiert: $copied Datei(en), $skipped übersprungen." -ForegroundColor DarkGray
+    return [pscustomobject]@{
+        Copied = $copied
+        Skipped = $skipped
+    }
+}
+
 function New-ReleaseNotesFile {
     [CmdletBinding()]
     param(
@@ -490,7 +532,7 @@ if (-not (Test-Path $docsSource)) {
     exit 1
 }
 
-Copy-Item -Path $docsSource -Destination $docsTarget -Recurse -Force
+Copy-DirectoryRobust -Source $docsSource -Destination $docsTarget -Label 'docs'
 
 $dataSource = Join-Path $PSScriptRoot 'data'
 $dataTarget = Join-Path $buildDirPath 'data'
@@ -499,7 +541,7 @@ if (-not (Test-Path $dataSource)) {
     exit 1
 }
 
-Copy-Item -Path $dataSource -Destination $dataTarget -Recurse -Force
+Copy-DirectoryRobust -Source $dataSource -Destination $dataTarget -Label 'data'
 
 $buildDir = Get-Item $buildDirPath
 
