@@ -55,7 +55,7 @@ def run_full_configuration_flow(
             if result.get("com_precheck_skipped"):
                 append_status("   ℹ️ COM optional nicht verfügbar (Registry/Template aktiv)\n")
             elif result.get("com_sync_ok", True):
-                append_status("   ✅ COM: [COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert\n")
+                append_status("   ✅ COM: [COM-HEALTH] OK | Word/Excel via COM, Outlook via Registry/MailSettings\n")
             elif result.get("com_sync_warning"):
                 append_status(f"   ⚠️ COM: [COM-HEALTH] DEGRADED | {result['com_sync_warning']}\n")
             if result.get("outlook_warning"):
@@ -160,7 +160,7 @@ def run_office_configuration_flow(
             if result.get("com_precheck_skipped"):
                 append_status("ℹ️ COM optional nicht verfügbar (Registry/Template aktiv)\n")
             elif result.get("com_sync_ok", True):
-                append_status("✅ COM: [COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert\n")
+                append_status("✅ COM: [COM-HEALTH] OK | Word/Excel via COM, Outlook via Registry/MailSettings\n")
             elif result.get("com_sync_warning"):
                 append_status(f"⚠️ COM: [COM-HEALTH] DEGRADED | {result['com_sync_warning']}\n")
             if result.get("outlook_warning"):

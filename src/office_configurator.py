@@ -27,12 +27,8 @@ class OfficeConfigurator:
         self.applied_settings = []  # Track applied settings for logging
 
     def _bootstrap_office_com(self) -> dict:
-        """Initialisiert COM einmal zentral und prüft Word, Excel und Outlook vorab.
-
-        Wenn ein Office-Teil nicht verfügbar ist, wird das nur als einmalige Info
-        zusammengefasst. Spätere Einzelwarnungen werden dann unterdrückt.
-        """
-        result = {
+        """Prüft nur die COM-Laufzeit und vermeidet langsame Office-Vorabstarts."""
+        result = { 
             "ready": True,
             "skip_com": False,
             "summary": None,
@@ -45,42 +41,12 @@ class OfficeConfigurator:
 
             pythoncom.CoInitialize()
             try:
-                probes = [
-                    ("Word", "Word.Application"),
-                    ("Excel", "Excel.Application"),
-                    ("Outlook", "Outlook.Application"),
-                ]
-                missing: list[str] = []
-
-                for label, prog_id in probes:
-                    try:
-                        app = win32com.client.DispatchEx(prog_id)
-                        try:
-                            if label in ("Word", "Excel"):
-                                try:
-                                    app.Visible = False
-                                except Exception:
-                                    pass
-                                try:
-                                    app.DisplayAlerts = 0 if label == "Word" else False
-                                except Exception:
-                                    pass
-                        finally:
-                            try:
-                                app.Quit()
-                            except Exception:
-                                pass
-                        result["details"][label] = "ok"
-                    except Exception as exc:
-                        missing.append(f"{label}: {exc}")
-                        result["details"][label] = str(exc)
-
-                if missing:
-                    result["ready"] = False
-                    result["skip_com"] = True
-                    result["summary"] = "; ".join(missing)
-                else:
-                    result["summary"] = "Word, Excel, Outlook COM vorab initialisiert."
+                result["details"] = {
+                    "pythoncom": "ok",
+                    "win32com": "ok",
+                    "mode": "lazy",
+                }
+                result["summary"] = "COM-Laufzeit verfügbar; Word/Excel werden nur bei Bedarf geöffnet. Outlook nutzt primär Registry/MailSettings."
             finally:
                 try:
                     pythoncom.CoUninitialize()
@@ -101,16 +67,10 @@ class OfficeConfigurator:
             self.applied_settings = []
 
             com_bootstrap = self._bootstrap_office_com()
-            if com_bootstrap.get("skip_com"):
-                self.logger.info(
-                    "[COM-HEALTH] PRECHECK | COM wird auf diesem System übersprungen: %s",
-                    com_bootstrap.get("summary", "unbekannt"),
-                )
-            else:
-                self.logger.info(
-                    "[COM-HEALTH] PRECHECK | %s",
-                    com_bootstrap.get("summary", "Word, Excel, Outlook COM vorab initialisiert."),
-                )
+            self.logger.info(
+                "[COM-HEALTH] PRECHECK | %s",
+                com_bootstrap.get("summary", "Word, Excel, Outlook COM vorab initialisiert."),
+            )
             
             font_name = config.get("font_name", "Aptos")
             font_size_word = config.get("font_size_word", 11)
@@ -192,7 +152,7 @@ class OfficeConfigurator:
             elif sync_warnings:
                 self.logger.warning("[COM-HEALTH] DEGRADED | " + " | ".join(sync_warnings))
             else:
-                self.logger.info("[COM-HEALTH] OK | Word, Excel, Outlook via COM synchronisiert")
+                self.logger.info("[COM-HEALTH] OK | Word/Excel via COM synchronisiert; Outlook via Registry/MailSettings/Template gesetzt")
             
             return {
                 "success": True,
@@ -361,10 +321,9 @@ class OfficeConfigurator:
             mailsettings_warning = self._apply_outlook_mailsettings_registry(font_name, int(font_size))
 
             com_warning = None
-            if not (com_bootstrap or {}).get("skip_com"):
-                com_warning = self._apply_outlook_options_via_com(font_name, int(font_size))
-            else:
-                self.logger.info("Outlook-COM übersprungen (Precheck meldete COM nicht verfügbar).")
+            self.logger.info(
+                "Outlook-COM-Synchronisierung wird übersprungen: MailSettings + Template-Sync sind der primäre und schnellere Pfad."
+            )
             self._log_applied_settings("Outlook")
 
             result = {"success": True, "message": "Outlook erfolgreich konfiguriert"}
