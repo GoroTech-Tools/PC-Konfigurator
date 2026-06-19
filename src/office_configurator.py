@@ -13,6 +13,7 @@ import logging
 import shutil
 import time
 import subprocess
+import re
 from pathlib import Path
 from registry_explainer import RegistryExplainer
 
@@ -161,6 +162,13 @@ class OfficeConfigurator:
 
             if outlook_result.get("com_warning"):
                 warning_text = outlook_result.get("com_warning")
+                if outlook_warning:
+                    outlook_warning = f"{outlook_warning}; {warning_text}"
+                else:
+                    outlook_warning = warning_text
+
+            if outlook_result.get("warning"):
+                warning_text = outlook_result.get("warning")
                 if outlook_warning:
                     outlook_warning = f"{outlook_warning}; {warning_text}"
                 else:
@@ -350,6 +358,8 @@ class OfficeConfigurator:
                     version,
                 )
 
+            mailsettings_warning = self._apply_outlook_mailsettings_registry(font_name, int(font_size))
+
             com_warning = None
             if not (com_bootstrap or {}).get("skip_com"):
                 com_warning = self._apply_outlook_options_via_com(font_name, int(font_size))
@@ -358,6 +368,8 @@ class OfficeConfigurator:
             self._log_applied_settings("Outlook")
 
             result = {"success": True, "message": "Outlook erfolgreich konfiguriert"}
+            if mailsettings_warning:
+                result["warning"] = mailsettings_warning
             if com_warning:
                 result["com_warning"] = com_warning
             return result
@@ -460,6 +472,24 @@ class OfficeConfigurator:
         size_value_names = ["NewMailFontSize", "ReplyForwardFontSize"]
 
         for version in candidates:
+            mailsettings_key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\MailSettings"
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, mailsettings_key_path, 0, winreg.KEY_READ) as key:
+                    for value_name in ("ComposeFontComplex", "ReplyFontComplex", "TextFontComplex"):
+                        try:
+                            blob, reg_type = winreg.QueryValueEx(key, value_name)
+                            if reg_type == winreg.REG_BINARY and isinstance(blob, (bytes, bytearray)):
+                                parsed = self._extract_outlook_font_from_complex_blob(bytes(blob))
+                                if parsed:
+                                    font_name, font_size = parsed
+                                    return font_name, font_size, version
+                        except FileNotFoundError:
+                            continue
+            except FileNotFoundError:
+                pass
+            except Exception as exc:
+                self.logger.debug(f"Outlook-MailSettings konnte nicht gelesen werden ({version}): {exc}")
+
             key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options"
             try:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ) as key:
@@ -492,6 +522,125 @@ class OfficeConfigurator:
                 self.logger.debug(f"Outlook-Registry konnte nicht gelesen werden ({version}): {exc}")
 
         return None, None, None
+
+    def _extract_outlook_font_from_complex_blob(self, blob: bytes):
+        """Extrahiert Schriftname/-größe aus Outlook *FontComplex*-HTML-Binärwerten."""
+        try:
+            text = blob.decode("utf-8", errors="ignore")
+
+            font_match = re.search(r'font-family:\s*"([^"]+)"', text, flags=re.IGNORECASE)
+            if not font_match:
+                return None
+
+            size_match = re.search(r'font-size:\s*([0-9]+(?:\.[0-9]+)?)pt', text, flags=re.IGNORECASE)
+            if not size_match:
+                return None
+
+            font_name = font_match.group(1).strip()
+            font_size = int(round(float(size_match.group(1))))
+            if not font_name or font_size <= 0:
+                return None
+            return font_name, font_size
+        except Exception:
+            return None
+
+    def _build_outlook_font_simple_blob(self, font_name: str, font_size: int) -> bytes:
+        """Erzeugt einen einfachen Outlook-Font-Blob (Compose/Reply/Text *Simple*)."""
+        safe_size = max(1, min(int(font_size), 72))
+        safe_name = (font_name or "Aptos").strip() or "Aptos"
+
+        blob = bytearray(60)
+        blob[:12] = bytes.fromhex("3C0000001F0000F800000040")
+        blob[12:16] = int(safe_size * 20).to_bytes(4, "little", signed=False)
+        blob[27] = 0x22
+
+        try:
+            encoded_name = safe_name.encode("mbcs", errors="replace")
+        except LookupError:
+            encoded_name = safe_name.encode("latin-1", errors="replace")
+
+        encoded_name = encoded_name[:31]
+        start = 28
+        blob[start:start + len(encoded_name)] = encoded_name
+        blob[start + len(encoded_name)] = 0
+        return bytes(blob)
+
+    def _build_outlook_font_complex_blob(self, font_name: str, font_size: int, mode: str) -> bytes:
+        """Erzeugt einen Outlook-*FontComplex*-Blob als HTML/CSS."""
+        safe_size = max(1, min(int(font_size), 72))
+        safe_name = (font_name or "Aptos").replace('"', "'").strip() or "Aptos"
+
+        if mode == "compose":
+            selector = "span.PersönlicherErstellstil"
+            style_name = "Persönlicher Erstellstil"
+            style_type = "personal-compose"
+        elif mode == "reply":
+            selector = "span.PersönlicherAntwortstil1"
+            style_name = "Persönlicher Antwortstil1"
+            style_type = "personal-reply"
+        else:
+            selector = "p.MsoPlainText, li.MsoPlainText, div.MsoPlainText"
+            style_name = "Nur Text"
+            style_type = "plain-text"
+
+        html = (
+            "<html>\r\n\r\n"
+            "<head>\r\n"
+            "<style>\r\n\r\n"
+            " /* Style Definitions */\r\n"
+            f" {selector}\r\n"
+            "\t{"
+            f"mso-style-name:\"{style_name}\";"
+            f"mso-style-type:{style_type};"
+            "mso-style-noshow:yes;"
+            "mso-style-unhide:no;"
+            f"font-size:{safe_size}.0pt;"
+            f"mso-ansi-font-size:{safe_size}.0pt;"
+            f"mso-bidi-font-size:{safe_size}.0pt;"
+            f"font-family:\"{safe_name}\",sans-serif;"
+            f"mso-ascii-font-family:{safe_name};"
+            f"mso-fareast-font-family:{safe_name};"
+            f"mso-hansi-font-family:{safe_name};"
+            "mso-bidi-font-family:\"Times New Roman\";"
+            "color:windowtext;"
+            "}\r\n"
+            "-->\r\n"
+            "</style>\r\n"
+            "</head>\r\n\r\n"
+            "</html>\r\n"
+        )
+        return html.encode("utf-8", errors="replace")
+
+    def _apply_outlook_mailsettings_registry(self, font_name: str, font_size: int) -> str | None:
+        """Setzt Outlook-Schriftwerte im Common\\MailSettings-Zweig (COM-freier Hauptpfad)."""
+        office_versions = ["16.0", "15.0"]
+        errors: list[str] = []
+
+        for version in office_versions:
+            key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\MailSettings"
+            try:
+                with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                    winreg.SetValueEx(key, "ComposeFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
+                    winreg.SetValueEx(key, "ReplyFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
+                    winreg.SetValueEx(key, "TextFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
+                    winreg.SetValueEx(key, "ComposeFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "compose"))
+                    winreg.SetValueEx(key, "ReplyFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "reply"))
+                    winreg.SetValueEx(key, "TextFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "text"))
+
+                self.logger.info(
+                    "[Outlook %s] Common\\MailSettings aktualisiert: %s %dpt (Simple+Complex)",
+                    version,
+                    font_name,
+                    int(font_size),
+                )
+            except Exception as exc:
+                errors.append(f"{version}: {exc}")
+
+        if errors:
+            warning = "Outlook-MailSettings konnten nicht vollständig gesetzt werden (" + "; ".join(errors) + ")"
+            self.logger.warning(warning)
+            return warning
+        return None
 
     def _sync_outlook_template_from_registry(self, template_path: Path, allow_com_fallback: bool = True):
         """Passt die Outlook-Vorlage an die eben gesetzte Schrift aus der Registry an."""
