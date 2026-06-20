@@ -32,7 +32,13 @@ def run_full_configuration_flow(
         font_result = install_all_fonts()
         if font_result.get("success"):
             installed_count = len(font_result.get("installed_fonts", []))
-            append_status(f"   Erfolg: {installed_count} Schrift-Dateien im Benutzerprofil installiert\n")
+            skipped_count = len(font_result.get("skipped_fonts", []))
+            if installed_count > 0:
+                append_status(f"   Erfolg: {installed_count} Schrift-Datei(en) neu im Benutzerprofil installiert\n")
+            elif skipped_count > 0:
+                append_status("   Alle Schriften sind bereits vorhanden – keine neuen Installationen erforderlich.\n")
+            else:
+                append_status("   Keine Schrift-Dateien im Fonts-Ordner gefunden.\n")
         else:
             append_status(
                 f"   Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n"

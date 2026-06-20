@@ -70,12 +70,14 @@ class RegistryExplanationWindow:
         self.tabview.add("Excel-Einstellungen")
         self.tabview.add("Outlook-Einstellungen")
         self.tabview.add("Windows-Einstellungen")
+        self.tabview.add("Office-Einstellungen")
 
         self.create_overview_tab()
         self._populate_settings_tab("Word", "Word-Einstellungen", "📝")
         self._populate_settings_tab("Excel", "Excel-Einstellungen", "📊")
         self._populate_settings_tab("Outlook", "Outlook-Einstellungen", "📧")
         self._populate_settings_tab("Windows", "Windows-Einstellungen", "🪟")
+        self._populate_settings_tab("Office", "Office-Einstellungen", "⚙️")
 
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x", padx=10, pady=10)
@@ -125,7 +127,8 @@ class RegistryExplanationWindow:
             "",
             f"Gesamt: {total_settings} Einstellungen",
             "",
-            "Wählen Sie in den Reitern unten, welche Einstellungen angewendet werden sollen.",
+            "Wählen Sie das gewünschte Register aus. Die jeweiligen Einstellungen (Empfehlungen)",
+            "können Sie bei Bedarf über die Kontrollkästchen in der ersten Spalte ändern.",
             "Klicken Sie auf eine Zeile, um eine detaillierte Beschreibung zu sehen.",
         ])
 

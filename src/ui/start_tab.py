@@ -74,6 +74,30 @@ def build_start_tab(
         justify="left",
     ).pack(anchor="w", padx=12, pady=(0, 8))
 
+    ctk.CTkLabel(
+        action_box,
+        text="SO STARTEN SIE:",
+        font=ctk.CTkFont(weight="bold"),
+    ).pack(anchor="w", padx=12, pady=(2, 0))
+    ctk.CTkLabel(
+        action_box,
+        text="1. Tab 'Vorlagen/Ablage' → Schriftart, Zielpfad und Template-Optionen anpassen\n"
+             "2. Tab 'Registry' → Geplante Änderungen einsehen (optional)\n"
+             "3. Über die Aktionen unten die Konfiguration starten",
+        justify="left",
+    ).pack(anchor="w", padx=12, pady=(0, 8))
+
+    ctk.CTkLabel(
+        action_box,
+        text="VOR DER AUSFÜHRUNG:",
+        font=ctk.CTkFont(weight="bold"),
+    ).pack(anchor="w", padx=12, pady=(2, 0))
+    ctk.CTkLabel(
+        action_box,
+        text="• Speichern Sie alle offenen Office-Dateien.",
+        justify="left",
+    ).pack(anchor="w", padx=12, pady=(0, 8))
+
     action_row = ctk.CTkFrame(action_box)
     action_row.pack(fill="x", padx=12, pady=(0, 10))
     ctk.CTkButton(

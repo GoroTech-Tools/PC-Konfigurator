@@ -39,7 +39,6 @@ from ui.execution_flow import (
     run_office_configuration_flow,
 )
 from ui.configuration_tab import build_configuration_tab
-from ui.overview_tab import build_overview_tab
 from ui.registry_info_tab import build_registry_info_tab
 from ui.layout import (
     build_main_layout,
@@ -306,8 +305,67 @@ class PCKonfiguratorGUI:
         tk_root.config(menu=menubar)
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Tools', menu=tools_menu)
+        tools_menu.add_command(label='Systemstatus anzeigen', command=self.open_system_status_window)
+        tools_menu.add_command(label='System prüfen', command=self.check_system_requirements)
+        tools_menu.add_separator()
         tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
         tools_menu.add_command(label='GPO-Design-Prüfung', command=self.run_gpo_check)
+
+    def open_system_status_window(self):
+        """Öffnet ein kompaktes Tool-Fenster für die Systemstatus-Anzeige."""
+        existing = getattr(self, "system_status_window", None)
+        if existing is not None:
+            try:
+                if existing.winfo_exists():
+                    existing.lift()
+                    existing.focus_force()
+                    return
+            except Exception:
+                pass
+
+        window = ctk.CTkToplevel(self.root)
+        window.title("Systemstatus")
+        window.geometry("620x300")
+        window.minsize(520, 240)
+
+        container = ctk.CTkFrame(window)
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+
+        ctk.CTkLabel(
+            container,
+            text="System-Status",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        ).pack(anchor="w", padx=12, pady=(12, 6))
+
+        self.system_status_label = ctk.CTkLabel(
+            container,
+            text="Klicken Sie auf 'System prüfen', um Windows- und Office-Version zu ermitteln.",
+            justify="left",
+            wraplength=560,
+        )
+        self.system_status_label.pack(fill="x", padx=12, pady=(0, 10))
+
+        button_row = ctk.CTkFrame(container)
+        button_row.pack(fill="x", padx=12, pady=(0, 12))
+
+        ctk.CTkButton(button_row, text="System prüfen", command=self.check_system_requirements).pack(side="left", padx=(0, 8), pady=6)
+        ctk.CTkButton(button_row, text="Schließen", command=window.destroy).pack(side="left", pady=6)
+
+        self.system_status_window = window
+
+        last_result = getattr(self, "last_system_check_result", None)
+        if isinstance(last_result, dict):
+            apply_system_status(last_result, self.system_status_label, self.start_status_label)
+
+        def _on_close():
+            self.system_status_window = None
+            self.system_status_label = None
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+        window.protocol("WM_DELETE_WINDOW", _on_close)
 
     def run_gpo_check(self):
         """GPO-Prüfung auf Office-Design-Richtlinien als eigenständiges Dialogfenster."""
@@ -360,6 +418,9 @@ class PCKonfiguratorGUI:
         self.start_status_label = None
         self.startmenu_mode_status_label = None
         self.template_status_frame = None
+        self.system_status_window = None
+        self.system_status_label = None
+        self.last_system_check_result = None
         self._logs_auto_refresh_job = None
         self._logs_auto_refresh_ms = 2000
 
@@ -388,8 +449,6 @@ class PCKonfiguratorGUI:
             self._update_last_result_view()
 
         self.add_tools_menu()
-        # Systemstatus direkt beim Start im Hintergrund ermitteln
-        self.root.after(500, self.check_system_requirements)
         
     def setup_appearance(self):
         """Erscheinungsbild der Anwendung festlegen"""
@@ -428,8 +487,7 @@ class PCKonfiguratorGUI:
         """GUI-Widgets erstellen"""
         layout_refs = build_main_layout(self.root, title="PC-Konfigurator")
         self.tabview = layout_refs["tabview"]
-        
-        self.create_overview_tab()
+
         self.create_start_tab()
         self.create_configuration_tab()
         self.create_registry_info_tab()
@@ -475,14 +533,6 @@ class PCKonfiguratorGUI:
         )
         self.startmenu_mode_status_label = refs.get("startmenu_mode_label") if isinstance(refs, dict) else None
         self._update_startmenu_mode_label()
-        
-    def create_overview_tab(self):
-        """Übersicht-Tab erstellen"""
-        refs = build_overview_tab(
-            self.tabview,
-            on_check_system=self.check_system_requirements,
-        )
-        self.status_label = refs["status_label"]
         
     def create_configuration_tab(self):
         """Konfiguration-Tab erstellen"""
@@ -715,6 +765,14 @@ class PCKonfiguratorGUI:
         
     def check_system_requirements(self):
         """System-Anforderungen in separatem Thread prüfen"""
+        if getattr(self, "system_status_label", None) is None:
+            self.open_system_status_window()
+
+        try:
+            self.system_status_label.configure(text="Systemprüfung läuft ...", text_color=("#1F2937", "#E5E7EB"), justify="left")
+        except Exception:
+            pass
+
         start_system_requirements_check(
             self.root,
             self.system_checker,
@@ -724,7 +782,10 @@ class PCKonfiguratorGUI:
         
     def update_system_status(self, result):
         """System-Status in der GUI aktualisieren"""
-        apply_system_status(result, self.status_label, self.start_status_label)
+        self.last_system_check_result = result
+        target_label = getattr(self, "system_status_label", None)
+        if target_label is not None:
+            apply_system_status(result, target_label, self.start_status_label)
     
     def add_status_text(self, text):
         """Text zur Status-Anzeige hinzufügen"""

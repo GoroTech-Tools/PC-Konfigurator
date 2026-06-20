@@ -4,7 +4,6 @@ from typing import Iterable
 
 import customtkinter as ctk
 
-TAB_OVERVIEW = "Übersicht"
 TAB_START = "Start"
 TAB_CONFIG = "Vorlagen/Ablage"
 TAB_REGISTRY = "Registry"
@@ -12,7 +11,6 @@ TAB_EXECUTION = "Ausführung"
 TAB_LOGS = "Logs"
 
 DEFAULT_TABS = (
-    TAB_OVERVIEW,
     TAB_START,
     TAB_CONFIG,
     TAB_REGISTRY,
