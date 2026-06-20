@@ -4,18 +4,39 @@ Datum: 2026-06-20
 
 ## Highlights
 
-- Tab „Übersicht" aus der Haupt-GUI entfernt; Inhalte in den Tab „Start" überführt.
-- Systemstatus-Anzeige und Systemprüfung in das Menü „Tools" verlagert.
-- Hinweise „So starten Sie" und „Vor der Ausführung" im Tab „Start" ergänzt.
-- Font-Installationsausgabe aussagekräftiger: unterscheidet Neu-Installation, bereits vorhanden und leeren Ordner.
-- Registry-GUI: neuer Tab „Office-Einstellungen" für allgemeine Office-Werte.
-- Registry-GUI: Hinweistext im Tab „Übersicht" präzisiert.
+- Start-Tab und Menüstruktur deutlich vereinfacht:
+	- Doku-Datei-Buttons aus dem Start-Tab entfernt.
+	- Neues Menü **Hilfe** mit:
+		- `Anwender-Dokumentation öffnen`
+		- `Technik-Dokumentation öffnen`
+		- `Mehr Informationen` (am Ende)
+- Tools-Menü überarbeitet:
+	- `System prüfen` als separater Menüeintrag entfernt.
+	- `Systemstatus anzeigen` startet die Prüfung nun automatisch.
+- Systemstatus-Fenster modernisiert:
+	- Schaltfläche `System prüfen` entfernt.
+	- `Schließen` unten rechts.
+	- Kompakteres Fensterlayout.
+- Neuer Bedienmodus im Start-Tab: **Einfach / Erweitert**
+	- `Registry`-Tab nur im erweiterten Modus.
+	- Zusätzliche Tools (Bitness/COM, GPO) nur im erweiterten Modus.
+	- Bereich `Ausgangsmaterial` (Ordner-Buttons) nur im erweiterten Modus.
+	- `Explorer neu starten` nur im erweiterten Modus.
+	- Aktionshinweise im Start-Tab dynamisch nummeriert je Modus.
+- Fensterpositionierung verbessert:
+	- Hauptfenster zentriert im Arbeitsbereich (ohne Taskleisten-Überdeckung).
+	- Fenster `Detaillierte Ansicht` gleich zentriert und vor dem Hauptfenster.
+- Tab `Vorlagen/Ablage` überarbeitet:
+	- Bereiche für Schriftart und Schriftgrößen horizontal nebeneinander.
+	- Beschriftungen vereinheitlicht (`Schriftgröße Word/Outlook`, `Schriftgröße Excel`).
+- Tab-Kopfzeilen robuster skaliert:
+	- Einheitliche, besser lesbare Breite und stabiles Verhalten beim Moduswechsel.
 
 ## Qualitätsstatus
 
-- Release-Build erfolgreich erzeugt.
-- ZIP-Artefakt erstellt und im Release-Ordner abgelegt.
-- Automatische Basisprüfung (Build/Packaging) im Skript durchlaufen.
+- Mehrfacher GUI-Smoke-Test durchgeführt (Start ohne Traceback).
+- Sichtprüfung der neuen Modus-/Menülogik erfolgreich.
+- Sichtprüfung der Fensterpositionierung und Tab-Layouts erfolgreich.
 
 ## Artefakte
 
@@ -25,11 +46,7 @@ Datum: 2026-06-20
 
 ## Enthaltene Commits (aktuelle Historie)
 
-- `168f032` Chore: enable markdownlint rule MD010
-- `a00aa27` Release v3.3.19: Explorer-Recovery hardening, Outlook template path fix, full docs update
-- `c42c2f7` Release v3.3.17: Office-Konfiguration beschleunigen
-- `95a8104` Release v3.3.16: Outlook MailSettings ohne COM
-- `1c8a04d` Release v3.3.15: COM-Precheck, Outlook-Template-Feedback und Build-Robustheit
+- Wird mit dem Release-Commit `v3.3.20` aktualisiert.
 
 ## Technische Build-Informationen
 

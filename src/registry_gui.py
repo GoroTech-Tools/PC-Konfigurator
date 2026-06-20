@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple
 
 from registry_explainer import RegistryExplainer, RegistrySettingInfo
 from ui.sizing import apply_uniform_button_sizes
+from ui.window_positioning import center_window_on_work_area
 
 
 class RegistryExplanationWindow:
@@ -39,7 +40,12 @@ class RegistryExplanationWindow:
 
         self.window = ctk.CTkToplevel(self.parent)
         self.window.title("Registry-Einstellungen - Konfiguration")
-        self.window.geometry("1000x750")
+        center_window_on_work_area(self.window, 1000, 750)
+        if self.parent is not None:
+            try:
+                self.window.transient(self.parent)
+            except Exception:
+                pass
         self.window.protocol("WM_DELETE_WINDOW", self.on_window_closing)
 
         self.create_widgets()
@@ -378,7 +384,10 @@ class RegistryExplanationWindow:
     def _bring_to_front(self):
         """Fenster in den Vordergrund bringen (verzögert, damit CTk fertig gerendert hat)."""
         if self.window and self.window.winfo_exists():
-            self.window.lift()
+            if self.parent is not None:
+                self.window.lift(self.parent)
+            else:
+                self.window.lift()
             self.window.focus_force()
             self.window.grab_set()
 

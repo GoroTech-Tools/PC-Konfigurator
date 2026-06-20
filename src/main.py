@@ -7,6 +7,7 @@ Moderne GUI-Anwendung zur PC-Konfiguration mit CustomTkinter
 
 import customtkinter as ctk
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import messagebox
 import threading
 import sys
@@ -42,6 +43,7 @@ from ui.configuration_tab import build_configuration_tab
 from ui.registry_info_tab import build_registry_info_tab
 from ui.layout import (
     build_main_layout,
+    TAB_START,
     TAB_CONFIG,
     TAB_EXECUTION,
     TAB_LOGS,
@@ -69,6 +71,7 @@ from ui.system_status import (
     start_system_requirements_check,
     apply_system_status,
 )
+from ui.window_positioning import center_window_on_work_area
 from ui.explorer_actions import (
     append_registry_restart_notice,
     restart_windows_explorer_with_prompt,
@@ -206,6 +209,7 @@ class PCKonfiguratorGUI:
     def _save_gui_state(self):
         data = {
             "settings": {
+                "ui_mode": self.ui_mode.get(),
                 "target_drive": self.target_drive.get(),
                 "use_documents": bool(self.use_documents.get()),
                 "startmenu_mode": self.startmenu_mode.get(),
@@ -229,6 +233,10 @@ class PCKonfiguratorGUI:
             return
 
         settings = data.get("settings", {})
+        ui_mode = str(settings.get("ui_mode", "simple")).strip().lower()
+        if ui_mode in ("simple", "advanced"):
+            self.ui_mode.set(ui_mode)
+
         target_drive = str(settings.get("target_drive", "")).strip()
         if target_drive:
             self.target_drive.set(target_drive)
@@ -263,6 +271,20 @@ class PCKonfiguratorGUI:
         self._save_gui_state()
         self._run_startmenu_guard(auto_restart_explorer=True)
         self._update_startmenu_mode_label()
+
+    def _on_ui_mode_changed(self, *_args):
+        """Persistiert den UI-Modus und aktualisiert die sichtbaren Bereiche."""
+        def _apply_mode_change():
+            self._save_gui_state()
+            self.apply_ui_mode()
+
+        try:
+            self.root.after(0, _apply_mode_change)
+        except Exception:
+            _apply_mode_change()
+
+    def _is_advanced_mode(self) -> bool:
+        return self.ui_mode.get() == "advanced"
 
     def _update_last_result_view(self):
         started_label = getattr(self, "last_result_started_label", None)
@@ -303,13 +325,30 @@ class PCKonfiguratorGUI:
         tk_root = self.root._get_tk() if hasattr(self.root, '_get_tk') else self.root  # type: ignore[attr-defined]
         menubar = tk.Menu(tk_root)
         tk_root.config(menu=menubar)
+
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Tools', menu=tools_menu)
         tools_menu.add_command(label='Systemstatus anzeigen', command=self.open_system_status_window)
-        tools_menu.add_command(label='System prüfen', command=self.check_system_requirements)
-        tools_menu.add_separator()
-        tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
-        tools_menu.add_command(label='GPO-Design-Prüfung', command=self.run_gpo_check)
+        if self._is_advanced_mode():
+            tools_menu.add_separator()
+            tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
+            tools_menu.add_command(label='GPO-Design-Prüfung', command=self.run_gpo_check)
+
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Hilfe', menu=help_menu)
+        help_menu.add_command(
+            label='Anwender-Dokumentation öffnen',
+            command=lambda: self.open_documentation("DOKUMENTATION_ANWENDER.md"),
+        )
+        help_menu.add_command(
+            label='Technik-Dokumentation öffnen',
+            command=lambda: self.open_documentation("DOKUMENTATION_TECHNIK.md"),
+        )
+        help_menu.add_separator()
+        help_menu.add_command(
+            label='Mehr Informationen',
+            command=lambda: self.open_runtime_folder("docs"),
+        )
 
     def open_system_status_window(self):
         """Öffnet ein kompaktes Tool-Fenster für die Systemstatus-Anzeige."""
@@ -319,14 +358,15 @@ class PCKonfiguratorGUI:
                 if existing.winfo_exists():
                     existing.lift()
                     existing.focus_force()
+                    self.check_system_requirements()
                     return
             except Exception:
                 pass
 
         window = ctk.CTkToplevel(self.root)
         window.title("Systemstatus")
-        window.geometry("620x300")
-        window.minsize(520, 240)
+        window.geometry("620x250")
+        window.minsize(520, 210)
 
         container = ctk.CTkFrame(window)
         container.pack(fill="both", expand=True, padx=12, pady=12)
@@ -339,7 +379,7 @@ class PCKonfiguratorGUI:
 
         self.system_status_label = ctk.CTkLabel(
             container,
-            text="Klicken Sie auf 'System prüfen', um Windows- und Office-Version zu ermitteln.",
+            text="Systemprüfung läuft ...",
             justify="left",
             wraplength=560,
         )
@@ -348,8 +388,7 @@ class PCKonfiguratorGUI:
         button_row = ctk.CTkFrame(container)
         button_row.pack(fill="x", padx=12, pady=(0, 12))
 
-        ctk.CTkButton(button_row, text="System prüfen", command=self.check_system_requirements).pack(side="left", padx=(0, 8), pady=6)
-        ctk.CTkButton(button_row, text="Schließen", command=window.destroy).pack(side="left", pady=6)
+        ctk.CTkButton(button_row, text="Schließen", command=window.destroy).pack(side="right", pady=6)
 
         self.system_status_window = window
 
@@ -367,12 +406,131 @@ class PCKonfiguratorGUI:
 
         window.protocol("WM_DELETE_WINDOW", _on_close)
 
+        self.check_system_requirements()
+
     def run_gpo_check(self):
         """GPO-Prüfung auf Office-Design-Richtlinien als eigenständiges Dialogfenster."""
         show_gpo_theme_check_dialog(self.root)
 
     def run_bitness_check(self):
         run_bitness_and_com_check(self.logger)
+
+    def _has_tab(self, tab_name: str) -> bool:
+        try:
+            tab_dict = getattr(self.tabview, "_tab_dict", None)
+            if isinstance(tab_dict, dict):
+                return tab_name in tab_dict
+        except Exception:
+            pass
+        return False
+
+    def _set_registry_tab_visible(self, visible: bool):
+        if visible:
+            if not self._has_tab(TAB_REGISTRY):
+                self.tabview.add(TAB_REGISTRY)
+                self.create_registry_info_tab()
+                self._enforce_tab_header_widths()
+        else:
+            if self._has_tab(TAB_REGISTRY):
+                try:
+                    if self.tabview.get() == TAB_REGISTRY:
+                        self._switch_to_tab(TAB_START)
+                except Exception:
+                    pass
+                try:
+                    self.tabview.delete(TAB_REGISTRY)
+                except Exception:
+                    pass
+                self._enforce_tab_header_widths()
+
+    def _enforce_tab_header_widths(self):
+        """Erzwingt gleich breite, lesbare Tab-Header im CTkTabview."""
+        tabview = getattr(self, "tabview", None)
+        if tabview is None:
+            return
+
+        def _apply_once():
+            segmented = getattr(tabview, "_segmented_button", None)
+            if segmented is None:
+                return
+
+            buttons_dict = getattr(segmented, "_buttons_dict", None)
+            if not isinstance(buttons_dict, dict) or not buttons_dict:
+                return
+
+            max_text_px = 0
+            for button in buttons_dict.values():
+                try:
+                    text = str(button.cget("text") or "")
+                    font_def = button.cget("font")
+                    max_text_px = max(max_text_px, tkfont.Font(font=font_def).measure(text))
+                except Exception:
+                    try:
+                        max_text_px = max(max_text_px, len(text) * 9)
+                    except Exception:
+                        pass
+
+            button_width = max(220, min(380, int(max_text_px) + 72))
+
+            try:
+                segmented.configure(dynamic_resizing=False)
+            except Exception:
+                pass
+
+            try:
+                segmented.configure(width=button_width * len(buttons_dict))
+            except Exception:
+                pass
+
+            for button in buttons_dict.values():
+                try:
+                    button.configure(width=button_width, anchor="center")
+                except Exception:
+                    pass
+
+        try:
+            tabview.update_idletasks()
+        except Exception:
+            pass
+
+        _apply_once()
+        # Nach Render-Zyklen erneut anwenden (CTk erzeugt intern teils verzögert neu).
+        for delay in (60, 140, 260):
+            try:
+                tabview.after(delay, _apply_once)
+            except Exception:
+                pass
+
+    def _set_execution_log_visible(self, visible: bool):
+        widget = getattr(self, "execution_status", None)
+        if widget is None:
+            return
+
+        try:
+            is_mapped = bool(widget.winfo_manager())
+        except Exception:
+            is_mapped = False
+
+        if visible and not is_mapped:
+            try:
+                widget.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+            except Exception:
+                pass
+        elif not visible and is_mapped:
+            try:
+                widget.pack_forget()
+            except Exception:
+                pass
+
+    def apply_ui_mode(self):
+        """Wendet den aktiven Bedienmodus (Einfach/Erweitert) auf die GUI an."""
+        advanced_mode = self._is_advanced_mode()
+
+        self._set_registry_tab_visible(advanced_mode)
+        self._set_execution_log_visible(advanced_mode)
+        self.create_start_tab()
+        self.add_tools_menu()
+        self._enforce_tab_header_widths()
     
     def __init__(self):
         """Initialisierung der GUI"""
@@ -405,6 +563,7 @@ class PCKonfiguratorGUI:
         
         # Variablen für Konfiguration
         self.target_drive = tk.StringVar(value="Z:")
+        self.ui_mode = tk.StringVar(value="simple")
         self.use_documents = tk.BooleanVar(value=False)
         self.startmenu_mode = tk.StringVar(value="win11")
         self.font_name = tk.StringVar(value=default_font_family)
@@ -441,6 +600,8 @@ class PCKonfiguratorGUI:
         self.font_size_word.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
 
+        self.apply_ui_mode()
+
         if isinstance(self._loaded_last_result, dict):
             self._last_run_started = str(self._loaded_last_result.get("started", "-"))
             self._last_run_mode = str(self._loaded_last_result.get("mode", "-"))
@@ -448,8 +609,6 @@ class PCKonfiguratorGUI:
             self._last_run_log_path = str(self._loaded_last_result.get("log_path", ""))
             self._update_last_result_view()
 
-        self.add_tools_menu()
-        
     def setup_appearance(self):
         """Erscheinungsbild der Anwendung festlegen"""
         ctk.set_appearance_mode("light")
@@ -458,8 +617,11 @@ class PCKonfiguratorGUI:
     def setup_main_window(self):
         """Hauptfenster konfigurieren"""
         self.root.title(f"PC-Konfigurator {self.version}")
-        self.root.geometry("1180x900")
-        self.root.minsize(1040, 780)
+
+        default_width, default_height = 1180, 900
+        final_width, final_height = center_window_on_work_area(self.root, default_width, default_height)
+
+        self.root.minsize(min(1040, final_width), min(780, final_height))
         self.root.resizable(True, True)
         
         # Icon setzen (falls vorhanden)
@@ -495,6 +657,7 @@ class PCKonfiguratorGUI:
         self.create_logs_tab()
 
         apply_uniform_button_sizes(self.root)
+        self._enforce_tab_header_widths()
 
     def _switch_to_tab(self, tab_name: str):
         """Wechselt robust auf den gewünschten Tab."""
@@ -513,10 +676,19 @@ class PCKonfiguratorGUI:
 
     def create_start_tab(self):
         """AP1-ähnlicher Startbereich mit klaren Schnellaktionen."""
+        start_frame = self.tabview.tab(TAB_START)
+        for child in start_frame.winfo_children():
+            try:
+                child.destroy()
+            except Exception:
+                pass
+
         refs = build_start_tab(
             self.tabview,
-            version=self.version,
+            ui_mode_var=self.ui_mode,
+            advanced_mode=self._is_advanced_mode(),
             current_startmenu_mode_text=self._get_startmenu_mode_text(),
+            on_ui_mode_changed=self._on_ui_mode_changed,
             on_open_config=lambda: self._switch_to_tab(TAB_CONFIG),
             on_open_registry_info=lambda: self._switch_to_tab(TAB_REGISTRY),
             on_run_full=self.execute_all_configurations,
@@ -525,11 +697,7 @@ class PCKonfiguratorGUI:
             on_restart_explorer=self.restart_windows_explorer,
             on_open_folder_templates=lambda: self.open_runtime_folder("data\\Datei-Vorlagen"),
             on_open_folder_fonts=lambda: self.open_runtime_folder("data\\Fonts"),
-            on_open_folder_docs=lambda: self.open_runtime_folder("docs"),
             on_open_folder_logs=lambda: self.open_runtime_folder("logs"),
-            on_open_doc_user=lambda: self.open_documentation("DOKUMENTATION_ANWENDER.md"),
-            on_open_doc_tech=lambda: self.open_documentation("DOKUMENTATION_TECHNIK.md"),
-            on_show_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
         )
         self.startmenu_mode_status_label = refs.get("startmenu_mode_label") if isinstance(refs, dict) else None
         self._update_startmenu_mode_label()

@@ -133,30 +133,36 @@ def build_configuration_tab(
         wraplength=900,
     ).pack(anchor="w", padx=10, pady=(0, 5))
 
-    font_frame = ctk.CTkFrame(font_section)
-    font_frame.pack(fill="x", padx=20, pady=5)
+    selection_row = ctk.CTkFrame(font_section)
+    selection_row.pack(fill="x", padx=20, pady=(5, 10))
 
-    ctk.CTkLabel(font_frame, text="Schriftart:").pack(anchor="w", padx=5)
+    font_frame = ctk.CTkFrame(selection_row)
+    font_frame.pack(side="left", fill="both", expand=True, padx=(0, 6), pady=5)
+
+    ctk.CTkLabel(font_frame, text="Schriftart:").pack(anchor="w", padx=8, pady=(6, 0))
 
     ctk.CTkOptionMenu(
         font_frame,
         variable=font_name_var,
         values=available_font_families,
-    ).pack(anchor="w", padx=5, pady=5)
+    ).pack(anchor="w", padx=8, pady=(4, 8))
 
-    size_frame = ctk.CTkFrame(font_section)
-    size_frame.pack(fill="x", padx=20, pady=(0, 10))
+    size_frame = ctk.CTkFrame(selection_row)
+    size_frame.pack(side="left", fill="both", expand=True, padx=(6, 0), pady=5)
 
-    word_size_frame = ctk.CTkFrame(size_frame)
-    word_size_frame.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+    size_inner = ctk.CTkFrame(size_frame)
+    size_inner.pack(fill="x", padx=8, pady=(8, 8))
 
-    ctk.CTkLabel(word_size_frame, text="Word/Outlook-Schriftgröße:").pack(anchor="w", padx=5)
+    word_size_frame = ctk.CTkFrame(size_inner)
+    word_size_frame.pack(side="left", fill="x", expand=True, padx=(0, 4), pady=2)
+
+    ctk.CTkLabel(word_size_frame, text="Schriftgröße Word/Outlook:").pack(anchor="w", padx=5)
     ctk.CTkOptionMenu(word_size_frame, variable=font_size_word_var, values=["10", "11", "12"]).pack(anchor="w", padx=5, pady=5)
 
-    excel_size_frame = ctk.CTkFrame(size_frame)
-    excel_size_frame.pack(side="right", fill="x", expand=True, padx=5, pady=5)
+    excel_size_frame = ctk.CTkFrame(size_inner)
+    excel_size_frame.pack(side="left", fill="x", expand=True, padx=(4, 0), pady=2)
 
-    ctk.CTkLabel(excel_size_frame, text="Excel-Schriftgröße:").pack(anchor="w", padx=5)
+    ctk.CTkLabel(excel_size_frame, text="Schriftgröße Excel:").pack(anchor="w", padx=5)
     ctk.CTkOptionMenu(excel_size_frame, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=5, pady=5)
 
     preview_label = ctk.CTkLabel(
