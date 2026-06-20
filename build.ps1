@@ -242,8 +242,8 @@ if ($SkipMarkdownLint) {
 } else {
     $mdLintScript = Join-Path $PSScriptRoot 'tools\lint-markdown.ps1'
     if (Test-Path $mdLintScript) {
-        Write-Host "Markdownlint-Prüfung läuft..." -ForegroundColor Cyan
-        & $mdLintScript -Quiet:$Quiet
+        Write-Host "Markdownlint-Prüfung mit Auto-Fix läuft..." -ForegroundColor Cyan
+        & $mdLintScript -Fix -Quiet:$Quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Build abgebrochen: Markdownlint-Fehler erkannt." -ForegroundColor Red
             exit 1
