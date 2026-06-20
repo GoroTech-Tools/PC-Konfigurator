@@ -242,10 +242,17 @@ if ($SkipMarkdownLint) {
 } else {
     $mdLintScript = Join-Path $PSScriptRoot 'tools\lint-markdown.ps1'
     if (Test-Path $mdLintScript) {
-        Write-Host "Markdownlint-Prüfung mit Auto-Fix läuft..." -ForegroundColor Cyan
+        Write-Host "Markdownlint-Auto-Fix läuft..." -ForegroundColor Cyan
         & $mdLintScript -Fix -Quiet:$Quiet
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Build abgebrochen: Markdownlint-Fehler erkannt." -ForegroundColor Red
+            Write-Host "Build abgebrochen: Markdownlint-Fehler beim Auto-Fix erkannt." -ForegroundColor Red
+            exit 1
+        }
+
+        Write-Host "Markdownlint-Verifikation (ohne Auto-Fix) läuft..." -ForegroundColor Cyan
+        & $mdLintScript -Quiet:$Quiet
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Build abgebrochen: Nicht automatisch behebbarer Markdownlint-Fehler erkannt." -ForegroundColor Red
             exit 1
         }
     } else {

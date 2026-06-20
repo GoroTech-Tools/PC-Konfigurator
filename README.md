@@ -279,6 +279,8 @@ Prüfroutinen:
 
 - Manuell: `tools/lint-markdown.ps1`
 - Automatisch im Build: `build.ps1` (abschaltbar mit `-SkipMarkdownLint`)
+  - Stufe 1: Auto-Fix (`lint-markdown.ps1 -Fix`)
+  - Stufe 2: Verifikation ohne Fix (Gate-Lauf)
 
 ---
 

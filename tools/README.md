@@ -39,5 +39,5 @@ Dieses Verzeichnis enthält unterstützende Projekt-Routinen.
 
 - Die Konfiguration liegt in `.markdownlint.json`.
 - Ausgeschlossene Pfade liegen in `.markdownlintignore`.
-- Der Build-Prozess (`build.ps1`) führt die Markdown-Prüfung standardmäßig aus.
+- Der Build-Prozess (`build.ps1`) führt die Markdown-Prüfung standardmäßig zweistufig aus (erst `-Fix`, dann Gate-Lauf ohne Fix).
 - Mit `build.ps1 -SkipMarkdownLint` kann die Prüfung bei Bedarf übersprungen werden.
