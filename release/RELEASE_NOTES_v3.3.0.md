@@ -14,4 +14,3 @@
 ## Hinweis
 
 Diese Release-Notes werden automatisch bei jedem Build erzeugt und bei ZIP-Erstellung aktualisiert.
-

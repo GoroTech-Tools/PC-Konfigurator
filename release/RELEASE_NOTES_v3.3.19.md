@@ -5,11 +5,11 @@ Datum: 2026-06-20
 ## Highlights
 
 - Explorer-Neustart wurde gegen verzögerte Shell-Reinitialisierung gehärtet
-	(Taskleisten-Sichtbarkeitsprüfung + Recovery-Fallback).
+  (Taskleisten-Sichtbarkeitsprüfung + Recovery-Fallback).
 - Outlook-Template-Pfadauflösung für `NormalEmail.dotm` in Direkt-/Script-Läufen
-	robust gemacht (keine falsche "Vorlage nicht gefunden"-Warnung mehr).
+  robust gemacht (keine falsche "Vorlage nicht gefunden"-Warnung mehr).
 - Doku umfassend aktualisiert (Anwender/Technik/Checklisten) inkl. transparenter
-	Hinweise zur modernen Outlook-Compose-Einschränkung.
+  Hinweise zur modernen Outlook-Compose-Einschränkung.
 
 ## Qualitätsstatus
 
