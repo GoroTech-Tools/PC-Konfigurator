@@ -1,7 +1,7 @@
 # Anwenderprüfung – Vollständige Checkliste (EXE)
 
 Version: 1.0  
-Stand: 2026-05-31
+Stand: 2026-06-20
 
 ## Ziel und Einsatz
 
@@ -72,6 +72,13 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Gewählte Optionen (Taskleiste/Kontextmenü/etc.) werden angewendet
 - [ ] Hinweis auf Explorer-Neustart/Neuanmeldung ist sichtbar
 - [ ] Nach Neustart/Neuanmeldung sind Änderungen wie erwartet aktiv
+- [ ] Explorer-Neustart über GUI getestet (Taskleiste wird innerhalb ~20 Sekunden wieder sichtbar)
+- [ ] Falls verzögert: Recovery-Hinweis erscheint verständlich und ohne Absturz
+
+## F1) Outlook-Hinweisprüfung (modernes Outlook)
+
+- [ ] In der Ausführung wird der Hinweis zur modernen Outlook-Einschränkung angezeigt
+- [ ] Erwartung ist klar: klassische Outlook-Engine folgt den Vorgaben, moderne Compose-Oberfläche ggf. eingeschränkt
 
 ## G) OneDrive- und Praxis-Sonderfälle
 

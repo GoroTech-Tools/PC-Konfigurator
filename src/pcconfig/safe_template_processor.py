@@ -395,9 +395,28 @@ class SafeTemplateProcessor:
             word = win32com.client.DispatchEx("Word.Application")
             word.Visible = False
             doc = word.Documents.Open(template_path, ReadOnly=True)
-            style = doc.Styles("Standard")
-            font_name = style.Font.Name
-            font_size = style.Font.Size
+            style = None
+            for style_name in ("Standard", "Normal"):
+                try:
+                    style = doc.Styles(style_name)
+                    break
+                except Exception:
+                    continue
+
+            if style is None:
+                try:
+                    style = doc.Styles(1)
+                except Exception:
+                    style = None
+
+            if style is not None:
+                font_name = style.Font.Name
+                font_size = style.Font.Size
+            else:
+                # Fallback auf Dokument-Default
+                font_name = doc.Content.Font.Name
+                font_size = doc.Content.Font.Size
+
             doc.Close(False)
             return {"font_name": font_name, "font_size": font_size}
         except Exception as e:
@@ -438,8 +457,16 @@ class SafeTemplateProcessor:
         self.logger.info(f"Starte PowerShell-Fallback: {' '.join(cmd)}")
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            stdout = result.stdout.strip() if result.stdout else "(keine Ausgabe)"
-            stderr = result.stderr.strip() if result.stderr else "(keine Fehlerausgabe)"
+            # robust gegen Codepage/Unicode-Ausgaben
+            # (verhindert sporadische UnicodeDecodeError in Reader-Threads)
+            if hasattr(result, "stdout") and isinstance(result.stdout, bytes):
+                stdout = result.stdout.decode("utf-8", errors="replace").strip()
+            else:
+                stdout = result.stdout.strip() if result.stdout else "(keine Ausgabe)"
+            if hasattr(result, "stderr") and isinstance(result.stderr, bytes):
+                stderr = result.stderr.decode("utf-8", errors="replace").strip()
+            else:
+                stderr = result.stderr.strip() if result.stderr else "(keine Fehlerausgabe)"
             if result.returncode == 0:
                 self.logger.info(f"PowerShell-Fallback erfolgreich: {stdout}")
                 return True

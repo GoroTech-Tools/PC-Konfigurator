@@ -1,6 +1,6 @@
-﻿# DOKUMENTATION_ANWENDER
+# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.15 (19.06.2026)
+**Version:** 3.3.19 (20.06.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -53,6 +53,10 @@ Windows-Explorer wird dabei **nicht** neu gestartet — die Wirkung des gesetzte
 tritt beim nächsten Windows-Login automatisch über den Autostart-Guard in Kraft.
 Wird der Modus manuell in der GUI umgeschaltet, startet der Explorer sofort neu,
 damit die Änderung sofort sichtbar wird.
+
+Falls die Taskleiste nach einem Explorer-Neustart nicht sofort erscheint, führt die
+Anwendung automatisch zusätzliche Wiederherstellungsschritte aus. In seltenen Fällen
+kann die Shell trotzdem noch einige Sekunden benötigen.
 
 Zusätzlich hinterlegt die Anwendung eine externe Autostart-Variante im Benutzerprofil,
 damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wird:
@@ -107,6 +111,12 @@ damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wi
 - Taskleiste links statt zentriert (Windows 11)
 - Klassisches Kontextmenü (Windows 11)
 - Taskleisten-Elemente und Suchfeld ausblenden
+
+**Outlook-Hinweis (modernes Outlook):**
+
+- Die klassische Outlook-Engine übernimmt Standardfonts aus Registry/Template i. d. R. zuverlässig.
+- In der modernen Outlook-Compose-Oberfläche kann Microsoft diese Vorgaben teilweise durch eigene UI-Standards übersteuern.
+- Die Anwendung blendet dazu einen transparenten Hinweis in der Ausführung ein.
 
 ### Schriftarten & Template-Sicherheit
 
@@ -179,4 +189,4 @@ Fehlerbild, Verbesserungsvorschläge).
 
 ---
 
-**Stand:** 25.05.2026
+**Stand:** 20.06.2026

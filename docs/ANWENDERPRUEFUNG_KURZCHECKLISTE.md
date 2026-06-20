@@ -1,6 +1,6 @@
 # Anwenderprüfung – Kurzcheckliste (5–10 Minuten)
 
-Stand: 2026-05-31
+Stand: 2026-06-20
 
 ## Ziel
 
@@ -21,6 +21,8 @@ um früh sichtbar zu machen, ob grundlegende Nutzung stabil funktioniert.
 - [ ] **Vollständige Konfiguration** einmal ausgeführt
 - [ ] Explorer-Neustart getestet (falls angeboten/erforderlich)
 - [ ] Ergebnis in Word/Excel/Outlook kurz plausibilisiert
+- [ ] Taskleiste erscheint nach Explorer-Neustart wieder innerhalb ~20 Sekunden
+- [ ] Outlook-Hinweis zur modernen Compose-Ansicht ist verständlich sichtbar
 
 ## Kurzfeedback (Pflicht)
 

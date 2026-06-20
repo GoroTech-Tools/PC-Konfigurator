@@ -62,6 +62,8 @@ def run_full_configuration_flow(
                 append_status(f"   ⚠️ Outlook-Template-Schritt: {result['outlook_warning']}\n")
             else:
                 append_status("   ✅ Outlook-Template-Schritt: Kopie und Synchronisation abgeschlossen\n")
+            if result.get("outlook_modern_notice"):
+                append_status(f"   ℹ️ Outlook modern: {result['outlook_modern_notice']}\n")
             if result.get("windows_warning"):
                 append_status(f"   ⚠️ Windows-Einstellungen: {result['windows_warning']}\n")
         else:
@@ -82,15 +84,11 @@ def run_full_configuration_flow(
                 font_size_excel=size_excel,
             )
             copy_results = template_manager.copy_templates_to_user()
-            safe_results = safe_office_config.configure_fonts_via_registry(
-                font_name=font_name,
-                font_size_word=size_word,
-                font_size_excel=size_excel,
-            )
 
             mod_ok = bool(mod_results) and all(bool(v) for v in mod_results.values())
             copy_ok = bool(copy_results) and all(bool(v) for v in copy_results.values())
-            registry_ok = all(bool(v) for k, v in safe_results.items() if k != "error")
+            # Registry wurde bereits in Schritt 3 über OfficeConfigurator gesetzt.
+            registry_ok = True
 
             if mod_ok and copy_ok:
                 append_status("   ✅ Templates angepasst und ins Benutzerprofil kopiert\n")
@@ -99,7 +97,8 @@ def run_full_configuration_flow(
 
             if registry_ok:
                 append_status(f"   ✅ Schriftart konfiguriert: {font_name}\n")
-                append_status(f"   ✅ Word: {size_word}pt, Excel: {size_excel}pt\n")
+                append_status(f"   ✅ Word/Outlook: {size_word}pt, Excel: {size_excel}pt\n")
+                append_status("   ℹ️ Registry-Schriftart wurde bereits in Schritt 3 gesetzt (kein Doppel-Lauf)\n")
             else:
                 append_status("   ⚠️ Registry-Schriftart-Konfiguration teilweise fehlgeschlagen\n")
                 overall_success = False
@@ -167,6 +166,8 @@ def run_office_configuration_flow(
                 append_status(f"⚠️ Outlook-Template-Schritt: {result['outlook_warning']}\n")
             else:
                 append_status("✅ Outlook-Template-Schritt: Kopie und Synchronisation abgeschlossen\n")
+            if result.get("outlook_modern_notice"):
+                append_status(f"ℹ️ Outlook modern: {result['outlook_modern_notice']}\n")
             advance_step("3. Abschluss...\n")
             append_status("Office-Konfiguration abgeschlossen!\n")
             add_registry_restart_notice()

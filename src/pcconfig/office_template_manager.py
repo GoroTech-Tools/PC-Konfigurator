@@ -17,6 +17,55 @@ from pcconfig.safe_template_processor import SafeTemplateProcessor
 
 
 class OfficeTemplateManager:
+    def _read_excel_font_info_from_template(self, template_path: Path):
+        """Liest die Default-Schrift aus xl/styles.xml (font[0]) einer .xltx/.xlsx-Datei."""
+        try:
+            with zipfile.ZipFile(template_path, 'r') as zf:
+                styles_xml = zf.read('xl/styles.xml')
+
+            root = ET.fromstring(styles_xml)
+            ns = {'x': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+            font = root.find('.//x:fonts/x:font', ns)
+            if font is None:
+                return None
+
+            name_el = font.find('x:name', ns)
+            size_el = font.find('x:sz', ns)
+
+            font_name = name_el.attrib.get('val', '').strip() if name_el is not None else ''
+            raw_size = size_el.attrib.get('val', '').strip() if size_el is not None else ''
+
+            if not font_name:
+                return None
+
+            try:
+                size_value = int(round(float(raw_size))) if raw_size else None
+            except Exception:
+                size_value = None
+
+            return {
+                'font_name': font_name,
+                'font_size': size_value,
+            }
+        except Exception as exc:
+            self.logger.debug(f"Excel-Font konnte nicht aus {template_path} gelesen werden: {exc}")
+            return None
+
+    @staticmethod
+    def _format_font_info(font_info):
+        """Formatiert Font-Infos als lesbaren Text für die GUI."""
+        if not font_info:
+            return "Unbekannt"
+        if isinstance(font_info, dict):
+            name = str(font_info.get('font_name', '')).strip()
+            size = font_info.get('font_size')
+            if name and size:
+                return f"{name} {size}pt"
+            if name:
+                return name
+            return "Unbekannt"
+        return str(font_info)
+
     def check_templates_exist(self):
         """Prüft, ob alle Templates existieren. Gibt Dict zurück."""
         result = {}
@@ -33,18 +82,19 @@ class OfficeTemplateManager:
             if path and path.exists():
                 try:
                     font_info = self.safe_processor.get_word_template_font_info(path)
-                    fonts[key] = font_info
+                    fonts[key] = self._format_font_info(font_info)
                 except Exception as e:
                     fonts[key] = f"Fehler: {e}"
             else:
-                fonts[key] = None
-        # Excel: Font auslesen ist schwierig, daher nur Platzhalter
+                fonts[key] = "Nicht vorhanden"
+        # Excel: Default-Font aus styles.xml lesen
         key = 'mappe_xltx'
         path = self.source_templates.get(key)
         if path and path.exists():
-            fonts[key] = "(nicht direkt auslesbar)"
+            excel_info = self._read_excel_font_info_from_template(path)
+            fonts[key] = self._format_font_info(excel_info)
         else:
-            fonts[key] = None
+            fonts[key] = "Nicht vorhanden"
         return fonts
     
     def __init__(self, app_dir):
@@ -77,7 +127,15 @@ class OfficeTemplateManager:
             self.logger.error(f"Fehler bei target_paths-Initialisierung: {e}")
             self.target_paths = {}
 
-    def update_font_in_templates(self, font_name=None, font_size_word=None, font_size_excel=None, skip_excel_com=False, **kwargs):
+    def update_font_in_templates(
+        self,
+        font_name=None,
+        font_size_word=None,
+        font_size_excel=None,
+        skip_excel_com=False,
+        allow_com_fallback=False,
+        **kwargs,
+    ):
         """
         Setzt Schriftart und -größe in allen Templates.
         Bevorzugt XML-basierte Anpassung (kein COM, kein Bitness-Problem).
@@ -95,7 +153,7 @@ class OfficeTemplateManager:
         if src and src.exists():
             try:
                 ok = self.safe_processor.update_word_template_xml(src, fn, fsw)
-                if not ok and not frozen:
+                if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für Normal.dotm")
                     ok = self.safe_processor.update_word_template_safely(src, fn, fsw)
                 result['normal_dotm'] = ok
@@ -108,7 +166,7 @@ class OfficeTemplateManager:
         if src and src.exists():
             try:
                 ok = self.safe_processor.update_excel_template_xml(src, fn, fse)
-                if not ok and not frozen:
+                if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für Mappe.xltx")
                     ok = self.safe_processor.update_excel_template_safely(src, fn, fse)
                 result['mappe_xltx'] = ok
@@ -125,7 +183,7 @@ class OfficeTemplateManager:
                 )
                 result['normal_email_dotm'] = ok
                 # Nach Anpassung: Font auslesen und loggen
-                if not ok and not frozen:
+                if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für NormalEmail.dotm")
                     ok = self.safe_processor.update_word_template_safely(
                         self.source_templates['normal_email_dotm'], fn, fsw

@@ -185,6 +185,26 @@ Beim Kaltstart wird `False` übergeben — der Autostart-Guard (Startup-Ordner) 
 beim nächsten Login für die Wirkung. Nur bei manueller GUI-Modus-Änderung wird
 weiterhin `True` übergeben (sofortige sichtbare Wirkung gewünscht).
 
+### Behobene Fehler (v3.3.19)
+
+#### 1) Explorer-Neustart: Explorer-Prozess lief, Taskleiste blieb unsichtbar
+
+In einzelnen Umgebungen war `explorer.exe` bereits wieder gestartet, die Shell war
+jedoch noch nicht vollständig reinitialisiert (Taskleiste fehlte weiterhin).
+
+**Fix:** Neustartlogik wurde auf Sichtbarkeitsprüfung der Taskleiste (`Shell_TrayWnd`)
+umgestellt und um Recovery-Fallbacks erweitert (zusätzlicher Explorer-Start,
+Shell-Komponenten-Reinit, `userinit.exe`-Fallback).
+
+#### 2) Direktlauf-Warnung „Outlook-Vorlage nicht gefunden"
+
+Bei Script-/Direktläufen konnte die Quellvorlage `NormalEmail.dotm` je nach
+Runtime-Kontext fälschlich als fehlend gemeldet werden.
+
+**Fix:** Robuste Kandidatenauflösung mit mehreren Basispfaden (Runtime-Root,
+Projektwurzel, `cwd`) implementiert; Warnung tritt im validierten Direktlauf
+nicht mehr auf.
+
 ### Sonder-Smoke-Check (31.05.2026): Explorer-/Startmenü-Registry
 
 Durchgeführter Verifikationstest der neu ergänzten Windows-Registry-Werte

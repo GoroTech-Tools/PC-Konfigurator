@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
+import ctypes
 import os
 from pathlib import Path
 import subprocess
+import time
 
 try:
     import winreg
@@ -74,14 +76,74 @@ def _set_sz_if_needed(root, path: str, name: str, value: str) -> bool:
 def _restart_explorer() -> bool:
     """Startet den Explorer neu, damit Startmenü-Änderungen sofort wirksam werden."""
     try:
+        def _taskbar_visible() -> bool:
+            try:
+                user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+                hwnd = user32.FindWindowW("Shell_TrayWnd", None)
+                if not hwnd:
+                    return False
+                return bool(user32.IsWindowVisible(hwnd))
+            except Exception:
+                return False
+
+        def _show_taskbar_if_present() -> bool:
+            try:
+                user32 = ctypes.windll.user32  # type: ignore[attr-defined]
+                hwnd = user32.FindWindowW("Shell_TrayWnd", None)
+                if not hwnd:
+                    return False
+                user32.ShowWindow(hwnd, 5)  # SW_SHOW
+                user32.SetForegroundWindow(hwnd)
+                return bool(user32.IsWindowVisible(hwnd))
+            except Exception:
+                return False
+
         subprocess.run(
             ["taskkill", "/F", "/IM", "explorer.exe"],
             check=False,
             capture_output=True,
             text=True,
         )
-        subprocess.Popen(["explorer.exe"])
-        return True
+
+        subprocess.Popen(["cmd", "/c", "start", "", "explorer.exe"])
+
+        deadline = time.monotonic() + 20.0
+        while time.monotonic() < deadline:
+            if _taskbar_visible():
+                return True
+            time.sleep(0.25)
+
+        if _show_taskbar_if_present() and _taskbar_visible():
+            return True
+
+        subprocess.Popen(["cmd", "/c", "start", "", "explorer.exe"])
+        deadline2 = time.monotonic() + 8.0
+        while time.monotonic() < deadline2:
+            if _taskbar_visible():
+                return True
+            time.sleep(0.25)
+
+        if _show_taskbar_if_present() and _taskbar_visible():
+            return True
+
+        for proc in ("ShellExperienceHost", "StartMenuExperienceHost", "SearchHost"):
+            subprocess.run(
+                ["taskkill", "/F", "/IM", f"{proc}.exe"],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+        subprocess.Popen(["cmd", "/c", "start", "", "explorer.exe"])
+        subprocess.Popen(["cmd", "/c", "start", "", r"C:\Windows\System32\userinit.exe"])
+
+        deadline3 = time.monotonic() + 12.0
+        while time.monotonic() < deadline3:
+            if _taskbar_visible() or _show_taskbar_if_present():
+                return True
+            time.sleep(0.25)
+
+        return False
     except Exception:
         return False
 

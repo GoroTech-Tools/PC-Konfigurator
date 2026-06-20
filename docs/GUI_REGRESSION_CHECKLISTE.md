@@ -1,6 +1,6 @@
 # GUI Regression-Checkliste
 
-Stand: 2026-05-31  
+Stand: 2026-06-20  
 Projekt: `PC-Konfigurator`
 
 Diese Checkliste dient zur Absicherung nach GUI-Refactorings im Rahmen der
@@ -57,3 +57,4 @@ Anmerkungen:
   Ablauf/Status-Update, Rückgabepfade).
 - Issue-Hinweis: Keine produktive Regression festgestellt; Testharness-Hinweise
   sind in dieser Checkliste dokumentiert, separates GitHub-Issue aktuell nicht erforderlich.
+- 20.06.2026 (Nachtest): Explorer-Neustart-Funktion gegen verzögerte Shell-Reinitialisierung gehärtet und mit sichtbarer Taskleisten-Prüfung verifiziert (`Shell_TrayWnd` sichtbar).

@@ -30,10 +30,17 @@ class OfficeConfigurator:
         """Prüft nur die COM-Laufzeit und vermeidet langsame Office-Vorabstarts."""
         result = { 
             "ready": True,
-            "skip_com": False,
+            "skip_com": True,
             "summary": None,
             "details": {},
         }
+
+        # COM-Sync ist standardmäßig deaktiviert (Performance/Stabilität).
+        # Aktivierbar über Umgebungsvariable PCONFIG_ENABLE_COM_SYNC=1.
+        if str(os.environ.get("PCONFIG_ENABLE_COM_SYNC", "0")).strip() not in {"1", "true", "TRUE", "yes", "YES"}:
+            result["summary"] = "COM-Synchronisierung standardmäßig deaktiviert; Registry/XML-Pfade aktiv."
+            result["details"] = {"mode": "registry+xml", "com_sync": "disabled_by_default"}
+            return result
 
         try:
             import pythoncom  # type: ignore
@@ -44,7 +51,7 @@ class OfficeConfigurator:
                 result["details"] = {
                     "pythoncom": "ok",
                     "win32com": "ok",
-                    "mode": "lazy",
+                    "mode": "lazy+com",
                 }
                 result["summary"] = "COM-Laufzeit verfügbar; Word/Excel werden nur bei Bedarf geöffnet. Outlook nutzt primär Registry/MailSettings."
             finally:
@@ -58,6 +65,27 @@ class OfficeConfigurator:
             result["summary"] = f"COM-Vorabprüfung nicht möglich: {exc}"
 
         return result
+
+    def _is_new_outlook_installed(self) -> bool:
+        """Ermittelt heuristisch, ob das neue Outlook (Monarch/Store-App) vorhanden ist."""
+        try:
+            candidates = [
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WindowsApps" / "olk.exe",
+                Path(os.environ.get("ProgramFiles", "C:\\Program Files")) / "WindowsApps",
+            ]
+            return any(p.exists() for p in candidates)
+        except Exception:
+            return False
+
+    def _get_new_outlook_notice(self) -> str | None:
+        """Hinweistext zur Einschränkung von Schriftdefaults im neuen Outlook."""
+        if not self._is_new_outlook_installed():
+            return None
+        return (
+            "Neues Outlook erkannt: Die moderne Ansicht übernimmt lokale Standard-"
+            "Schriftarten/-größen aus Registry/NormalEmail.dotm nur eingeschränkt. "
+            "Classic Outlook wird vollständig unterstützt."
+        )
         
     def configure_all_settings(self, config, include_windows: bool = True):
         """Alle Office-Einstellungen konfigurieren"""
@@ -153,6 +181,10 @@ class OfficeConfigurator:
                 self.logger.warning("[COM-HEALTH] DEGRADED | " + " | ".join(sync_warnings))
             else:
                 self.logger.info("[COM-HEALTH] OK | Word/Excel via COM synchronisiert; Outlook via Registry/MailSettings/Template gesetzt")
+
+            new_outlook_notice = self._get_new_outlook_notice()
+            if new_outlook_notice:
+                self.logger.info(f"[OUTLOOK-MODERN] {new_outlook_notice}")
             
             return {
                 "success": True,
@@ -166,6 +198,7 @@ class OfficeConfigurator:
                 "com_sync_warning": None if com_bootstrap.get("skip_com") else ("; ".join(sync_warnings) if sync_warnings else None),
                 "com_precheck_summary": com_bootstrap.get("summary"),
                 "com_precheck_skipped": bool(com_bootstrap.get("skip_com")),
+                "outlook_modern_notice": new_outlook_notice,
             }
             
         except Exception as e:
@@ -357,12 +390,18 @@ class OfficeConfigurator:
                     # Fallback: EXE-Verzeichnis
                     base_dir = Path(sys.executable).parent
                 else:
-                    # Ausgeführt als Script
-                    base_dir = Path(__file__).parent.parent.parent
+                    # Ausgeführt als Script: Projektwurzel liegt i.d.R. eine Ebene über src/
+                    base_dir = Path(__file__).resolve().parent.parent
 
             source_candidates = [
                 base_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
             ]
+
+            # Zusätzliche Fallback-Kandidaten für Direkt-/Terminal-Läufe
+            source_candidates.extend([
+                Path(__file__).resolve().parent / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
+                Path.cwd() / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm",
+            ])
 
             # Fallback: direkt aus dem PyInstaller-Bundle lesen, falls Runtime-Datei gesperrt ist
             import sys
@@ -546,6 +585,7 @@ class OfficeConfigurator:
             "<html>\r\n\r\n"
             "<head>\r\n"
             "<style>\r\n\r\n"
+            "<!--\r\n"
             " /* Style Definitions */\r\n"
             f" {selector}\r\n"
             "\t{"
@@ -561,6 +601,8 @@ class OfficeConfigurator:
             f"mso-fareast-font-family:{safe_name};"
             f"mso-hansi-font-family:{safe_name};"
             "mso-bidi-font-family:\"Times New Roman\";"
+            f"font-family:\"{safe_name}\",sans-serif!important;"
+            f"font-size:{safe_size}.0pt!important;"
             "color:windowtext;"
             "}\r\n"
             "-->\r\n"
@@ -575,19 +617,28 @@ class OfficeConfigurator:
         office_versions = ["16.0", "15.0"]
         errors: list[str] = []
 
+        value_map = {
+            "ComposeFontSimple": self._build_outlook_font_simple_blob(font_name, font_size),
+            "ReplyFontSimple": self._build_outlook_font_simple_blob(font_name, font_size),
+            "TextFontSimple": self._build_outlook_font_simple_blob(font_name, font_size),
+            "ComposeFontComplex": self._build_outlook_font_complex_blob(font_name, font_size, "compose"),
+            "ReplyFontComplex": self._build_outlook_font_complex_blob(font_name, font_size, "reply"),
+            "TextFontComplex": self._build_outlook_font_complex_blob(font_name, font_size, "text"),
+        }
+
         for version in office_versions:
-            key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\MailSettings"
+            key_paths = [
+                f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\MailSettings",
+                f"SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options\\Mail",
+            ]
             try:
-                with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-                    winreg.SetValueEx(key, "ComposeFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
-                    winreg.SetValueEx(key, "ReplyFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
-                    winreg.SetValueEx(key, "TextFontSimple", 0, winreg.REG_BINARY, self._build_outlook_font_simple_blob(font_name, font_size))
-                    winreg.SetValueEx(key, "ComposeFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "compose"))
-                    winreg.SetValueEx(key, "ReplyFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "reply"))
-                    winreg.SetValueEx(key, "TextFontComplex", 0, winreg.REG_BINARY, self._build_outlook_font_complex_blob(font_name, font_size, "text"))
+                for key_path in key_paths:
+                    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                        for value_name, blob in value_map.items():
+                            winreg.SetValueEx(key, value_name, 0, winreg.REG_BINARY, blob)
 
                 self.logger.info(
-                    "[Outlook %s] Common\\MailSettings aktualisiert: %s %dpt (Simple+Complex)",
+                    "[Outlook %s] MailSettings aktualisiert (Common + Outlook\\Options\\Mail): %s %dpt (Simple+Complex)",
                     version,
                     font_name,
                     int(font_size),
@@ -957,6 +1008,25 @@ class OfficeConfigurator:
 
     def _set_windows_value_with_fallback(self, key_path, name, value, explanation_key):
         """Setzt einen dokumentierten Windows-Wert mit WinReg und reg.exe-Fallback."""
+        is_optional_policy_value = name == "TaskbarDa"
+
+        # Optionaler Spezialfall: TaskbarDa ist auf vielen Systemen via Richtlinie gesperrt.
+        # Hier bewusst ohne _set_single_registry_value arbeiten, um unnötiges Error-Logging
+        # bei Access-Denied zu vermeiden.
+        if is_optional_policy_value:
+            try:
+                with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                    winreg.SetValueEx(key, name, 0, winreg.REG_DWORD, int(value))
+                self.logger.info(f"[Windows Current] {name} = {value}")
+                return True
+            except Exception as e:
+                if "WinError 5" in str(e):
+                    self.logger.info(
+                        f"[Windows Current] {name} ist per Richtlinie/Berechtigung geschützt; "
+                        "Wert wird als optional übersprungen."
+                    )
+                    return True
+
         try:
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
                 self._set_single_registry_value(
@@ -970,6 +1040,13 @@ class OfficeConfigurator:
                 )
             return True
         except Exception as e:
+            if is_optional_policy_value and "WinError 5" in str(e):
+                self.logger.info(
+                    f"[Windows Current] {name} ist per Richtlinie/Berechtigung geschützt; "
+                    "Wert wird als optional übersprungen."
+                )
+                return True
+
             self.logger.warning(f"WinReg-Setzen fehlgeschlagen für {name}: {e}. Versuche reg.exe-Fallback...")
 
             fallback = subprocess.run(
@@ -1004,6 +1081,13 @@ class OfficeConfigurator:
                     "impact": setting_info.impact if setting_info else "Windows UI-Verhalten",
                     "category": setting_info.category if setting_info else "Windows - Explorer",
                 })
+                return True
+
+            if is_optional_policy_value:
+                self.logger.info(
+                    f"[Windows Current] {name} konnte nicht gesetzt werden (optional/policy), "
+                    "ohne Abbruch fortgesetzt."
+                )
                 return True
 
             # Falls Schreiben blockiert ist, aber der Zielwert bereits gesetzt ist,

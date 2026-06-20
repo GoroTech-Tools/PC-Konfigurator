@@ -26,7 +26,7 @@ def run_safe_restore_templates_dialog(
             "✅ Schriftart-Einstellungen werden über Registry gesetzt (sicher!)\n"
             "✅ Keine direkte Template-Manipulation\n\n"
             f"Gewählte Schriftart: {font_name_display}\n"
-            f"Word-Größe: {font_size_word}pt\n"
+            f"Word/Outlook-Größe: {font_size_word}pt\n"
             f"Excel-Größe: {font_size_excel}pt\n\n"
             "Fortfahren?",
             icon="question",
@@ -73,7 +73,7 @@ def run_safe_restore_templates_dialog(
                 f"🔤 Installierte Font-Dateien: {installed_font_count}\n\n"
                 f"🎯 Neue Einstellungen:\n"
                 f"• Schriftart: {font_name_display}\n"
-                f"• Word: {font_size_word}pt\n"
+                f"• Word/Outlook: {font_size_word}pt\n"
                 f"• Excel: {font_size_excel}pt\n\n"
                 f"➤ Starten Sie Office-Programme neu für beste Ergebnisse!",
             )
@@ -198,7 +198,7 @@ def run_update_office_templates_dialog(
                 f"Erfolgreiche Templates:\n"
                 + "\n".join(successful_templates)
                 + f"\n\nNeue Standard-Schriftart: {font_name_display}\n"
-                f"Word-Größe: {font_size_word}pt, Excel-Größe: {font_size_excel}pt\n\n"
+                f"Word/Outlook-Größe: {font_size_word}pt, Excel-Größe: {font_size_excel}pt\n\n"
                 f"➤ Neue Word-Dokumente verwenden jetzt {font_name_display}!\n"
                 f"➤ Neue Excel-Dokumente verwenden jetzt {font_name_display}!\n"
                 f"➤ Neue E-Mails verwenden jetzt {font_name_display}!",

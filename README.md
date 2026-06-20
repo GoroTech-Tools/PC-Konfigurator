@@ -1,8 +1,8 @@
-﻿# PC-Konfigurator
+# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.15 (Build: 19.06.2026, Python 3.13.7)
+**Version:** 3.3.19 (Build: 20.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -174,6 +174,13 @@ Der Build-Prozess ergänzt automatisch:
 - Verarbeitungszeit typischerweise ca. 2 bis 5 Sekunden pro Template
 
 ## Changelog
+
+### v3.3.19 (20. Juni 2026)
+
+- **Explorer-Neustart robustifiziert:** Neustart wartet jetzt auf sichtbare Taskleiste (`Shell_TrayWnd`) statt nur auf einen laufenden `explorer.exe`-Prozess.
+- **Shell-Recovery-Fallback ergänzt:** Bei verzögertem Shell-Rebind werden zusätzliche Recovery-Schritte ausgeführt (u. a. Re-Init von Shell-Komponenten und `userinit.exe`-Fallback).
+- **Outlook-Template-Auflösung gehärtet:** Quellpfad für `NormalEmail.dotm` funktioniert jetzt auch in Direkt-/Script-Läufen ohne Bundle-Kontext.
+- **Office-UI-Transparenz verbessert:** GUI zeigt konsistente Hinweise zu `Word/Outlook` und zur bekannten Einschränkung der modernen Outlook-Compose-Oberfläche.
 
 ### v3.3.7 (17. Juni 2026)
 

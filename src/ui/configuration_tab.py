@@ -121,6 +121,18 @@ def build_configuration_tab(
         text_color="gray",
     ).pack(anchor="w", padx=10, pady=(0, 5))
 
+    ctk.CTkLabel(
+        font_section,
+        text=(
+            "Hinweis: Classic Outlook übernimmt diese Vorgaben zuverlässig. "
+            "Die moderne Outlook-Ansicht kann lokale Standard-Schriftarten/-größen "
+            "teilweise ignorieren."
+        ),
+        font=ctk.CTkFont(size=11),
+        text_color="gray",
+        wraplength=900,
+    ).pack(anchor="w", padx=10, pady=(0, 5))
+
     font_frame = ctk.CTkFrame(font_section)
     font_frame.pack(fill="x", padx=20, pady=5)
 
@@ -146,5 +158,37 @@ def build_configuration_tab(
 
     ctk.CTkLabel(excel_size_frame, text="Excel-Schriftgröße:").pack(anchor="w", padx=5)
     ctk.CTkOptionMenu(excel_size_frame, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=5, pady=5)
+
+    preview_label = ctk.CTkLabel(
+        font_section,
+        text="",
+        justify="left",
+        font=ctk.CTkFont(size=11),
+        text_color="gray",
+    )
+    preview_label.pack(anchor="w", padx=20, pady=(0, 10))
+
+    def _update_font_preview(*_args):
+        try:
+            selected_font = str(font_name_var.get()).strip()
+            word_size = str(font_size_word_var.get()).strip()
+            excel_size = str(font_size_excel_var.get()).strip()
+            preview_label.configure(
+                text=(
+                    "Aktuelle Auswahl:\n"
+                    f"Word/Outlook: {selected_font} {word_size} pt\n"
+                    f"Excel: {selected_font} {excel_size} pt"
+                )
+            )
+        except Exception:
+            preview_label.configure(text="Aktuelle Auswahl: (nicht verfügbar)")
+
+    for var in (font_name_var, font_size_word_var, font_size_excel_var):
+        try:
+            var.trace_add("write", _update_font_preview)
+        except Exception:
+            pass
+
+    _update_font_preview()
 
     return {}
