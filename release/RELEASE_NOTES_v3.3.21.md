@@ -5,11 +5,11 @@ Datum: 2026-06-20
 ## Highlights
 
 - GUI-Moduswechsel (Einfach/Erweitert) stabilisiert:
-	- `Registry`-Tab wird beim Umschalten zuverlässig ein-/ausgeblendet.
-	- Start-Tab-/Menüaktualisierung läuft robust über den UI-Event-Zyklus.
+  - `Registry`-Tab wird beim Umschalten zuverlässig ein-/ausgeblendet.
+  - Start-Tab-/Menüaktualisierung läuft robust über den UI-Event-Zyklus.
 - Tab-Kopfzeilen in der Haupt-GUI visuell verbessert:
-	- Einheitliche Breiten mit gut lesbaren Beschriftungen.
-	- Re-Anwendung nach Renderzyklen, damit CTk-Interne Updates nicht überschreiben.
+  - Einheitliche Breiten mit gut lesbaren Beschriftungen.
+  - Re-Anwendung nach Renderzyklen, damit CTk-Interne Updates nicht überschreiben.
 - Layout- und Bedienfeinschliff aus v3.3.20 konsolidiert und releasefähig verpackt.
 
 ## Qualitätsstatus
