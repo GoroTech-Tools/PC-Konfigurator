@@ -2,7 +2,7 @@
 
 **Build:** PC-Konfigurator
 **Datum:** 2026-06-20T20:42:43
-**Version:** 3.3.21 (Release)
+**Version:** 3.3.22 (Release)
 
 ## Build-Details
 
@@ -10,7 +10,7 @@
 - **PyInstaller:** 6.17.0
 - **Build-Modus:** --onefile --windowed
 - **Build-Datum:** 2026-06-20T20:42:43
-- **Build-Version:** 3.3.21
+- **Build-Version:** 3.3.22
 - **Plattform:** win32
 - **EXE-Name:** PC-Konfigurator.exe
 

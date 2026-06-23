@@ -49,6 +49,8 @@ PC-Konfigurator/
 2. Auswahl von Schriftart, Optionen und Zielparametern
 3. Konfigurationspipeline:
    - Registry-Anpassungen (HKCU)
+   - Empfohlene Dateien/zuletzt verwendete Dateien/Sprunglisten deaktivieren
+   - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung

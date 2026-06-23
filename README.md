@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.21 (Build: 20.06.2026, Python 3.13.7)
+**Version:** 3.3.22 (Build: 23.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -47,6 +47,8 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 - Klassisches Kontextmenü aktivieren
 - Taskleisten-Widgets ausblenden
 - Suchfeld in der Taskleiste ausblenden
+- Empfohlene Dateien im Startmenü, zuletzt verwendete Dateien im Datei-Explorer und Sprunglisten standardmäßig deaktivieren
+- Anwendungen im Startmenü standardmäßig in Listenansicht darstellen
 - Beim App-Start wird der gewünschte Startmenü-Modus automatisch gesetzt (Windows 11 oder optional klassisch als dauerhafter Fallback; Benutzerkontext, ohne Adminrechte)
 - Zusätzlich wird eine externe Benutzer-Autostart-Variante hinterlegt (`%APPDATA%\\PC-Konfigurator\\startmenu-guard` + Eintrag im Startup-Ordner), damit der gewählte Modus auch ohne manuellen App-Start bei Anmeldung angewendet wird
 

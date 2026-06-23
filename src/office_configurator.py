@@ -886,13 +886,14 @@ class OfficeConfigurator:
                 ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
                 ("Hidden", 1, "windows_explorer_show_hidden_items"),
+                ("ShowRecent", 0, "windows_explorer_show_recent_files"),
             ]
             failed_values: list[str] = []
 
             start_menu_settings = [
                 ("Start_Layout", 1, "windows_startmenu_list_layout"),
                 ("Start_TrackProgs", 1, "windows_startmenu_list_view"),
-                ("Start_TrackDocs", 1, "windows_startmenu_track_documents"),
+                ("Start_TrackDocs", 0, "windows_startmenu_track_documents"),
                 ("Start_ShowDocuments", 1, "windows_startmenu_show_documents"),
                 ("Start_ShowDownloads", 1, "windows_startmenu_show_downloads"),
                 ("Start_ShowNetwork", 1, "windows_startmenu_show_network"),

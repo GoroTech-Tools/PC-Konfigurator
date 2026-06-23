@@ -36,7 +36,41 @@ class FontInstaller:
 
     def get_user_fonts_dir(self):
         """Liefert das benutzerspezifische Fonts-Verzeichnis."""
-        return Path(os.environ['LOCALAPPDATA']) / 'Microsoft' / 'Windows' / 'Fonts'
+        local_app_data = os.environ.get('LOCALAPPDATA')
+        if local_app_data:
+            return Path(local_app_data) / 'Microsoft' / 'Windows' / 'Fonts'
+
+        # Fallback für Sonderkonstellationen (z. B. eingeschränkte Laufzeitkontexte):
+        # Windows-Profile liegen üblicherweise unter %USERPROFILE%\AppData\Local.
+        return Path.home() / 'AppData' / 'Local' / 'Microsoft' / 'Windows' / 'Fonts'
+
+    def _ensure_user_fonts_dir(self):
+        """Stellt sicher, dass das benutzerspezifische Fonts-Verzeichnis existiert."""
+        fonts_user_dir = self.get_user_fonts_dir()
+        try:
+            fonts_user_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as exc:
+            self.logger.error(f"Fonts-Verzeichnis konnte nicht angelegt werden: {fonts_user_dir} ({exc})")
+            raise
+
+        if not fonts_user_dir.exists() or not fonts_user_dir.is_dir():
+            raise RuntimeError(f"Fonts-Verzeichnis ist nicht verfügbar: {fonts_user_dir}")
+
+        return fonts_user_dir
+
+    def _log_font_installation_context(self, source_dir: Path, target_dir: Path) -> None:
+        """Schreibt eine kurze Diagnose zum verwendeten Font-Pfad ins Log."""
+        try:
+            local_app_data = os.environ.get('LOCALAPPDATA') or '<nicht gesetzt>'
+            self.logger.info(
+                "Font-Diagnose | Quelle=%s | Ziel=%s | LOCALAPPDATA=%s | Ziel existiert=%s",
+                source_dir,
+                target_dir,
+                local_app_data,
+                target_dir.exists(),
+            )
+        except Exception:
+            pass
 
     def discover_font_families(self, fonts_directory):
         """Ermittelt verfügbare Font-Familien aus dem Fonts-Verzeichnis."""
@@ -80,8 +114,7 @@ class FontInstaller:
             installed_fonts = []
             failed_fonts = []
             installed_paths = []
-            fonts_user_dir = self.get_user_fonts_dir()
-            fonts_user_dir.mkdir(parents=True, exist_ok=True)
+            fonts_user_dir = self._ensure_user_fonts_dir()
 
             for font_file in family_files:
                 if self._install_single_font(font_file):
@@ -123,12 +156,10 @@ class FontInstaller:
                 }
             
             installed_fonts = []
+            refreshed_fonts = []
             failed_fonts = []
             skipped_fonts = []
 
-            fonts_user_dir = self.get_user_fonts_dir()
-            fonts_user_dir.mkdir(parents=True, exist_ok=True)
-            
             # Rekursiv alle Font-Dateien finden
             font_files = []
             
@@ -136,18 +167,22 @@ class FontInstaller:
                 font_files.extend(fonts_dir.rglob(f'*{ext}'))
             
             self.logger.info(f"Gefundene Font-Dateien: {len(font_files)}")
+
+            fonts_user_dir = self._ensure_user_fonts_dir()
+            self._log_font_installation_context(fonts_dir, fonts_user_dir)
             
             for font_file in font_files:
                 try:
                     target_file = fonts_user_dir / font_file.name
-                    if target_file.exists():
-                        skipped_fonts.append(font_file.name)
-                        continue
-
+                    already_installed = target_file.exists()
                     success = self._install_single_font(font_file)
                     if success:
-                        installed_fonts.append(font_file.name)
-                        self.logger.info(f"Font installiert: {font_file.name}")
+                        if already_installed:
+                            if font_file.name not in refreshed_fonts:
+                                refreshed_fonts.append(font_file.name)
+                        else:
+                            installed_fonts.append(font_file.name)
+                        self.logger.info(f"Font verarbeitet: {font_file.name}")
                     else:
                         failed_fonts.append(font_file.name)
                         self.logger.warning(f"Font-Installation fehlgeschlagen: {font_file.name}")
@@ -161,8 +196,9 @@ class FontInstaller:
                 self._refresh_font_cache()
             
             return {
-                "success": True,
+                "success": len(failed_fonts) == 0,
                 "installed_fonts": installed_fonts,
+                "refreshed_fonts": refreshed_fonts,
                 "failed_fonts": failed_fonts,
                 "skipped_fonts": skipped_fonts,
                 "total_processed": len(font_files)
@@ -183,8 +219,7 @@ class FontInstaller:
         """
         try:
             # Ziel-Verzeichnis für User-Fonts
-            fonts_user_dir = self.get_user_fonts_dir()
-            fonts_user_dir.mkdir(parents=True, exist_ok=True)
+            fonts_user_dir = self._ensure_user_fonts_dir()
 
             # Font-Name aus Datei extrahieren
             font_name = self._get_font_name_from_file(font_file)
@@ -194,13 +229,11 @@ class FontInstaller:
             # Font-Datei ins User-Verzeichnis kopieren
             target_file = fonts_user_dir / font_file.name
 
-            # Prüfen ob Font bereits installiert ist
             if target_file.exists():
-                self.logger.debug(f"Font bereits installiert: {font_file.name}")
-                return True
-
-            # Font-Datei kopieren
-            shutil.copy2(font_file, target_file)
+                self.logger.debug(f"Font-Datei bereits vorhanden, Registrierung wird erneuert: {font_file.name}")
+            else:
+                # Font-Datei kopieren
+                shutil.copy2(font_file, target_file)
 
             # Font in der Registry registrieren (nur für aktuellen Benutzer)
             registry_success = self._register_font_in_user_registry(font_name, font_file.name)
@@ -287,7 +320,12 @@ class FontInstaller:
             
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
                 winreg.SetValueEx(key, font_name, 0, winreg.REG_SZ, font_filename)
-                self.logger.info(f"Font in User-Registry registriert: {font_name}")
+                self.logger.info(
+                    "Font in User-Registry registriert: %s | Pfad=%s | Key=HKCU\\%s",
+                    font_name,
+                    font_filename,
+                    key_path,
+                )
                 return True
                 
         except Exception as e:
