@@ -1,4 +1,4 @@
-# PC-Konfigurator
+﻿# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 

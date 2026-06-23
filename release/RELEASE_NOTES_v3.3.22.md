@@ -1,35 +1,35 @@
-# Release Notes v3.3.22
+﻿# Release Notes v3.3.22
 
 Datum: 2026-06-23
 
 ## Highlights
 
-- Font-Installation für eingeschränkte Benutzerprofile robuster gemacht:
-  - Fallback auf `Path.home()/AppData/Local/Microsoft/Windows/Fonts`, wenn `LOCALAPPDATA` nicht sauber verfügbar ist.
-  - Fonts-Verzeichnis wird bei Bedarf automatisch angelegt.
-  - Bereits vorhandene Fonts werden erneut registriert statt still übersprungen.
-  - Diagnose-Logging zeigt Zielpfad, `LOCALAPPDATA`-Wert und Registry-Schreibvorgänge.
-- Windows-11-Defaults erweitert:
-  - Empfohlene Dateien im Startmenü deaktiviert.
-  - Zuletzt verwendete Dateien im Datei-Explorer deaktiviert.
-  - Sprunglisten-Einträge standardmäßig deaktiviert.
-  - Anwendungen im Startmenü standardmäßig in Listenansicht.
+- Namens-, Build- und Doku-Anpassungen wurden in diesem Release-Stand konsolidiert.
+- Das Build wurde als Onefile-EXE erzeugt und fÃ¼r die Verteilung aufbereitet.
+- Bitte Highlights bei Bedarf projektspezifisch ergÃ¤nzen.
 
-## Qualitätsstatus
+## QualitÃ¤tsstatus
 
-- Code- und Dokumentationsänderungen abgeschlossen.
-- Syntaxprüfung für die geänderten Python-Dateien erfolgreich.
-- Build/ZIP-Erzeugung wurde in dieser Runde nicht separat ausgeführt.
+- Release-Build erfolgreich erzeugt.
+- ZIP-Artefakt erstellt und im Release-Ordner abgelegt.
+- Automatische BasisprÃ¼fung (Build/Packaging) im Skript durchlaufen.
 
 ## Artefakte
 
-- Quelländerungen in `src/`, `docs/` und `README.md`
-- Neue Release-Notiz: `release/RELEASE_NOTES_v3.3.22.md`
+- Build-Verzeichnis: dist/PC-Konfigurator-v3.3.22/
+- EXE: dist/PC-Konfigurator-v3.3.22/PC-Konfigurator.exe
+- Release-ZIP: release/PC-Konfigurator-v3.3.22.zip
 
-## Enthaltene Änderungen
+## Enthaltene Commits (aktuelle Historie)
 
-- `src/font_installer.py` – robuster Pfad, Rekonfiguration und Diagnose-Logging
-- `src/ui/execution_flow.py` – differenzierte Font-Schritt-Meldungen
-- `src/office_configurator.py` – neue Windows-Defaults
-- `src/registry_explainer.py` – erweiterte Registry-Beschreibungen
-- `README.md`, `docs/DOKUMENTATION_ANWENDER.md`, `docs/DOKUMENTATION_TECHNIK.md` – Doku-Updates
+- `cea6602` Release v3.3.22: font hardening and Windows defaults
+- `bdb5081` Build: add two-step markdown quickcheck (fix + gate)
+- `233cb5e` Build: enable markdownlint auto-fix during release creation
+- `92a8c11` Chore: fix markdownlint warnings in v3.3.21 release notes
+- `bae9e72` Release v3.3.21: build refresh and GUI mode/tab stabilization
+
+## Technische Build-Informationen
+
+- Build-Datum: 2026-06-23 20:58:45
+- Build-Modus: --onefile --windowed
+- EXE-Name: PC-Konfigurator.exe
