@@ -1,5 +1,11 @@
-# Build-Skript für PC-Konfigurator
+﻿# Build-Skript für PC-Konfigurator
 # Erstellt automatisch das Build und führt Post-Build-Aktionen aus
+
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Dieses Build-Skript schreibt bewusst Statusmeldungen auf die Konsole.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets', '', Justification = 'Lokaler Wrapper dient der konditionalen Konsolenausgabe im Build.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Die Funktionen sind interne Build-Hilfsfunktionen ohne Benutzerbestätigung.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingEmptyCatchBlock', '', Justification = 'Fehler werden an dieser Stelle bewusst still ignoriert oder an anderer Stelle protokolliert.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'Einige Zwischenwerte sind nur für Lesbarkeit bzw. zukünftige Erweiterungen vorgesehen.')]
 
 param(
     [switch]$NoVersionBump,
@@ -47,12 +53,16 @@ function Set-GitOneDriveSafety {
     }
 }
 
-function Normalize-MarkdownTail {
+function Update-MarkdownTail {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$Path
     )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return
+    }
 
     if (-not (Test-Path $Path)) {
         return
@@ -212,7 +222,7 @@ function New-ReleaseNotesFile {
     $content = $contentLines -join "`r`n"
 
     Set-Content -Path $notesPath -Value $content -Encoding UTF8
-    Normalize-MarkdownTail -Path $notesPath
+    Update-MarkdownTail -Path $notesPath
     Write-Host "Release-Notes erstellt/aktualisiert: $notesPath" -ForegroundColor Green
     return $notesPath
 }
@@ -233,7 +243,7 @@ foreach ($mdPath in @(
     (Join-Path $PSScriptRoot 'README.md'),
     (Join-Path $PSScriptRoot 'docs\DOKUMENTATION_ANWENDER.md')
 )) {
-    Normalize-MarkdownTail -Path $mdPath
+    Update-MarkdownTail -Path $mdPath
 }
 
 # Vorab: Markdownlint als Standard-Dokuroutine ausführen
@@ -290,17 +300,14 @@ function Write-Host {
 # Schritt 0: Versionsnummer automatisch erhöhen (optional überspringbar)
 $buildInfoPath = Join-Path $PSScriptRoot 'src/build_info.py'
 $buildInfoTxtPath = Join-Path $PSScriptRoot 'src\BUILD-INFO.txt'
-$newVersion = $null
 if (Test-Path $buildInfoPath) {
     $content = Get-Content $buildInfoPath -Raw
     if ($content -match "'version': '([0-9]+)\.([0-9]+)\.([0-9]+)'") {
         $major = [int]$matches[1]
         $minor = [int]$matches[2]
         $patch = [int]$matches[3]
-        $currentVersion = "$major.$minor.$patch"
-
         if ($NoVersionBump) {
-            $newVersion = $currentVersion
+            $newVersion = "$major.$minor.$patch"
             Write-Host "Versionssprung übersprungen (-NoVersionBump). Verwende Version: $newVersion" -ForegroundColor Cyan
         } else {
             $nextMajor = $major
@@ -327,7 +334,7 @@ if (Test-Path $buildInfoPath) {
                 $readme = Get-Content $readmePath -Raw
                 $readme = [regex]::Replace($readme, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \(Build: [0-9]{2}\.[0-9]{2}\.[0-9]{4}, Python [0-9.]+\)', "**Version:** $newVersion (Build: $dateForMd, Python $pythonVersionShort)")
                 Set-Content $readmePath $readme -Encoding UTF8
-                Normalize-MarkdownTail -Path $readmePath
+                Update-MarkdownTail -Path $readmePath
                 Write-Host "README.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 
@@ -336,7 +343,7 @@ if (Test-Path $buildInfoPath) {
                 $anwenderDoc = Get-Content $anwenderDocPath -Raw
                 $anwenderDoc = [regex]::Replace($anwenderDoc, '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+ \([0-9]{2}\.[0-9]{2}\.[0-9]{4}\)', "**Version:** $newVersion ($dateForMd)")
                 Set-Content $anwenderDocPath $anwenderDoc -Encoding UTF8
-                Normalize-MarkdownTail -Path $anwenderDocPath
+                Update-MarkdownTail -Path $anwenderDocPath
                 Write-Host "docs/DOKUMENTATION_ANWENDER.md automatisch aktualisiert." -ForegroundColor Cyan
             }
 

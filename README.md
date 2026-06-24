@@ -1,8 +1,8 @@
-﻿# PC-Konfigurator
+# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.22 (Build: 23.06.2026, Python 3.13.7)
+**Version:** 3.3.23 (Build: 24.06.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -125,6 +125,12 @@ PC-Konfigurator-v3.3.1/
 5. Templates werden automatisch sicher angepasst und kopiert.
 
 ### Entwicklung und Build-System
+
+Hinweis zur Python-Umgebung (wichtig bei OneDrive/mehreren Rechnern):
+
+- Virtuelle Umgebungen (`.venv`, `.venv-1` usw.) sind unter Windows nicht portabel und enthalten absolute Pfade.
+- Deshalb niemals eine vorhandene venv zwischen Benutzerprofilen/Rechnern "mitnehmen".
+- Stattdessen auf dem Zielrechner immer neu erzeugen (`.\setup.ps1`) und anschließend normal aktivieren.
 
 ```bash
 # Python-Umgebung einrichten
