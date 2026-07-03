@@ -12,7 +12,7 @@ um früh sichtbar zu machen, ob grundlegende Nutzung stabil funktioniert.
 - [ ] `PC-Konfigurator.exe` startet
 - [ ] GUI ist vollständig sichtbar und bedienbar
 - [ ] Eine Schriftart ausgewählt
-- [ ] **Nur Office konfigurieren** einmal ausgeführt
+- [ ] Bedienmodus auf **Erweitert** gestellt und **Nur Office konfigurieren** einmal ausgeführt
 - [ ] Keine kritische Fehlermeldung / kein Absturz
 - [ ] Log-Eintrag wurde erzeugt
 

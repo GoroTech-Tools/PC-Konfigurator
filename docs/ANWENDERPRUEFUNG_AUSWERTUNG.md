@@ -58,7 +58,7 @@ Details/Anmerkungen:
 | EXE-Start / Stabilität                |    |           |        |          |
 | Bedienbarkeit / Verständlichkeit      |    |           |        |          |
 | Vollständige Konfiguration            |    |           |        |          |
-| Nur Office konfigurieren              |    |           |        |          |
+| Nur Office konfigurieren (Erweitert) |    |           |        |          |
 | Template-/Font-Handling               |    |           |        |          |
 | Windows-/Registry-Anpassungen         |    |           |        |          |
 | Logging / Nachvollziehbarkeit         |    |           |        |          |

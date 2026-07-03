@@ -46,15 +46,19 @@ PC-Konfigurator/
 ## 3. Laufzeitfluss
 
 1. Start der EXE/`src/main.py`
-2. Auswahl von Schriftart, Optionen und Zielparametern
-3. Konfigurationspipeline:
+2. Navigation `Start` → **Weiter** → `Konfiguration` → **Weiter** → `Ausführung`
+3. Auswahl von Schriftart, Optionen und Zielparametern
+4. Konfigurationspipeline:
    - Registry-Anpassungen (HKCU)
    - Empfohlene Dateien/zuletzt verwendete Dateien/Sprunglisten deaktivieren
    - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung
-4. Logging und Ergebnisanzeige in der Oberfläche
+5. Ausführungsmodus:
+   - `Einfach`: Vollständige Konfiguration
+   - `Erweitert`: Vollständige Konfiguration oder Office-only
+6. Logging und Ergebnisanzeige in der Oberfläche
 
 ### Aktueller Status: offene Word-Detailpunkte
 
@@ -72,12 +76,18 @@ Abnahmeaufgabe bestehen.
 
 ```mermaid
 flowchart TD
-   A[Start Konfiguration] --> B[Parameter aus GUI]
-   B --> C[Registry und Office-Schritte]
-   C --> D[Template-Backup]
-   D --> E[Template-Anpassung]
-   E --> F[Template-Deployment]
-   F --> G[Statusausgabe und Logs]
+   A[Start-Tab] --> B[Weiter zu Konfiguration]
+   B --> C[Parameter aus GUI]
+   C --> D[Weiter zu Ausführung]
+   D --> E{Bedienmodus}
+   E -->|Einfach| F[Vollständige Konfiguration]
+   E -->|Erweitert| G[Vollständige oder Office-only]
+   F --> H[Registry und Office-Schritte]
+   G --> H
+   H --> I[Template-Backup]
+   I --> J[Template-Anpassung]
+   J --> K[Template-Deployment]
+   K --> L[Statusausgabe und Logs]
 ```
 
 ![Datenfluss Dokumentation Technik](diagramme/technik_datenfluss.svg)

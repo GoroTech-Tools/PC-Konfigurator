@@ -1,7 +1,13 @@
 flowchart TD
-    A[Start Konfiguration] --> B[Parameter aus GUI]
-    B --> C[Registry und Office-Schritte]
-    C --> D[Template-Backup]
-    D --> E[Template-Anpassung]
-    E --> F[Template-Deployment]
-    F --> G[Statusausgabe und Logs]
+    A[Start-Tab] --> B[Weiter zu Konfiguration]
+    B --> C[Parameter aus GUI]
+    C --> D[Weiter zu Ausführung]
+    D --> E{Bedienmodus}
+    E -->|Einfach| F[Vollständige Konfiguration]
+    E -->|Erweitert| G[Vollständige oder Office-only]
+    F --> H[Registry und Office-Schritte]
+    G --> H
+    H --> I[Template-Backup]
+    I --> J[Template-Anpassung]
+    J --> K[Template-Deployment]
+    K --> L[Statusausgabe und Logs]

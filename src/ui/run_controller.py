@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+from ui.theme import get_status_color
+
 
 class ExecutionRunController:
     """Kapselt Fortschritts-/Schrittanzeige und Live-Log für Ausführungen."""
@@ -49,19 +51,36 @@ class ExecutionRunController:
         self.steps_label.configure(text=text)
 
     def _set_state(self, kind: str, text: str) -> None:
-        color = {
-            "info": "#1f6aa5",
-            "success": "#2e8b57",
-            "warning": "#b36b00",
-            "error": "#b00020",
-        }.get(kind, "#1f6aa5")
+        color = get_status_color(kind)
         self.state_label.configure(text=text, text_color=color)
+
+    def _setup_status_tags(self) -> None:
+        """Definiert semantische Text-Tags für Live-Statusausgaben."""
+        try:
+            self.status_textbox.tag_config("status_info", foreground=get_status_color("info")[0])
+            self.status_textbox.tag_config("status_success", foreground=get_status_color("success")[0])
+            self.status_textbox.tag_config("status_warning", foreground=get_status_color("warning")[0])
+            self.status_textbox.tag_config("status_error", foreground=get_status_color("error")[0])
+        except Exception:
+            pass
+
+    @staticmethod
+    def _classify_status_tag(text: str) -> str:
+        upper = text.upper()
+        if any(token in upper for token in ("FEHLER", "ERROR", "❌", "ABBRUCH")):
+            return "status_error"
+        if any(token in upper for token in ("WARN", "⚠", "HINWEIS")):
+            return "status_warning"
+        if any(token in upper for token in ("OK", "ERFOLG", "✅", "FERTIG", "ABGESCHLOSSEN")):
+            return "status_success"
+        return "status_info"
 
     def preview(self, mode: str = "full") -> None:
         self.steps = self._steps_for_mode(mode)
         self.step_index = -1
 
         def _update() -> None:
+            self._setup_status_tags()
             self._render_steps()
             self.progress_bar.set(0)
 
@@ -73,6 +92,7 @@ class ExecutionRunController:
         self.log_buffer = [title]
 
         def _update() -> None:
+            self._setup_status_tags()
             self.status_textbox.delete("0.0", "end")
             self.status_textbox.insert("0.0", title)
             self.progress_bar.set(0)
@@ -85,7 +105,8 @@ class ExecutionRunController:
         self.log_buffer.append(text)
 
         def _update() -> None:
-            self.status_textbox.insert("end", text)
+            tag = self._classify_status_tag(text)
+            self.status_textbox.insert("end", text, tag)
             self.status_textbox.see("end")
 
         self.run_on_ui(_update)

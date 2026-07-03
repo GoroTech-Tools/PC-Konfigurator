@@ -6,7 +6,7 @@ Datum: 2026-06-17
 
 - Startmenü-Modus in der GUI erweitert: `Windows 11 (empfohlen)` und dauerhafter `Klassisch (Fallback)` inkl. Live-Anzeige (`🟦`/`🟧`).
 - Tab-Darstellung stabilisiert: Lesbarkeitsproblem der Reiter in Hauptfenster und Registry-Detailfenster behoben.
-- Fensterhöhe des Hauptfensters dezent erhöht, damit die Schriftgrößen-Einstellungen im Bereich `Vorlagen/Ablage` sichtbar bleiben.
+- Fensterhöhe des Hauptfensters dezent erhöht, damit die Schriftgrößen-Einstellungen im Bereich `Konfiguration` sichtbar bleiben.
 
 ## Qualitätsstatus
 

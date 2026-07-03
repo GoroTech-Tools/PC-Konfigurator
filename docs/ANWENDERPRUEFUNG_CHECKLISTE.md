@@ -45,8 +45,9 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Template-Anpassung/Kopie wird durchgeführt
 - [ ] Abschlussmeldung ist konsistent mit dem realen Ergebnis
 
-## D) Funktionsprüfung „Nur Office konfigurieren"
+## D) Funktionsprüfung „Nur Office konfigurieren" (nur im erweiterten Modus)
 
+- [ ] Bedienmodus auf **Erweitert** gestellt
 - [ ] Lauf startet ohne Fehler
 - [ ] Office-Einstellungen werden sichtbar angewendet
 - [ ] Lauf endet ohne Absturz/Freeze

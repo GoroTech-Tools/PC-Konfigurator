@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.23 (Build: 24.06.2026, Python 3.13.7)
+**Version:** 3.3.25 (Build: 03.07.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -17,12 +17,14 @@ Office-Vorlagen und benutzerspezifische Schriftarten.
 
 ```mermaid
 flowchart LR
-  A[PC-Konfigurator starten] --> B[System prüfen]
-  B --> C[Schriftart und Optionen wählen]
-  C --> D[Vollständige oder Office-Konfiguration starten]
-  D --> E[Registry und Office konfigurieren]
-  E --> F[Templates sicher anpassen]
-  F --> G[Ergebnis und Logs prüfen]
+  A[PC-Konfigurator starten] --> B[Start-Tab]
+  B --> C[Weiter zu Konfiguration]
+  C --> D[Einstellungen prüfen]
+  D --> E[Weiter zu Ausführung]
+  E --> F[Vollständige Konfiguration]
+  E --> G[Nur Office<br/>nur Erweitert]
+  F --> H[Ergebnis und Logs prüfen]
+  G --> H
 ```
 
 ![Ablaufübersicht PC-Konfigurator](docs/diagramme/anwender_ablauf.svg)
@@ -212,7 +214,7 @@ Der Build-Prozess ergänzt automatisch:
 - Startmenü-Guard erweitert: Modus ist nun in der GUI dauerhaft zwischen `🟦 Windows 11 (empfohlen)` und `🟧 Klassisch (Fallback)` umschaltbar.
 - Start-Tab zeigt den aktiven Startmenü-Modus inklusive Live-Aktualisierung und Farbcodierung.
 - Tab-Darstellung stabilisiert: problematische manuelle Tab-Skalierung entfernt (Hauptfenster + Registry-Detailfenster), Beschriftungen bleiben lesbar.
-- Fensterhöhe dezent erhöht, damit Einstellungen im Bereich `Vorlagen/Ablage` (u. a. Schriftgrößen) zuverlässig sichtbar sind.
+- Fensterhöhe dezent erhöht, damit Einstellungen im Bereich `Konfiguration` (u. a. Schriftgrößen) zuverlässig sichtbar sind.
 
 ### v3.3.6 (08. Juni 2026)
 

@@ -98,7 +98,8 @@ def apply_uniform_button_sizes(container, *, width: int = DEFAULT_BUTTON_WIDTH, 
     for child in children:
         try:
             if isinstance(child, ctk.CTkButton):
-                child.configure(width=width, height=height)
+                if not bool(getattr(child, "_skip_uniform_size", False)):
+                    child.configure(width=width, height=height)
         except Exception:
             pass
         apply_uniform_button_sizes(child, width=width, height=height)

@@ -49,6 +49,7 @@ from ui.layout import (
     TAB_LOGS,
     TAB_REGISTRY,
 )
+from ui.quick_actions import build_quick_actions_bar
 from ui.template_status import (
     render_safe_template_status,
     render_template_status,
@@ -91,8 +92,10 @@ from runtime.runtime_bundle import (
 # Schlüssel  = Anzeigename im Dropdown
 # Wert       = Schriftname, den Windows/Office intern kennt
 FONT_OPTIONS: dict[str, str] = {
+    "Arial":              "Arial",
     "Aptos":              "Aptos",
     "Aptos Narrow":       "Aptos Narrow",
+    "Calibri":            "Calibri",
     "Futura Cyrillic":    "Futura Cyrillic",
     "Glacial Indifference": "Glacial Indifference",
     "Montserrat":         "Montserrat",
@@ -113,6 +116,11 @@ RUNTIME_FILES = [
     "app_icon.ico",
 ]
 GUI_STATE_FILE = "gui_state.json"
+APPEARANCE_OPTIONS: dict[str, str] = {
+    "Hell": "light",
+    "Dunkel": "dark",
+    "System": "system",
+}
 
 
 class PCKonfiguratorGUI:
@@ -216,6 +224,7 @@ class PCKonfiguratorGUI:
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
+                "appearance_mode": self.appearance_mode.get(),
             },
             "last_result": {
                 "started": self._last_run_started,
@@ -261,9 +270,29 @@ class PCKonfiguratorGUI:
         except Exception:
             self.font_size_excel.set(10)
 
+        appearance_mode = str(settings.get("appearance_mode", "Hell")).strip()
+        if appearance_mode in APPEARANCE_OPTIONS:
+            self.appearance_mode.set(appearance_mode)
+
         self._loaded_last_result = data.get("last_result")
 
     def _on_setting_changed(self, *_args):
+        self._save_gui_state()
+
+    def _apply_appearance_mode(self):
+        """Setzt den Appearance-Mode anhand der GUI-Auswahl."""
+        selected = str(self.appearance_mode.get()).strip()
+        mode = APPEARANCE_OPTIONS.get(selected, "light")
+        try:
+            ctk.set_appearance_mode(mode)
+        except Exception:
+            pass
+
+    def _on_appearance_mode_changed(self, value: str):
+        """Callback für Theme-Umschaltung über Quick-Action-Leiste."""
+        if value in APPEARANCE_OPTIONS:
+            self.appearance_mode.set(value)
+        self._apply_appearance_mode()
         self._save_gui_state()
 
     def _on_startmenu_mode_changed(self, *_args):
@@ -527,8 +556,9 @@ class PCKonfiguratorGUI:
         advanced_mode = self._is_advanced_mode()
 
         self._set_registry_tab_visible(advanced_mode)
-        self._set_execution_log_visible(advanced_mode)
         self.create_start_tab()
+        self.create_execution_tab()
+        self._set_execution_log_visible(advanced_mode)
         self.add_tools_menu()
         self._enforce_tab_header_widths()
     
@@ -569,6 +599,7 @@ class PCKonfiguratorGUI:
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
+        self.appearance_mode = tk.StringVar(value="Hell")
         self.run_controller: ExecutionRunController | None = None
         self._last_run_started = "-"
         self._last_run_mode = "-"
@@ -584,6 +615,7 @@ class PCKonfiguratorGUI:
         self._logs_auto_refresh_ms = 2000
 
         self._load_gui_state()
+        self._apply_appearance_mode()
         # Beim Kaltstart keinen Explorer-Neustart auslösen: der Modus wird still
         # in die Registry geschrieben; der Autostart-Guard (Startup-Ordner) sorgt
         # beim nächsten Login für die Wirkung. Ein Explorer-Kill beim App-Start
@@ -648,7 +680,20 @@ class PCKonfiguratorGUI:
     def create_widgets(self):
         """GUI-Widgets erstellen"""
         layout_refs = build_main_layout(self.root, title="PC-Konfigurator")
+        self.main_frame = layout_refs["main_frame"]
         self.tabview = layout_refs["tabview"]
+
+        build_quick_actions_bar(
+            self.main_frame,
+            appearance_values=list(APPEARANCE_OPTIONS.keys()),
+            appearance_variable=self.appearance_mode,
+            on_appearance_changed=self._on_appearance_mode_changed,
+            on_open_start=lambda: self._switch_to_tab(TAB_START),
+            on_open_config=lambda: self._switch_to_tab(TAB_CONFIG),
+            on_open_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
+            on_open_logs=lambda: self._switch_to_tab(TAB_LOGS),
+            on_run_full=self.execute_all_configurations,
+        )
 
         self.create_start_tab()
         self.create_configuration_tab()
@@ -691,10 +736,6 @@ class PCKonfiguratorGUI:
             on_ui_mode_changed=self._on_ui_mode_changed,
             on_open_config=lambda: self._switch_to_tab(TAB_CONFIG),
             on_open_registry_info=lambda: self._switch_to_tab(TAB_REGISTRY),
-            on_run_full=self.execute_all_configurations,
-            on_run_office=self.execute_office_only,
-            on_check_system=self.check_system_requirements,
-            on_restart_explorer=self.restart_windows_explorer,
             on_open_folder_templates=lambda: self.open_runtime_folder("data\\Datei-Vorlagen"),
             on_open_folder_fonts=lambda: self.open_runtime_folder("data\\Fonts"),
             on_open_folder_logs=lambda: self.open_runtime_folder("logs"),
@@ -713,6 +754,7 @@ class PCKonfiguratorGUI:
             font_size_word_var=self.font_size_word,
             font_size_excel_var=self.font_size_excel,
             available_font_families=self.available_font_families,
+            on_continue_to_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
         )
 
         self.template_status_frame = refs.get("template_status_frame") if isinstance(refs, dict) else None
@@ -767,8 +809,16 @@ class PCKonfiguratorGUI:
         
     def create_execution_tab(self):
         """Ausführung-Tab erstellen"""
+        execution_frame = self.tabview.tab(TAB_EXECUTION)
+        for child in execution_frame.winfo_children():
+            try:
+                child.destroy()
+            except Exception:
+                pass
+
         refs = build_execution_tab(
             self.tabview,
+            advanced_mode=self._is_advanced_mode(),
             on_run_full=self.execute_all_configurations,
             on_run_office=self.execute_office_only,
             on_restart_explorer=self.restart_windows_explorer,

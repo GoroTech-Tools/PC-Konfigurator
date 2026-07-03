@@ -9,14 +9,17 @@ Angleichung an den `AP1-Konfigurator`.
 ## 1) Start und Navigation
 
 - [x] Anwendung startet ohne Traceback/Absturz
-- [x] Tabs `Übersicht`, `Start`, `Vorlagen/Ablage`, `Registry`, `Ausführung`, `Logs` vorhanden
+- [x] Tabs `Übersicht`, `Start`, `Konfiguration`, `Registry`, `Ausführung`, `Logs` vorhanden
 - [x] Wechsel zwischen Tabs funktioniert stabil
 - [x] Schnellnavigation aus dem Start-Tab funktioniert (Konfiguration/Registry/Ausführung)
+- [x] Start-Tab enthält Schaltfläche `Weiter` und öffnet Tab `Konfiguration`
+- [x] Tab `Konfiguration` enthält unten Schaltfläche `Weiter` und öffnet Tab `Ausführung`
 
 ## 2) Konfigurations- und Ausführungsfluss
 
 - [x] Vollständige Konfiguration startet und läuft durch
-- [x] Office-only-Konfiguration startet und läuft durch
+- [x] Office-only-Konfiguration startet und läuft durch (nur Modus `Erweitert`)
+- [x] Schaltfläche `Nur Office konfigurieren` ist in `Einfach` ausgeblendet und in `Erweitert` sichtbar
 - [x] Fortschrittsbalken und Schritt-Checkliste werden korrekt aktualisiert
 - [x] Statusfarben/-texte wechseln plausibel (Info/Success/Error)
 

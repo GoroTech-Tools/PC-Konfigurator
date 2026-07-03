@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.23 (24.06.2026)
+**Version:** 3.3.25 (03.07.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -13,11 +13,15 @@ ohne klassische Installation direkt gestartet werden.
 
 ```mermaid
 flowchart LR
-  A[Programm starten] --> B[Konfiguration wählen]
-  B --> C[Optional Windows-Einstellungen festlegen]
-  C --> D[Ausführung starten]
-  D --> E[Office und Templates werden angepasst]
-  E --> F[Status und Logs prüfen]
+  A[Programm starten] --> B[Start-Tab]
+  B --> C[Weiter]
+  C --> D[Konfiguration]
+  D --> E[Weiter]
+  E --> F[Ausführung]
+  F --> G[Vollständige Konfiguration]
+  F --> H[Nur Office<br/>nur im erweiterten Modus]
+  G --> I[Status und Logs prüfen]
+  H --> I
 ```
 
 ![Ablauf Dokumentation Anwender](diagramme/anwender_ablauf.svg)
@@ -35,7 +39,8 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 
 - Gewünschtes Ziel-Laufwerk wählen (z. B. `Z:` für BFW)
 - Schriftart und Schriftgröße für Word/Excel festlegen
-- „Individuelle Einstellungen konfigurieren“ für erweiterte Optionen
+- Über **„Weiter“** unten zum Tab `Ausführung` wechseln
+- Bedienmodus `Einfach`/`Erweitert` im Start-Tab wählen
 
 ### 3. Windows-Einstellungen
 
@@ -77,7 +82,7 @@ damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wi
 **Tab „Ausführung“:**
 
 - **Vollständige Konfiguration starten** – führt alle Anpassungen und Kopiervorgänge automatisiert aus
-- **Nur Office konfigurieren** – schnelle Registry-Optimierungen und Template-Handling nur für Office
+- **Nur Office konfigurieren** – nur im **erweiterten Modus**, schnelle Registry-Optimierungen und Template-Handling nur für Office
 
 ## Features im Detail
 

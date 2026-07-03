@@ -1,5 +1,7 @@
 # Auto-generierte Build-Informationen
-BUILD_INFO = {'version': '3.3.23', 'build_date': '2026-06-24T19:42:33', 'python_version': '3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]', 'platform': 'win32'}
+BUILD_INFO = {'version': '3.3.25', 'build_date': '2026-07-03T17:50:32', 'python_version': '3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]', 'platform': 'win32'}
+
+
 
 
 

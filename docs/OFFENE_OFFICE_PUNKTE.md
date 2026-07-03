@@ -149,7 +149,7 @@ Ein Punkt kann als „stabil verifiziert" markiert werden, wenn:
   - [ ] OK
   - [x] eingeschränkt
   - [ ] nicht OK
-- Handlungsempfehlung: GUI-Validierung auf echter Office-Installation nach Lauf „Nur Office konfigurieren" wiederholen.
+- Handlungsempfehlung: GUI-Validierung auf echter Office-Installation nach Lauf „Nur Office konfigurieren" im **erweiterten Modus** wiederholen.
 
 ### Musterlauf 2 (Vorlage Teamtest)
 

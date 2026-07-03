@@ -26,7 +26,7 @@ Datum: 2026-06-20
 - Fensterpositionierung verbessert:
   - Hauptfenster zentriert im Arbeitsbereich (ohne Taskleisten-Überdeckung).
   - Fenster `Detaillierte Ansicht` gleich zentriert und vor dem Hauptfenster.
-- Tab `Vorlagen/Ablage` überarbeitet:
+- Tab `Konfiguration` überarbeitet:
   - Bereiche für Schriftart und Schriftgrößen horizontal nebeneinander.
   - Beschriftungen vereinheitlicht (`Schriftgröße Word/Outlook`, `Schriftgröße Excel`).
 - Tab-Kopfzeilen robuster skaliert:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from ui.theme import get_status_color
+
 TEMPLATE_NAMES = {
     "normal_dotm": "Word Standard-Template (Normal.dotm)",
     "mappe_xltx": "Excel Standard-Template (Mappe.xltx)",
@@ -74,6 +76,6 @@ def render_template_status_error(frame, message: str) -> None:
     error_label = ctk.CTkLabel(
         frame,
         text=message,
-        text_color="red",
+        text_color=get_status_color("error"),
     )
     error_label.pack(anchor="w", padx=10, pady=5)

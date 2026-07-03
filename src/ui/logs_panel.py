@@ -5,6 +5,8 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
+from ui.theme import create_scrollable_page, create_section_card
+
 
 def build_logs_tab(
     tabview,
@@ -17,11 +19,25 @@ def build_logs_tab(
     """Erstellt den Logs-Tab und liefert Widget-Referenzen zurück."""
     logs_frame = tabview.tab(tab_name)
 
-    log_text = ctk.CTkTextbox(logs_frame, height=400)
-    log_text.pack(fill="both", expand=True, padx=10, pady=10)
+    page = create_scrollable_page(logs_frame)
 
-    log_button_frame = ctk.CTkFrame(logs_frame)
-    log_button_frame.pack(fill="x", padx=10, pady=10)
+    ctk.CTkLabel(
+        page,
+        text="Logs und Diagnose",
+        font=ctk.CTkFont(size=20, weight="bold"),
+    ).pack(anchor="w", padx=8, pady=(2, 10))
+
+    _logs_card, logs_body = create_section_card(
+        page,
+        title="Aktuelle Laufprotokolle",
+        description="Es wird automatisch die neueste Log-Datei angezeigt.",
+    )
+
+    log_text = ctk.CTkTextbox(logs_body, height=420)
+    log_text.pack(fill="both", expand=True, padx=4, pady=(0, 10))
+
+    log_button_frame = ctk.CTkFrame(logs_body)
+    log_button_frame.pack(fill="x", padx=4, pady=(0, 2))
 
     refresh_button = ctk.CTkButton(
         log_button_frame,
