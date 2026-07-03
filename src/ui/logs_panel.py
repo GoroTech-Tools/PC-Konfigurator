@@ -5,7 +5,7 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-from ui.theme import create_scrollable_page, create_section_card
+from ui.theme import PAGE_HEADING_COLOR, create_scrollable_page, create_section_card
 
 
 def build_logs_tab(
@@ -25,6 +25,8 @@ def build_logs_tab(
         page,
         text="Logs und Diagnose",
         font=ctk.CTkFont(size=20, weight="bold"),
+        text_color=PAGE_HEADING_COLOR,
+        fg_color="transparent",
     ).pack(anchor="w", padx=8, pady=(2, 10))
 
     _logs_card, logs_body = create_section_card(

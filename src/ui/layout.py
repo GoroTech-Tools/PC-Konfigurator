@@ -4,6 +4,8 @@ from typing import Iterable
 
 import customtkinter as ctk
 
+from ui.theme import CARD_TITLE_COLOR
+
 TAB_START = "Start"
 TAB_CONFIG = "Konfiguration"
 TAB_REGISTRY = "Registry"
@@ -31,11 +33,15 @@ def build_main_layout(
     main_frame = ctk.CTkFrame(root)
     main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
+    header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+    header_frame.pack(fill="x", padx=10, pady=(10, 8))
+
     ctk.CTkLabel(
-        main_frame,
+        header_frame,
         text=title,
         font=ctk.CTkFont(size=24, weight="bold"),
-    ).pack(pady=(10, 20))
+        text_color=CARD_TITLE_COLOR,
+    ).pack(side="left", pady=(0, 0))
 
     tabview = ctk.CTkTabview(main_frame)
     tabview.pack(fill="both", expand=True, padx=10, pady=10)
@@ -45,5 +51,6 @@ def build_main_layout(
 
     return {
         "main_frame": main_frame,
+        "header_frame": header_frame,
         "tabview": tabview,
     }

@@ -71,6 +71,7 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 ## F) Windows-/Registry-Einstellungen
 
 - [ ] Gewählte Optionen (Taskleiste/Kontextmenü/etc.) werden angewendet
+- [ ] Explorer-Suchoption „Immer Dateinamen und -inhalte suchen" ist aktiviert (Benutzerkontext)
 - [ ] Hinweis auf Explorer-Neustart/Neuanmeldung ist sichtbar
 - [ ] Nach Neustart/Neuanmeldung sind Änderungen wie erwartet aktiv
 - [ ] Explorer-Neustart über GUI getestet (Taskleiste wird innerhalb ~20 Sekunden wieder sichtbar)

@@ -51,6 +51,7 @@ PC-Konfigurator/
 4. Konfigurationspipeline:
    - Registry-Anpassungen (HKCU)
    - Empfohlene Dateien/zuletzt verwendete Dateien/Sprunglisten deaktivieren
+   - Explorer-Option „Immer Dateinamen und -inhalte suchen" aktivieren (`SearchFileNameAlways=1`)
    - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
    - Template-Anpassungen über SafeTemplateProcessor

@@ -19,6 +19,7 @@ um früh sichtbar zu machen, ob grundlegende Nutzung stabil funktioniert.
 ## Optional (wenn Zeit vorhanden)
 
 - [ ] **Vollständige Konfiguration** einmal ausgeführt
+- [ ] Explorer-Suchoption „Immer Dateinamen und -inhalte suchen" ist aktiv
 - [ ] Explorer-Neustart getestet (falls angeboten/erforderlich)
 - [ ] Ergebnis in Word/Excel/Outlook kurz plausibilisiert
 - [ ] Taskleiste erscheint nach Explorer-Neustart wieder innerhalb ~20 Sekunden

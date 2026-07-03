@@ -11,6 +11,23 @@ PALE_BUTTON_STYLE = {
     "border_color": ("#B8C3CF", "#6A7683"),
 }
 
+CONTINUE_BUTTON_STYLE = {
+    "fg_color": ("#E8F1FF", "#1F2D44"),
+    "hover_color": ("#D8E9FF", "#284061"),
+    "text_color": ("#0F2A56", "#F3F7FF"),
+    "border_width": 2,
+    "border_color": ("#1D4ED8", "#60A5FA"),
+}
+
+CARD_STYLE = {
+    "fg_color": ("#EEF2F7", "#121A26"),
+    "border_width": 1,
+    "border_color": ("#D5DEE8", "#364155"),
+}
+
+CARD_TITLE_COLOR = ("#0F172A", "#FFFFFF")
+PAGE_HEADING_COLOR = ("#0B1F44", "#EAF2FF")
+
 STATUS_COLORS = {
     "info": ("#1F4E8C", "#8EC5FF"),
     "success": ("#1F7A3D", "#8EE6A9"),
@@ -34,13 +51,14 @@ def create_scrollable_page(tab_frame):
 
 def create_section_card(parent, *, title: str, description: str | None = None):
     """Erzeugt eine einheitliche Inhaltskarte mit Titel und optionaler Beschreibung."""
-    card = ctk.CTkFrame(parent, corner_radius=10)
+    card = ctk.CTkFrame(parent, corner_radius=10, **CARD_STYLE)
     card.pack(fill="x", padx=4, pady=(0, 10))
 
     ctk.CTkLabel(
         card,
         text=title,
         font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
     ).pack(anchor="w", padx=14, pady=(12, 4))
 
     if description:

@@ -886,6 +886,7 @@ class OfficeConfigurator:
                 ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
                 ("Hidden", 1, "windows_explorer_show_hidden_items"),
+                ("SearchFileNameAlways", 1, "windows_explorer_search_file_contents"),
                 ("ShowRecent", 0, "windows_explorer_show_recent_files"),
             ]
             failed_values: list[str] = []

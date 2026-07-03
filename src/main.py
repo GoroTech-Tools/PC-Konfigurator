@@ -49,7 +49,6 @@ from ui.layout import (
     TAB_LOGS,
     TAB_REGISTRY,
 )
-from ui.quick_actions import build_quick_actions_bar
 from ui.template_status import (
     render_safe_template_status,
     render_template_status,
@@ -124,6 +123,111 @@ APPEARANCE_OPTIONS: dict[str, str] = {
 
 
 class PCKonfiguratorGUI:
+    def _position_font_preview_window(self, window, width: int = 560, height: int = 340):
+        """Positioniert die Vorschau unten rechts über dem Hauptfenster."""
+        try:
+            self.root.update_idletasks()
+            root_x = self.root.winfo_rootx()
+            root_y = self.root.winfo_rooty()
+            root_w = self.root.winfo_width()
+            root_h = self.root.winfo_height()
+
+            x = root_x + max(0, root_w - width - 24)
+            y = root_y + max(0, root_h - height - 48)
+            window.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            try:
+                window.geometry(f"{width}x{height}")
+            except Exception:
+                pass
+
+    def _refresh_font_preview_window(self):
+        """Aktualisiert Inhalte der separaten Font-Vorschau."""
+        preview_rows = getattr(self, "font_preview_rows", None)
+        if not isinstance(preview_rows, dict):
+            return
+
+        try:
+            available = {name.lower() for name in tkfont.families()}
+        except Exception:
+            available = set()
+
+        default_preview_font = ctk.CTkFont(size=13)
+        for family, row in preview_rows.items():
+            is_available = family.lower() in available
+            try:
+                row.configure(
+                    text=f"{family}{'' if is_available else ' (nicht lokal verfügbar)'}",
+                    font=ctk.CTkFont(family=family, size=13) if is_available else default_preview_font,
+                    text_color=("#111827", "#E5E7EB") if is_available else ("#6B7280", "#9CA3AF"),
+                )
+            except Exception:
+                row.configure(
+                    text=f"{family} (Vorschau nicht verfügbar)",
+                    font=default_preview_font,
+                    text_color=("#6B7280", "#9CA3AF"),
+                )
+
+    def open_font_preview_window(self):
+        """Öffnet eine schwebende Font-Vorschau unten rechts über der Haupt-GUI."""
+        existing = getattr(self, "font_preview_window", None)
+        if existing is not None:
+            try:
+                if existing.winfo_exists():
+                    self._position_font_preview_window(existing)
+                    existing.lift()
+                    existing.focus_force()
+                    self._refresh_font_preview_window()
+                    return
+            except Exception:
+                pass
+
+        window = ctk.CTkToplevel(self.root)
+        window.title("Font-Vorschau")
+        window.minsize(520, 300)
+        self._position_font_preview_window(window)
+
+        try:
+            window.transient(self.root)
+        except Exception:
+            pass
+
+        container = ctk.CTkFrame(window)
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+
+        ctk.CTkLabel(
+            container,
+            text="Fontliste (Vorschau je Schriftart):",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        ).pack(anchor="w", padx=10, pady=(10, 4))
+
+        list_frame = ctk.CTkScrollableFrame(container, height=160)
+        list_frame.pack(fill="both", expand=True, padx=10, pady=(0, 8))
+        self.font_preview_rows = {}
+        for family in self.available_font_families:
+            row = ctk.CTkLabel(
+                list_frame,
+                text=family,
+                anchor="w",
+                justify="left",
+            )
+            row.pack(fill="x", padx=6, pady=2)
+            self.font_preview_rows[family] = row
+
+        ctk.CTkButton(container, text="Schließen", command=window.destroy, height=34).pack(anchor="e", padx=10, pady=(0, 10))
+
+        self.font_preview_window = window
+        self._refresh_font_preview_window()
+
+        def _on_close():
+            self.font_preview_window = None
+            self.font_preview_rows = None
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+        window.protocol("WM_DELETE_WINDOW", _on_close)
     def _get_startmenu_mode_text(self) -> str:
         """Liefert den anzuzeigenden Startmenü-Modus als Klartext."""
         return "🟧 Klassisch (Fallback)" if self.startmenu_mode.get() == "classic" else "🟦 Windows 11 (empfohlen)"
@@ -278,6 +382,7 @@ class PCKonfiguratorGUI:
 
     def _on_setting_changed(self, *_args):
         self._save_gui_state()
+        self._refresh_font_preview_window()
 
     def _apply_appearance_mode(self):
         """Setzt den Appearance-Mode anhand der GUI-Auswahl."""
@@ -289,7 +394,7 @@ class PCKonfiguratorGUI:
             pass
 
     def _on_appearance_mode_changed(self, value: str):
-        """Callback für Theme-Umschaltung über Quick-Action-Leiste."""
+        """Callback für Theme-Umschaltung über die Designauswahl."""
         if value in APPEARANCE_OPTIONS:
             self.appearance_mode.set(value)
         self._apply_appearance_mode()
@@ -362,6 +467,27 @@ class PCKonfiguratorGUI:
             tools_menu.add_separator()
             tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
             tools_menu.add_command(label='GPO-Design-Prüfung', command=self.run_gpo_check)
+
+        design_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Design', menu=design_menu)
+        design_menu.add_radiobutton(
+            label='hell',
+            variable=self.appearance_mode,
+            value='Hell',
+            command=lambda: self._on_appearance_mode_changed('Hell'),
+        )
+        design_menu.add_radiobutton(
+            label='dunkel',
+            variable=self.appearance_mode,
+            value='Dunkel',
+            command=lambda: self._on_appearance_mode_changed('Dunkel'),
+        )
+        design_menu.add_radiobutton(
+            label='System',
+            variable=self.appearance_mode,
+            value='System',
+            command=lambda: self._on_appearance_mode_changed('System'),
+        )
 
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Hilfe', menu=help_menu)
@@ -610,6 +736,8 @@ class PCKonfiguratorGUI:
         self.template_status_frame = None
         self.system_status_window = None
         self.system_status_label = None
+        self.font_preview_window = None
+        self.font_preview_rows = None
         self.last_system_check_result = None
         self._logs_auto_refresh_job = None
         self._logs_auto_refresh_ms = 2000
@@ -650,10 +778,10 @@ class PCKonfiguratorGUI:
         """Hauptfenster konfigurieren"""
         self.root.title(f"PC-Konfigurator {self.version}")
 
-        default_width, default_height = 1180, 900
+        default_width, default_height = 1180, 820
         final_width, final_height = center_window_on_work_area(self.root, default_width, default_height)
 
-        self.root.minsize(min(1040, final_width), min(780, final_height))
+        self.root.minsize(min(1040, final_width), min(700, final_height))
         self.root.resizable(True, True)
         
         # Icon setzen (falls vorhanden)
@@ -681,19 +809,8 @@ class PCKonfiguratorGUI:
         """GUI-Widgets erstellen"""
         layout_refs = build_main_layout(self.root, title="PC-Konfigurator")
         self.main_frame = layout_refs["main_frame"]
+        self.header_frame = layout_refs["header_frame"]
         self.tabview = layout_refs["tabview"]
-
-        build_quick_actions_bar(
-            self.main_frame,
-            appearance_values=list(APPEARANCE_OPTIONS.keys()),
-            appearance_variable=self.appearance_mode,
-            on_appearance_changed=self._on_appearance_mode_changed,
-            on_open_start=lambda: self._switch_to_tab(TAB_START),
-            on_open_config=lambda: self._switch_to_tab(TAB_CONFIG),
-            on_open_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
-            on_open_logs=lambda: self._switch_to_tab(TAB_LOGS),
-            on_run_full=self.execute_all_configurations,
-        )
 
         self.create_start_tab()
         self.create_configuration_tab()
@@ -755,6 +872,7 @@ class PCKonfiguratorGUI:
             font_size_excel_var=self.font_size_excel,
             available_font_families=self.available_font_families,
             on_continue_to_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
+            on_open_font_preview=self.open_font_preview_window,
         )
 
         self.template_status_frame = refs.get("template_status_frame") if isinstance(refs, dict) else None

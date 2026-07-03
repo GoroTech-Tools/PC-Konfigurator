@@ -58,9 +58,10 @@ Details/Anmerkungen:
 | EXE-Start / Stabilität                |    |           |        |          |
 | Bedienbarkeit / Verständlichkeit      |    |           |        |          |
 | Vollständige Konfiguration            |    |           |        |          |
-| Nur Office konfigurieren (Erweitert) |    |           |        |          |
+| Nur Office konfigurieren (Erweitert)  |    |           |        |          |
 | Template-/Font-Handling               |    |           |        |          |
 | Windows-/Registry-Anpassungen         |    |           |        |          |
+| Explorer-Dateiinhaltssuche aktiviert  |    |           |        |          |
 | Logging / Nachvollziehbarkeit         |    |           |        |          |
 
 ## 4) Kritische Befunde (Blocker)

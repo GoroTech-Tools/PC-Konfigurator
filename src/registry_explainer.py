@@ -576,6 +576,16 @@ class RegistryExplainer:
                 category="Windows - Explorer",
                 office_versions=["15.0", "16.0"],
             ),
+            "windows_explorer_search_file_contents": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                value_name="SearchFileNameAlways",
+                value_type="REG_DWORD",
+                default_value=1,
+                description="Explorer-Suche auf 'Immer Dateinamen und -inhalte suchen' setzen.",
+                impact="Aktiviert die Dateiinhaltssuche auch außerhalb des Suchindex (kann Suchläufe verlangsamen).",
+                category="Windows - Explorer",
+                office_versions=["15.0", "16.0"],
+            ),
             "windows_explorer_show_recent_files": RegistrySettingInfo(
                 key_path="SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
                 value_name="ShowRecent",

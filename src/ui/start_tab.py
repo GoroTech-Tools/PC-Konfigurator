@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 import customtkinter as ctk
 
-from ui.theme import PALE_BUTTON_STYLE, create_scrollable_page, create_section_card
+from ui.theme import CONTINUE_BUTTON_STYLE, PALE_BUTTON_STYLE, PAGE_HEADING_COLOR, create_scrollable_page, create_section_card
 
 
 def build_start_tab(
@@ -29,6 +29,8 @@ def build_start_tab(
         page,
         text="Willkommen im PC-Konfigurator",
         font=ctk.CTkFont(size=20, weight="bold"),
+        text_color=PAGE_HEADING_COLOR,
+        fg_color="transparent",
     ).pack(anchor="w", padx=8, pady=(2, 10))
 
     _mode_card, mode_body = create_section_card(
@@ -63,17 +65,27 @@ def build_start_tab(
 
     config_actions = ctk.CTkFrame(config_body, fg_color="transparent")
     config_actions.pack(fill="x", padx=4, pady=(0, 2))
-    ctk.CTkButton(
-        config_actions,
+
+    left_actions = ctk.CTkFrame(config_actions, fg_color="transparent")
+    left_actions.pack(side="left", fill="x", expand=True)
+
+    right_actions = ctk.CTkFrame(config_actions, fg_color="transparent")
+    right_actions.pack(side="right")
+
+    next_button = ctk.CTkButton(
+        right_actions,
         text="Weiter",
         command=on_open_config,
         font=ctk.CTkFont(weight="bold"),
+        width=220,
         height=38,
-        **PALE_BUTTON_STYLE,
-    ).pack(side="left", padx=(0, 8), pady=6)
+        **CONTINUE_BUTTON_STYLE,
+    )
+    next_button.pack(side="right", pady=6)
+
     registry_info_button = None
     if advanced_mode:
-        registry_info_button = ctk.CTkButton(config_actions, text="Registry-Info öffnen", command=on_open_registry_info, **PALE_BUTTON_STYLE)
+        registry_info_button = ctk.CTkButton(left_actions, text="Registry-Info öffnen", command=on_open_registry_info, **PALE_BUTTON_STYLE)
         registry_info_button.pack(side="left", padx=(0, 8), pady=6)
 
     if advanced_mode:

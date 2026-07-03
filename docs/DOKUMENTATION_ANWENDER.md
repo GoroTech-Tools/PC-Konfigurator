@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.25 (03.07.2026)
+**Version:** 3.3.30 (03.07.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -116,6 +116,7 @@ damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wi
 - Taskleiste links statt zentriert (Windows 11)
 - Klassisches Kontextmenü (Windows 11)
 - Taskleisten-Elemente und Suchfeld ausblenden
+- Explorer-Suche auf „Immer Dateinamen und -inhalte suchen" setzen (pro Benutzer)
 - Empfohlene Dateien im Startmenü, zuletzt verwendete Dateien im Datei-Explorer und Sprunglisten standardmäßig deaktivieren
 - Anwendungen im Startmenü standardmäßig als Liste anzeigen
 
