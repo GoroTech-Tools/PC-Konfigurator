@@ -33,7 +33,7 @@ Datum: 2026-05-31
 - EXE: `dist/PC-Konfigurator-v3.3.2/PC-Konfigurator.exe`
 - Release-ZIP: `release/PC-Konfigurator-v3.3.2.zip`
 - GitHub-Release:
-  - `https://github.com/TomGorontzy/PC-Konfigurator/releases/tag/v3.3.2`
+  - `https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v3.3.2`
 
 ## Enthaltene Commits (seit v3.3.1)
 
