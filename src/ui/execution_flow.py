@@ -60,6 +60,14 @@ def run_full_configuration_flow(
             else:
                 append_status(f"   ⚠️ Office-Preclose mit Hinweis: {preclose_result.get('warning', 'Unbekannt')}\n")
 
+        if office_settings.get("enable_office_warmup"):
+            append_status("   ℹ️ Office-Warm-up aktiv: Word/Excel werden kurz initialisiert...\n")
+            warmup_result = office_configurator.warmup_office_apps()
+            if warmup_result.get("success"):
+                append_status("   ✅ Office-Warm-up erfolgreich\n")
+            else:
+                append_status(f"   ⚠️ Office-Warm-up mit Hinweis: {warmup_result.get('warning', 'Unbekannt')}\n")
+
         result = office_configurator.configure_all_settings(office_settings)
 
         if result["success"]:
@@ -99,6 +107,7 @@ def run_full_configuration_flow(
             template_names = {
                 "normal_dotm": "Word Standard-Template (Normal.dotm)",
                 "mappe_xltx": "Excel Standard-Template (Mappe.xltx)",
+                "book_xltx": "Excel Zusatz-Template (book.xltx)",
                 "normal_email_dotm": "Outlook E-Mail-Template (NormalEmail.dotm)",
             }
 
@@ -156,6 +165,7 @@ def run_full_configuration_flow(
                 template_names = {
                     "normal_dotm": "Word Standard-Template (Normal.dotm)",
                     "mappe_xltx": "Excel Standard-Template (Mappe.xltx)",
+                    "book_xltx": "Excel Zusatz-Template (book.xltx)",
                     "normal_email_dotm": "Outlook E-Mail-Template (NormalEmail.dotm)",
                 }
                 for key, item in verify_details.items():

@@ -325,8 +325,10 @@ class PCKonfiguratorGUI:
                 "target_drive": self.target_drive.get(),
                 "use_documents": bool(self.use_documents.get()),
                 "startmenu_mode": self.startmenu_mode.get(),
+                "enable_firm_mode": bool(self.enable_firm_mode.get()),
                 "enable_com_sync": bool(self.enable_com_sync.get()),
                 "enable_office_preclose": bool(self.enable_office_preclose.get()),
+                "enable_office_warmup": bool(self.enable_office_warmup.get()),
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
@@ -362,8 +364,10 @@ class PCKonfiguratorGUI:
         if startmenu_mode in ("win11", "classic"):
             self.startmenu_mode.set(startmenu_mode)
 
+        self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
         self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
         self.enable_office_preclose.set(bool(settings.get("enable_office_preclose", True)))
+        self.enable_office_warmup.set(bool(settings.get("enable_office_warmup", False)))
 
         font_name = str(settings.get("font_name", "")).strip()
         if font_name in self.available_font_families:
@@ -410,6 +414,14 @@ class PCKonfiguratorGUI:
         self._save_gui_state()
         self._run_startmenu_guard(auto_restart_explorer=True)
         self._update_startmenu_mode_label()
+
+    def _on_firm_mode_changed(self, *_args):
+        """Aktiviert robuste Voreinstellungen für Firmenumgebungen."""
+        if bool(self.enable_firm_mode.get()):
+            self.enable_com_sync.set(True)
+            self.enable_office_preclose.set(True)
+            self.enable_office_warmup.set(True)
+        self._save_gui_state()
 
     def _on_ui_mode_changed(self, *_args):
         """Persistiert den UI-Modus und aktualisiert die sichtbaren Bereiche."""
@@ -727,8 +739,10 @@ class PCKonfiguratorGUI:
         self.ui_mode = tk.StringVar(value="simple")
         self.use_documents = tk.BooleanVar(value=False)
         self.startmenu_mode = tk.StringVar(value="win11")
+        self.enable_firm_mode = tk.BooleanVar(value=False)
         self.enable_com_sync = tk.BooleanVar(value=False)
         self.enable_office_preclose = tk.BooleanVar(value=True)
+        self.enable_office_warmup = tk.BooleanVar(value=False)
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
@@ -763,8 +777,10 @@ class PCKonfiguratorGUI:
         self.target_drive.trace_add("write", self._on_setting_changed)
         self.use_documents.trace_add("write", self._on_setting_changed)
         self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
+        self.enable_firm_mode.trace_add("write", self._on_firm_mode_changed)
         self.enable_com_sync.trace_add("write", self._on_setting_changed)
         self.enable_office_preclose.trace_add("write", self._on_setting_changed)
+        self.enable_office_warmup.trace_add("write", self._on_setting_changed)
         self.font_name.trace_add("write", self._on_setting_changed)
         self.font_size_word.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
@@ -876,8 +892,10 @@ class PCKonfiguratorGUI:
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
             startmenu_mode_var=self.startmenu_mode,
+            enable_firm_mode_var=self.enable_firm_mode,
             enable_com_sync_var=self.enable_com_sync,
             enable_office_preclose_var=self.enable_office_preclose,
+            enable_office_warmup_var=self.enable_office_warmup,
             font_name_var=self.font_name,
             font_size_word_var=self.font_size_word,
             font_size_excel_var=self.font_size_excel,
@@ -1054,6 +1072,7 @@ class PCKonfiguratorGUI:
             'font_size_excel': self.font_size_excel.get(),
                         'enable_com_sync': bool(self.enable_com_sync.get()),
                         'enable_office_preclose': bool(self.enable_office_preclose.get()),
+                        'enable_office_warmup': bool(self.enable_office_warmup.get()),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }

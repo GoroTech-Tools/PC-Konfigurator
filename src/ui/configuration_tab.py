@@ -13,8 +13,10 @@ def build_configuration_tab(
     use_documents_var,
     target_drive_var,
     startmenu_mode_var,
+    enable_firm_mode_var,
     enable_com_sync_var,
     enable_office_preclose_var,
+    enable_office_warmup_var,
     font_name_var,
     font_size_word_var,
     font_size_excel_var,
@@ -242,6 +244,64 @@ def build_configuration_tab(
         preclose_card,
         text="Office-Anwendungen vor dem Lauf automatisch schließen",
         variable=enable_office_preclose_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
+
+    warmup_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    warmup_card.pack(fill="x", padx=4, pady=(0, 6))
+
+    ctk.CTkLabel(
+        warmup_card,
+        text="Office-Warm-up (optional)",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+
+    ctk.CTkLabel(
+        warmup_card,
+        text=(
+            "Initialisiert Word und Excel kurz vor dem Lauf. "
+            "Hilft bei LTSC-/Profilumgebungen, in denen Defaults sonst erst verzögert greifen."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+
+    ctk.CTkCheckBox(
+        warmup_card,
+        text="Word/Excel vor der Konfiguration kurz initialisieren",
+        variable=enable_office_warmup_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
+
+    firm_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    firm_card.pack(fill="x", padx=4, pady=(0, 6))
+
+    ctk.CTkLabel(
+        firm_card,
+        text="Firmenmodus (robust)",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+
+    ctk.CTkLabel(
+        firm_card,
+        text=(
+            "Aktiviert eine robuste Voreinstellung für verwaltete Umgebungen: "
+            "COM-Sync + Office-Preclose + Office-Warm-up."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+
+    ctk.CTkCheckBox(
+        firm_card,
+        text="Firmenmodus aktivieren (empfohlen bei Office LTSC/Firmenrichtlinien)",
+        variable=enable_firm_mode_var,
         onvalue=True,
         offvalue=False,
     ).pack(anchor="w", padx=14, pady=(0, 10))

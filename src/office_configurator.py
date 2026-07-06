@@ -126,6 +126,62 @@ class OfficeConfigurator:
             return {"success": False, "warning": message}
 
         return {"success": True, "message": "Office-Anwendungen wurden verarbeitet."}
+
+    def warmup_office_apps(self) -> dict:
+        """Initialisiert Word/Excel kurz per COM und beendet die Instanzen wieder."""
+        warnings: list[str] = []
+        apps = [
+            ("Word", "Word.Application"),
+            ("Excel", "Excel.Application"),
+        ]
+
+        try:
+            import pythoncom  # type: ignore
+            import win32com.client  # type: ignore
+        except Exception as exc:
+            message = f"Office-Warm-up nicht verfügbar (COM fehlt): {exc}"
+            self.logger.warning(message)
+            return {"success": False, "warning": message}
+
+        try:
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
+
+        try:
+            for label, prog_id in apps:
+                app = None
+                try:
+                    app = win32com.client.DispatchEx(prog_id)
+                    try:
+                        app.Visible = False
+                    except Exception:
+                        pass
+                    try:
+                        app.DisplayAlerts = False
+                    except Exception:
+                        pass
+                    self.logger.info(f"Office-Warm-up erfolgreich: {label}")
+                except Exception as exc:
+                    warnings.append(f"{label}: {exc}")
+                finally:
+                    if app is not None:
+                        try:
+                            app.Quit()
+                        except Exception:
+                            pass
+        finally:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
+
+        if warnings:
+            message = "Office-Warm-up mit Warnungen: " + "; ".join(warnings)
+            self.logger.warning(message)
+            return {"success": False, "warning": message}
+
+        return {"success": True, "message": "Office-Warm-up erfolgreich."}
         
     def configure_all_settings(self, config, include_windows: bool = True):
         """Alle Office-Einstellungen konfigurieren"""

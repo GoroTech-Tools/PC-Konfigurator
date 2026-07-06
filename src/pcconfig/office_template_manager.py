@@ -200,6 +200,31 @@ class OfficeTemplateManager:
                     'actual': info,
                 }
 
+        # Excel book.xltx (zusätzliche Vorlage)
+        book_target = self.target_paths.get('book_xltx')
+        if not book_target or not book_target.exists():
+            details['book_xltx'] = {
+                'ok': False,
+                'reason': 'Ziel-Template nicht vorhanden',
+                'actual': None,
+            }
+        else:
+            info = self._read_excel_font_info_from_template(book_target)
+            if not info:
+                details['book_xltx'] = {
+                    'ok': False,
+                    'reason': 'Schrift nicht aus Template lesbar',
+                    'actual': None,
+                }
+            else:
+                name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
+                size_ok = self._size_matches(info.get('font_size'), font_size_excel)
+                details['book_xltx'] = {
+                    'ok': bool(name_ok and size_ok),
+                    'reason': None if (name_ok and size_ok) else 'Abweichende Excel-Defaults',
+                    'actual': info,
+                }
+
         # Outlook NormalEmail.dotm
         outlook_target = self.target_paths.get('normal_email_dotm')
         if not outlook_target or not outlook_target.exists():
@@ -267,6 +292,14 @@ class OfficeTemplateManager:
             fonts[key] = self._format_font_info(excel_info)
         else:
             fonts[key] = "Nicht vorhanden"
+
+        # Excel Zusatzvorlage book.xltx im Zielprofil
+        book_target = self.target_paths.get('book_xltx')
+        if book_target and book_target.exists():
+            excel_book_info = self._read_excel_font_info_from_template(book_target)
+            fonts['book_xltx'] = self._format_font_info(excel_book_info)
+        else:
+            fonts['book_xltx'] = "Nicht vorhanden"
         return fonts
     
     def __init__(self, app_dir):
@@ -293,6 +326,7 @@ class OfficeTemplateManager:
             self.target_paths = {
                 'normal_dotm': Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Templates" / "Normal.dotm",
                 'mappe_xltx': Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Excel" / "XLSTART" / "Mappe.xltx",
+                'book_xltx': Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Excel" / "XLSTART" / "book.xltx",
                 'normal_email_dotm': Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Templates" / "NormalEmail.dotm"
             }
         except Exception as e:
@@ -514,4 +548,22 @@ class OfficeTemplateManager:
                         time.sleep(2)
             else:
                 self.logger.error(f"Konnte {source_path} nach {max_retries} Versuchen nicht kopieren.")
+
+        # Zusätzliche Excel-Vorlage: book.xltx aus Mappe.xltx ableiten
+        mappe_target = self.target_paths.get('mappe_xltx')
+        book_target = self.target_paths.get('book_xltx')
+        if mappe_target and book_target:
+            if results.get('mappe_xltx') and Path(mappe_target).exists():
+                try:
+                    Path(book_target).parent.mkdir(parents=True, exist_ok=True)
+                    from shutil import copy2
+                    copy2(str(mappe_target), str(book_target))
+                    self.logger.info(f"Zusatzvorlage kopiert: {mappe_target} -> {book_target}")
+                    results['book_xltx'] = True
+                except Exception as e:
+                    self.logger.error(f"Fehler beim Kopieren der Zusatzvorlage {mappe_target} -> {book_target}: {e}")
+                    results['book_xltx'] = False
+            else:
+                self.logger.warning("Zusatzvorlage book.xltx übersprungen: Mappe.xltx wurde nicht erfolgreich kopiert.")
+                results['book_xltx'] = False
         return results
