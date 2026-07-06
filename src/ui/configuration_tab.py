@@ -17,6 +17,7 @@ def build_configuration_tab(
     font_size_word_var,
     font_size_excel_var,
     available_font_families: list[str],
+    show_hidden_files_var,
     on_continue_to_execution: Callable[[], None],
     on_open_font_preview: Callable[[], None],
 ) -> dict[str, Any]:
@@ -184,6 +185,26 @@ def build_configuration_tab(
 
     ctk.CTkLabel(size_inner, text="Excel:").pack(anchor="w", padx=2)
     ctk.CTkOptionMenu(size_inner, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=2, pady=(2, 2))
+
+    _hidden_card, hidden_body = create_section_card(
+        page,
+        title="Ausgeblendete Elemente",
+        description="Legt fest, ob der Windows-Explorer ausgeblendete Dateien und Ordner anzeigt.",
+    )
+
+    ctk.CTkRadioButton(
+        hidden_body,
+        text="Standardmäßig ausgeblendet lassen (empfohlen)",
+        variable=show_hidden_files_var,
+        value=0,
+    ).pack(anchor="w", padx=6, pady=2)
+
+    ctk.CTkRadioButton(
+        hidden_body,
+        text="Standardmäßig anzeigen lassen",
+        variable=show_hidden_files_var,
+        value=1,
+    ).pack(anchor="w", padx=6, pady=(2, 6))
 
     _next_card, next_body = create_section_card(
         page,

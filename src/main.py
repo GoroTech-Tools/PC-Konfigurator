@@ -328,6 +328,7 @@ class PCKonfiguratorGUI:
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
+                "show_hidden_files": bool(self.show_hidden_files.get()),
                 "appearance_mode": self.appearance_mode.get(),
             },
             "last_result": {
@@ -373,6 +374,8 @@ class PCKonfiguratorGUI:
             self.font_size_excel.set(int(settings.get("font_size_excel", 10)))
         except Exception:
             self.font_size_excel.set(10)
+
+        self.show_hidden_files.set(bool(settings.get("show_hidden_files", False)))
 
         appearance_mode = str(settings.get("appearance_mode", "Hell")).strip()
         if appearance_mode in APPEARANCE_OPTIONS:
@@ -725,6 +728,7 @@ class PCKonfiguratorGUI:
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
+        self.show_hidden_files = tk.BooleanVar(value=False)
         self.appearance_mode = tk.StringVar(value="Hell")
         self.run_controller: ExecutionRunController | None = None
         self._last_run_started = "-"
@@ -759,6 +763,7 @@ class PCKonfiguratorGUI:
         self.font_name.trace_add("write", self._on_setting_changed)
         self.font_size_word.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
+        self.show_hidden_files.trace_add("write", self._on_setting_changed)
 
         self.apply_ui_mode()
 
@@ -871,6 +876,7 @@ class PCKonfiguratorGUI:
             font_size_word_var=self.font_size_word,
             font_size_excel_var=self.font_size_excel,
             available_font_families=self.available_font_families,
+            show_hidden_files_var=self.show_hidden_files,
             on_continue_to_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
             on_open_font_preview=self.open_font_preview_window,
         )
@@ -1042,7 +1048,8 @@ class PCKonfiguratorGUI:
             'font_size_word': self.font_size_word.get(),
             'font_size_excel': self.font_size_excel.get(),
             'target_drive': self.target_drive.get(),
-            'use_documents_folder': self.use_documents.get()
+            'use_documents_folder': self.use_documents.get(),
+            'show_hidden_files': bool(self.show_hidden_files.get()),
         }
 
     def _get_registry_config(self) -> dict:
