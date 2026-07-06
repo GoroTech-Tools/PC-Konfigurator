@@ -90,6 +90,10 @@ def run_full_configuration_flow(
                 append_status("   ✅ Outlook-Template-Schritt: Kopie und Synchronisation abgeschlossen\n")
             if result.get("outlook_modern_notice"):
                 append_status(f"   ℹ️ Outlook modern: {result['outlook_modern_notice']}\n")
+            if result.get("hidden_items_mode_label"):
+                append_status(
+                    f"   ℹ️ Ausgeblendete Elemente: {result['hidden_items_mode_label']}\n"
+                )
             if result.get("windows_warning"):
                 append_status(f"   ⚠️ Windows-Einstellungen: {result['windows_warning']}\n")
         else:

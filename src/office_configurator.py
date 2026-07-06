@@ -260,9 +260,11 @@ class OfficeConfigurator:
 
             windows_result = {"success": True, "message": "Windows-Einstellungen übersprungen"}
             windows_warning = None
+            hidden_items_mode_label = None
             if include_windows:
                 show_hidden_items = self._is_truthy(config.get("show_hidden_items", False))
                 windows_result = self.configure_windows_settings(show_hidden_items=show_hidden_items)
+                hidden_items_mode_label = "standardmäßig anzeigen" if show_hidden_items else "standardmäßig ausblenden"
                 windows_warning = windows_result.get("warning")
                 if not windows_result.get("success", False):
                     windows_warning = windows_result.get(
@@ -291,6 +293,7 @@ class OfficeConfigurator:
                 "outlook_warning": outlook_warning,
                 "windows_configured": bool(windows_result.get("success", False)),
                 "windows_warning": windows_warning,
+                "hidden_items_mode_label": hidden_items_mode_label,
                 "com_sync_ok": len(sync_warnings) == 0,
                 "com_sync_warning": None if com_bootstrap.get("skip_com") else ("; ".join(sync_warnings) if sync_warnings else None),
                 "com_precheck_summary": com_bootstrap.get("summary"),
