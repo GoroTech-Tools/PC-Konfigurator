@@ -325,6 +325,7 @@ class PCKonfiguratorGUI:
                 "target_drive": self.target_drive.get(),
                 "use_documents": bool(self.use_documents.get()),
                 "startmenu_mode": self.startmenu_mode.get(),
+                "enable_com_sync": bool(self.enable_com_sync.get()),
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
@@ -359,6 +360,8 @@ class PCKonfiguratorGUI:
         startmenu_mode = str(settings.get("startmenu_mode", "win11")).strip().lower()
         if startmenu_mode in ("win11", "classic"):
             self.startmenu_mode.set(startmenu_mode)
+
+        self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
 
         font_name = str(settings.get("font_name", "")).strip()
         if font_name in self.available_font_families:
@@ -722,6 +725,7 @@ class PCKonfiguratorGUI:
         self.ui_mode = tk.StringVar(value="simple")
         self.use_documents = tk.BooleanVar(value=False)
         self.startmenu_mode = tk.StringVar(value="win11")
+        self.enable_com_sync = tk.BooleanVar(value=False)
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
         self.font_size_excel = tk.IntVar(value=10)
@@ -756,6 +760,7 @@ class PCKonfiguratorGUI:
         self.target_drive.trace_add("write", self._on_setting_changed)
         self.use_documents.trace_add("write", self._on_setting_changed)
         self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
+        self.enable_com_sync.trace_add("write", self._on_setting_changed)
         self.font_name.trace_add("write", self._on_setting_changed)
         self.font_size_word.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
@@ -867,6 +872,7 @@ class PCKonfiguratorGUI:
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
             startmenu_mode_var=self.startmenu_mode,
+            enable_com_sync_var=self.enable_com_sync,
             font_name_var=self.font_name,
             font_size_word_var=self.font_size_word,
             font_size_excel_var=self.font_size_excel,
@@ -1041,6 +1047,7 @@ class PCKonfiguratorGUI:
               'font_name': self._get_office_font_name(),
             'font_size_word': self.font_size_word.get(),
             'font_size_excel': self.font_size_excel.get(),
+                        'enable_com_sync': bool(self.enable_com_sync.get()),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }

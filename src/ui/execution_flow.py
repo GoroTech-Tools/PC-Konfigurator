@@ -87,6 +87,12 @@ def run_full_configuration_flow(
             size_word = get_font_size_word()
             size_excel = get_font_size_excel()
 
+            template_names = {
+                "normal_dotm": "Word Standard-Template (Normal.dotm)",
+                "mappe_xltx": "Excel Standard-Template (Mappe.xltx)",
+                "normal_email_dotm": "Outlook E-Mail-Template (NormalEmail.dotm)",
+            }
+
             mod_results = template_manager.update_font_in_templates(
                 font_name=font_name,
                 font_size_word=size_word,
@@ -99,10 +105,33 @@ def run_full_configuration_flow(
             # Registry wurde bereits in Schritt 3 über OfficeConfigurator gesetzt.
             registry_ok = True
 
+            failed_mod_templates = [
+                template_names.get(key, key)
+                for key, ok in mod_results.items()
+                if not ok
+            ]
+            failed_copy_templates = [
+                template_names.get(key, key)
+                for key, ok in copy_results.items()
+                if not ok
+            ]
+
             if mod_ok and copy_ok:
                 append_status("   ✅ Templates angepasst und ins Benutzerprofil kopiert\n")
             else:
-                append_status("   ⚠️ Template-Anpassung/Kopie teilweise fehlgeschlagen (Details im Log)\n")
+                append_status("   ❌ Template-Anpassung/Kopie fehlgeschlagen (Details unten)\n")
+                if failed_mod_templates:
+                    append_status("   ❌ Schrift-/Style-Anpassung fehlgeschlagen für:\n")
+                    for name in failed_mod_templates:
+                        append_status(f"      - {name}\n")
+                if failed_copy_templates:
+                    append_status("   ❌ Kopieren ins Benutzerprofil fehlgeschlagen für:\n")
+                    for name in failed_copy_templates:
+                        append_status(f"      - {name}\n")
+                append_status(
+                    "   💡 Hinweise: Office-Programme schließen, Schreibrechte in %APPDATA% prüfen und ggf. COM-Synchronisierung in den Einstellungen aktivieren.\n"
+                )
+                overall_success = False
 
             if registry_ok:
                 append_status(f"   ✅ Schriftart konfiguriert: {font_name}\n")

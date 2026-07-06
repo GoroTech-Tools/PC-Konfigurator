@@ -13,6 +13,7 @@ def build_configuration_tab(
     use_documents_var,
     target_drive_var,
     startmenu_mode_var,
+    enable_com_sync_var,
     font_name_var,
     font_size_word_var,
     font_size_excel_var,
@@ -184,6 +185,36 @@ def build_configuration_tab(
 
     ctk.CTkLabel(size_inner, text="Excel:").pack(anchor="w", padx=2)
     ctk.CTkOptionMenu(size_inner, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=2, pady=(2, 2))
+
+    com_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    com_card.pack(fill="x", padx=4, pady=(6, 6))
+
+    ctk.CTkLabel(
+        com_card,
+        text="COM-Synchronisierung (optional)",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+
+    ctk.CTkLabel(
+        com_card,
+        text=(
+            "Standardmäßig arbeitet der PC-Konfigurator schnell/stabil über Registry/XML. "
+            "Aktivieren Sie COM nur bei Bedarf (z. B. wenn Office auf einzelnen Firmenrechnern "
+            "nicht alle Font-Defaults übernimmt)."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+
+    ctk.CTkCheckBox(
+        com_card,
+        text="COM-Synchronisierung für Word/Excel aktivieren (langsamer, aber robuster)",
+        variable=enable_com_sync_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
 
     _next_card, next_body = create_section_card(
         page,

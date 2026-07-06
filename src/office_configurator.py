@@ -26,7 +26,14 @@ class OfficeConfigurator:
         self.registry_explainer = RegistryExplainer()
         self.applied_settings = []  # Track applied settings for logging
 
-    def _bootstrap_office_com(self) -> dict:
+    @staticmethod
+    def _is_truthy(value) -> bool:
+        """Robuste Bool-Auswertung für Config-/Umgebungswerte."""
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    def _bootstrap_office_com(self, config: dict | None = None) -> dict:
         """Prüft nur die COM-Laufzeit und vermeidet langsame Office-Vorabstarts."""
         result = { 
             "ready": True,
@@ -36,10 +43,14 @@ class OfficeConfigurator:
         }
 
         # COM-Sync ist standardmäßig deaktiviert (Performance/Stabilität).
-        # Aktivierbar über Umgebungsvariable PCONFIG_ENABLE_COM_SYNC=1.
-        if str(os.environ.get("PCONFIG_ENABLE_COM_SYNC", "0")).strip() not in {"1", "true", "TRUE", "yes", "YES"}:
-            result["summary"] = "COM-Synchronisierung standardmäßig deaktiviert; Registry/XML-Pfade aktiv."
-            result["details"] = {"mode": "registry+xml", "com_sync": "disabled_by_default"}
+        # Priorität: GUI-Config > Umgebungsvariable > Default(False).
+        config_value = None if config is None else config.get("enable_com_sync")
+        env_value = os.environ.get("PCONFIG_ENABLE_COM_SYNC", "0")
+        enable_com_sync = self._is_truthy(config_value) if config_value is not None else self._is_truthy(env_value)
+
+        if not enable_com_sync:
+            result["summary"] = "COM-Synchronisierung deaktiviert; Registry/XML-Pfade aktiv."
+            result["details"] = {"mode": "registry+xml", "com_sync": "disabled"}
             return result
 
         try:
@@ -94,7 +105,7 @@ class OfficeConfigurator:
             # Laufbezogenen Zähler zurücksetzen, damit applied_count pro Ausführung korrekt ist
             self.applied_settings = []
 
-            com_bootstrap = self._bootstrap_office_com()
+            com_bootstrap = self._bootstrap_office_com(config)
             self.logger.info(
                 "[COM-HEALTH] PRECHECK | %s",
                 com_bootstrap.get("summary", "Word, Excel, Outlook COM vorab initialisiert."),
