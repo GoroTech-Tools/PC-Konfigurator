@@ -56,7 +56,7 @@ def build_start_tab(
 
     startmenu_mode_label = ctk.CTkLabel(
         config_body,
-        text=f"Aktueller Startmenü-Modus: {current_startmenu_mode_text}",
+        text=f"Aktueller Kontextmenü-Modus: {current_startmenu_mode_text}",
         justify="left",
         font=ctk.CTkFont(size=11, weight="bold"),
         text_color=("#2F3B52", "#D0DBF0"),

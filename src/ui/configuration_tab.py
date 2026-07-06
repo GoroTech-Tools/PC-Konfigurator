@@ -93,13 +93,13 @@ def build_configuration_tab(
     startmenu_card.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=0)
     ctk.CTkLabel(
         startmenu_card,
-        text="Startmenü-Modus",
+        text="Kontextmenü-Modus",
         font=ctk.CTkFont(size=15, weight="bold"),
         text_color=CARD_TITLE_COLOR,
     ).pack(anchor="w", padx=14, pady=(10, 3))
     ctk.CTkLabel(
         startmenu_card,
-        text="Wählen Sie, welcher Modus beim Start des PC-Konfigurators gesetzt werden soll.",
+        text="Wählen Sie, welcher Kontextmenü-Modus beim Start des PC-Konfigurators gesetzt werden soll.",
         justify="left",
         wraplength=440,
         text_color=("#4B5563", "#D1D5DB"),
@@ -109,14 +109,14 @@ def build_configuration_tab(
 
     ctk.CTkRadioButton(
         startmenu_body,
-        text="Windows-11-Startmenü bevorzugen (empfohlen)",
+        text="Windows 11-Kontextmenü bevorzugen (empfohlen)",
         variable=startmenu_mode_var,
         value="win11",
     ).pack(anchor="w", padx=6, pady=2)
 
     ctk.CTkRadioButton(
         startmenu_body,
-        text="Klassisches Startmenü dauerhaft aktivieren (Fallback)",
+        text="Klassisches Kontextmenü dauerhaft aktivieren (Fallback)",
         variable=startmenu_mode_var,
         value="classic",
     ).pack(anchor="w", padx=6, pady=(2, 6))

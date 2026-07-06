@@ -230,7 +230,7 @@ class PCKonfiguratorGUI:
         window.protocol("WM_DELETE_WINDOW", _on_close)
     def _get_startmenu_mode_text(self) -> str:
         """Liefert den anzuzeigenden Startmenü-Modus als Klartext."""
-        return "🟧 Klassisch (Fallback)" if self.startmenu_mode.get() == "classic" else "🟦 Windows 11 (empfohlen)"
+        return "🟧 Klassisches Kontextmenü (Fallback)" if self.startmenu_mode.get() == "classic" else "🟦 Windows 11-Kontextmenü (empfohlen)"
 
     def _update_startmenu_mode_label(self):
         """Aktualisiert die Start-Tab-Anzeige für den aktiven Startmenü-Modus."""
