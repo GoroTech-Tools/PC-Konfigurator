@@ -325,6 +325,7 @@ class PCKonfiguratorGUI:
                 "target_drive": self.target_drive.get(),
                 "use_documents": bool(self.use_documents.get()),
                 "startmenu_mode": self.startmenu_mode.get(),
+                "hidden_items_mode": self.hidden_items_mode.get(),
                 "enable_firm_mode": bool(self.enable_firm_mode.get()),
                 "enable_com_sync": bool(self.enable_com_sync.get()),
                 "enable_office_preclose": bool(self.enable_office_preclose.get()),
@@ -363,6 +364,10 @@ class PCKonfiguratorGUI:
         startmenu_mode = str(settings.get("startmenu_mode", "win11")).strip().lower()
         if startmenu_mode in ("win11", "classic"):
             self.startmenu_mode.set(startmenu_mode)
+
+        hidden_items_mode = str(settings.get("hidden_items_mode", "hide")).strip().lower()
+        if hidden_items_mode in ("hide", "show"):
+            self.hidden_items_mode.set(hidden_items_mode)
 
         self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
         self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
@@ -739,6 +744,7 @@ class PCKonfiguratorGUI:
         self.ui_mode = tk.StringVar(value="simple")
         self.use_documents = tk.BooleanVar(value=False)
         self.startmenu_mode = tk.StringVar(value="win11")
+        self.hidden_items_mode = tk.StringVar(value="hide")
         self.enable_firm_mode = tk.BooleanVar(value=False)
         self.enable_com_sync = tk.BooleanVar(value=False)
         self.enable_office_preclose = tk.BooleanVar(value=True)
@@ -777,6 +783,7 @@ class PCKonfiguratorGUI:
         self.target_drive.trace_add("write", self._on_setting_changed)
         self.use_documents.trace_add("write", self._on_setting_changed)
         self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
+        self.hidden_items_mode.trace_add("write", self._on_setting_changed)
         self.enable_firm_mode.trace_add("write", self._on_firm_mode_changed)
         self.enable_com_sync.trace_add("write", self._on_setting_changed)
         self.enable_office_preclose.trace_add("write", self._on_setting_changed)
@@ -892,6 +899,7 @@ class PCKonfiguratorGUI:
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
             startmenu_mode_var=self.startmenu_mode,
+            hidden_items_mode_var=self.hidden_items_mode,
             enable_firm_mode_var=self.enable_firm_mode,
             enable_com_sync_var=self.enable_com_sync,
             enable_office_preclose_var=self.enable_office_preclose,
@@ -1073,6 +1081,7 @@ class PCKonfiguratorGUI:
                         'enable_com_sync': bool(self.enable_com_sync.get()),
                         'enable_office_preclose': bool(self.enable_office_preclose.get()),
                         'enable_office_warmup': bool(self.enable_office_warmup.get()),
+                        'show_hidden_items': self.hidden_items_mode.get() == 'show',
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }

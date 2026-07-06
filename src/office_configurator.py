@@ -261,7 +261,8 @@ class OfficeConfigurator:
             windows_result = {"success": True, "message": "Windows-Einstellungen übersprungen"}
             windows_warning = None
             if include_windows:
-                windows_result = self.configure_windows_settings()
+                show_hidden_items = self._is_truthy(config.get("show_hidden_items", False))
+                windows_result = self.configure_windows_settings(show_hidden_items=show_hidden_items)
                 windows_warning = windows_result.get("warning")
                 if not windows_result.get("success", False):
                     windows_warning = windows_result.get(
@@ -970,10 +971,17 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Excel Registry-Einstellungen: {e}")
             raise
 
-    def configure_windows_settings(self):
+    def configure_windows_settings(self, show_hidden_items: bool = False):
         """Windows-Explorer- und Taskleisten-Defaults konfigurieren."""
         try:
             self.logger.info("Windows-Einstellungen werden konfiguriert...")
+
+            hidden_value = 1 if show_hidden_items else 2
+            show_super_hidden_value = 1 if show_hidden_items else 0
+            self.logger.info(
+                "Explorer-Sichtbarkeit: ausgeblendete Elemente %s",
+                "anzeigen" if show_hidden_items else "ausblenden",
+            )
 
             key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
             windows_settings = [
@@ -981,7 +989,7 @@ class OfficeConfigurator:
                 ("TaskbarDa", 0, "windows_hide_widgets"),
                 ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
-                ("Hidden", 1, "windows_explorer_show_hidden_items"),
+                ("Hidden", hidden_value, "windows_explorer_show_hidden_items"),
                 ("SearchFileNameAlways", 1, "windows_explorer_search_file_contents"),
                 ("ShowRecent", 0, "windows_explorer_show_recent_files"),
             ]
@@ -1020,7 +1028,7 @@ class OfficeConfigurator:
 
             # Zusatzwerte ohne RegistryExplainer-Mapping
             extra_values = {
-                "ShowSuperHidden": 1 # Geschützte Systemdateien anzeigen
+                "ShowSuperHidden": show_super_hidden_value
             }
             for name, value in extra_values.items():
                 if not self._set_windows_extra_value_with_fallback(key_path, name, value):

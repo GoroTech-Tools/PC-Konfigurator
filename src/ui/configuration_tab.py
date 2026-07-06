@@ -13,6 +13,7 @@ def build_configuration_tab(
     use_documents_var,
     target_drive_var,
     startmenu_mode_var,
+    hidden_items_mode_var,
     enable_firm_mode_var,
     enable_com_sync_var,
     enable_office_preclose_var,
@@ -119,6 +120,38 @@ def build_configuration_tab(
         text="Klassisches Kontextmenü dauerhaft aktivieren (Fallback)",
         variable=startmenu_mode_var,
         value="classic",
+    ).pack(anchor="w", padx=6, pady=(2, 6))
+
+    hidden_items_card = ctk.CTkFrame(top_row, corner_radius=10, **CARD_STYLE)
+    hidden_items_card.grid(row=1, column=1, sticky="nsew", padx=(5, 0), pady=(6, 0))
+    ctk.CTkLabel(
+        hidden_items_card,
+        text="Ausgeblendete Elemente",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+    ctk.CTkLabel(
+        hidden_items_card,
+        text="Wählen Sie, ob ausgeblendete Elemente im Explorer standardmäßig angezeigt werden.",
+        justify="left",
+        wraplength=440,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+    hidden_items_body = ctk.CTkFrame(hidden_items_card, fg_color="transparent")
+    hidden_items_body.pack(fill="x", padx=12, pady=(0, 8))
+
+    ctk.CTkRadioButton(
+        hidden_items_body,
+        text="standardmäßig ausgeblendet lassen (default)",
+        variable=hidden_items_mode_var,
+        value="hide",
+    ).pack(anchor="w", padx=6, pady=2)
+
+    ctk.CTkRadioButton(
+        hidden_items_body,
+        text="standardmäßig anzeigen lassen",
+        variable=hidden_items_mode_var,
+        value="show",
     ).pack(anchor="w", padx=6, pady=(2, 6))
 
     _font_card, font_body = create_section_card(
