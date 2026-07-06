@@ -14,6 +14,7 @@ def build_configuration_tab(
     target_drive_var,
     startmenu_mode_var,
     enable_com_sync_var,
+    enable_office_preclose_var,
     font_name_var,
     font_size_word_var,
     font_size_excel_var,
@@ -212,6 +213,35 @@ def build_configuration_tab(
         com_card,
         text="COM-Synchronisierung für Word/Excel aktivieren (langsamer, aber robuster)",
         variable=enable_com_sync_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
+
+    preclose_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    preclose_card.pack(fill="x", padx=4, pady=(0, 6))
+
+    ctk.CTkLabel(
+        preclose_card,
+        text="Office vor Konfiguration schließen (empfohlen)",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+
+    ctk.CTkLabel(
+        preclose_card,
+        text=(
+            "Beendet Word, Excel und Outlook vor dem Konfigurationslauf. "
+            "Das reduziert Datei-Locks und erhöht die Erfolgsquote in Firmenumgebungen."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+
+    ctk.CTkCheckBox(
+        preclose_card,
+        text="Office-Anwendungen vor dem Lauf automatisch schließen",
+        variable=enable_office_preclose_var,
         onvalue=True,
         offvalue=False,
     ).pack(anchor="w", padx=14, pady=(0, 10))

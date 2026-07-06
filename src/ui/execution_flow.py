@@ -51,6 +51,15 @@ def run_full_configuration_flow(
         root_update()
 
         office_settings = get_office_settings_from_gui()
+
+        if office_settings.get("enable_office_preclose"):
+            append_status("   ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vorab beendet...\n")
+            preclose_result = office_configurator.close_office_apps()
+            if preclose_result.get("success"):
+                append_status("   ✅ Office-Prozesse wurden vorab verarbeitet\n")
+            else:
+                append_status(f"   ⚠️ Office-Preclose mit Hinweis: {preclose_result.get('warning', 'Unbekannt')}\n")
+
         result = office_configurator.configure_all_settings(office_settings)
 
         if result["success"]:
@@ -131,6 +140,35 @@ def run_full_configuration_flow(
                 append_status(
                     "   💡 Hinweise: Office-Programme schließen, Schreibrechte in %APPDATA% prüfen und ggf. COM-Synchronisierung in den Einstellungen aktivieren.\n"
                 )
+                overall_success = False
+
+            verify_result = template_manager.verify_user_template_fonts(
+                font_name=font_name,
+                font_size_word=size_word,
+                font_size_excel=size_excel,
+            )
+
+            verify_details = verify_result.get("details", {})
+            if verify_result.get("success"):
+                append_status("   ✅ Post-Verify: Ziel-Templates im Benutzerprofil entsprechen den erwarteten Font-Defaults\n")
+            else:
+                append_status("   ❌ Post-Verify: Abweichungen in Ziel-Templates erkannt\n")
+                template_names = {
+                    "normal_dotm": "Word Standard-Template (Normal.dotm)",
+                    "mappe_xltx": "Excel Standard-Template (Mappe.xltx)",
+                    "normal_email_dotm": "Outlook E-Mail-Template (NormalEmail.dotm)",
+                }
+                for key, item in verify_details.items():
+                    display_name = template_names.get(key, key)
+                    if item.get("ok"):
+                        continue
+                    reason = item.get("reason") or "Abweichung"
+                    actual = item.get("actual") or {}
+                    actual_name = actual.get("font_name", "?") if isinstance(actual, dict) else "?"
+                    actual_size = actual.get("font_size", "?") if isinstance(actual, dict) else "?"
+                    append_status(
+                        f"      - {display_name}: {reason} (Ist: {actual_name} {actual_size}pt)\n"
+                    )
                 overall_success = False
 
             if registry_ok:

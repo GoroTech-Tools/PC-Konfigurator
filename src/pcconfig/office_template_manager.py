@@ -17,6 +17,70 @@ from pcconfig.safe_template_processor import SafeTemplateProcessor
 
 
 class OfficeTemplateManager:
+    def _read_word_font_info_from_template(self, template_path: Path):
+        """Liest die Standard-Schrift aus word/styles.xml (docDefaults bzw. Normal/Standard-Stil)."""
+        try:
+            with zipfile.ZipFile(template_path, 'r') as zf:
+                names = zf.namelist()
+                styles_entry = next((n for n in names if n.lower() == 'word/styles.xml'), None)
+                if not styles_entry:
+                    return None
+                styles_xml = zf.read(styles_entry)
+
+            root = ET.fromstring(styles_xml)
+            ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+
+            # 1) docDefaults bevorzugen
+            rpr = root.find('.//w:docDefaults/w:rPrDefault/w:rPr', ns)
+
+            # 2) Fallback auf Normal/Standard-Stil oder Default-Paragraph-Style
+            if rpr is None:
+                for style in root.findall('.//w:style', ns):
+                    style_id = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}styleId', '')
+                    style_type = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', '')
+                    is_default = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}default', '') == '1'
+                    if style_id in {'Normal', 'Standard'} or (style_type == 'paragraph' and is_default):
+                        rpr = style.find('w:rPr', ns)
+                        if rpr is not None:
+                            break
+
+            if rpr is None:
+                return None
+
+            rfonts = rpr.find('w:rFonts', ns)
+            if rfonts is None:
+                return None
+
+            font_name = (
+                rfonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii')
+                or rfonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi')
+                or rfonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cs')
+                or ''
+            ).strip()
+
+            sz = rpr.find('w:sz', ns)
+            raw_size = ''
+            if sz is not None:
+                raw_size = sz.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '').strip()
+
+            if not font_name:
+                return None
+
+            size_value = None
+            if raw_size:
+                try:
+                    size_value = int(round(float(raw_size) / 2.0))
+                except Exception:
+                    size_value = None
+
+            return {
+                'font_name': font_name,
+                'font_size': size_value,
+            }
+        except Exception as exc:
+            self.logger.debug(f"Word-Font konnte nicht aus {template_path} gelesen werden: {exc}")
+            return None
+
     def _read_excel_font_info_from_template(self, template_path: Path):
         """Liest die Default-Schrift aus xl/styles.xml (font[0]) einer .xltx/.xlsx-Datei."""
         try:
@@ -66,6 +130,112 @@ class OfficeTemplateManager:
             return "Unbekannt"
         return str(font_info)
 
+    @staticmethod
+    def _normalize_font_name(name):
+        if not name:
+            return ""
+        return str(name).strip().lower()
+
+    @staticmethod
+    def _size_matches(actual, expected):
+        try:
+            if actual is None:
+                return False
+            return int(round(float(actual))) == int(round(float(expected)))
+        except Exception:
+            return False
+
+    def verify_user_template_fonts(self, font_name, font_size_word, font_size_excel):
+        """Verifiziert, ob die Ziel-Templates im Benutzerprofil die erwarteten Font-Defaults tragen."""
+        expected_font = str(font_name or '').strip()
+        details = {}
+
+        # Word Normal.dotm
+        normal_target = self.target_paths.get('normal_dotm')
+        if not normal_target or not normal_target.exists():
+            details['normal_dotm'] = {
+                'ok': False,
+                'reason': 'Ziel-Template nicht vorhanden',
+                'actual': None,
+            }
+        else:
+            info = self._read_word_font_info_from_template(normal_target)
+            if not info:
+                details['normal_dotm'] = {
+                    'ok': False,
+                    'reason': 'Schrift nicht aus Template lesbar',
+                    'actual': None,
+                }
+            else:
+                name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
+                size_ok = self._size_matches(info.get('font_size'), font_size_word)
+                details['normal_dotm'] = {
+                    'ok': bool(name_ok and size_ok),
+                    'reason': None if (name_ok and size_ok) else 'Abweichende Word-Defaults',
+                    'actual': info,
+                }
+
+        # Excel Mappe.xltx
+        excel_target = self.target_paths.get('mappe_xltx')
+        if not excel_target or not excel_target.exists():
+            details['mappe_xltx'] = {
+                'ok': False,
+                'reason': 'Ziel-Template nicht vorhanden',
+                'actual': None,
+            }
+        else:
+            info = self._read_excel_font_info_from_template(excel_target)
+            if not info:
+                details['mappe_xltx'] = {
+                    'ok': False,
+                    'reason': 'Schrift nicht aus Template lesbar',
+                    'actual': None,
+                }
+            else:
+                name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
+                size_ok = self._size_matches(info.get('font_size'), font_size_excel)
+                details['mappe_xltx'] = {
+                    'ok': bool(name_ok and size_ok),
+                    'reason': None if (name_ok and size_ok) else 'Abweichende Excel-Defaults',
+                    'actual': info,
+                }
+
+        # Outlook NormalEmail.dotm
+        outlook_target = self.target_paths.get('normal_email_dotm')
+        if not outlook_target or not outlook_target.exists():
+            details['normal_email_dotm'] = {
+                'ok': False,
+                'reason': 'Ziel-Template nicht vorhanden',
+                'actual': None,
+            }
+        else:
+            info = self._read_word_font_info_from_template(outlook_target)
+            if not info:
+                details['normal_email_dotm'] = {
+                    'ok': False,
+                    'reason': 'Schrift nicht aus Template lesbar',
+                    'actual': None,
+                }
+            else:
+                name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
+                size_ok = self._size_matches(info.get('font_size'), font_size_word)
+                details['normal_email_dotm'] = {
+                    'ok': bool(name_ok and size_ok),
+                    'reason': None if (name_ok and size_ok) else 'Abweichende Outlook-Template-Defaults',
+                    'actual': info,
+                }
+
+        success = all(item.get('ok') for item in details.values()) if details else False
+        return {
+            'success': success,
+            'details': details,
+            'expected': {
+                'font_name': expected_font,
+                'font_size_word': int(font_size_word),
+                'font_size_excel': int(font_size_excel),
+            },
+        }
+
     def check_templates_exist(self):
         """Prüft, ob alle Templates existieren. Gibt Dict zurück."""
         result = {}
@@ -81,7 +251,9 @@ class OfficeTemplateManager:
             path = self.source_templates.get(key)
             if path and path.exists():
                 try:
-                    font_info = self.safe_processor.get_word_template_font_info(path)
+                    font_info = self._read_word_font_info_from_template(path)
+                    if not font_info:
+                        font_info = self.safe_processor.get_word_template_font_info(path)
                     fonts[key] = self._format_font_info(font_info)
                 except Exception as e:
                     fonts[key] = f"Fehler: {e}"

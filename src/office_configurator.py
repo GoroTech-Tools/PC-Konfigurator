@@ -97,6 +97,35 @@ class OfficeConfigurator:
             "Schriftarten/-größen aus Registry/NormalEmail.dotm nur eingeschränkt. "
             "Classic Outlook wird vollständig unterstützt."
         )
+
+    def close_office_apps(self) -> dict:
+        """Beendet Word, Excel und Outlook vor dem Konfigurationslauf."""
+        process_names = ["WINWORD.EXE", "EXCEL.EXE", "OUTLOOK.EXE"]
+        warnings: list[str] = []
+
+        for proc in process_names:
+            try:
+                result = subprocess.run(
+                    ["taskkill", "/IM", proc, "/F"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode in (0, 128):
+                    # 128 = Prozess nicht gefunden (kein Fehler für unseren Use-Case)
+                    self.logger.info(f"Office-Preclose verarbeitet: {proc}")
+                else:
+                    stderr = (result.stderr or "").strip()
+                    warnings.append(f"{proc}: {stderr or 'taskkill return code ' + str(result.returncode)}")
+            except Exception as exc:
+                warnings.append(f"{proc}: {exc}")
+
+        if warnings:
+            message = "Office-Preclose mit Warnungen: " + "; ".join(warnings)
+            self.logger.warning(message)
+            return {"success": False, "warning": message}
+
+        return {"success": True, "message": "Office-Anwendungen wurden verarbeitet."}
         
     def configure_all_settings(self, config, include_windows: bool = True):
         """Alle Office-Einstellungen konfigurieren"""
