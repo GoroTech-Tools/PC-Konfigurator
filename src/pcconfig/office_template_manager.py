@@ -338,6 +338,7 @@ class OfficeTemplateManager:
         font_name=None,
         font_size_word=None,
         font_size_excel=None,
+        corporate_design="INN-tegrativ",
         skip_excel_com=False,
         allow_com_fallback=False,
         **kwargs,
@@ -359,6 +360,10 @@ class OfficeTemplateManager:
         if src and src.exists():
             try:
                 ok = self.safe_processor.update_word_template_xml(src, fn, fsw)
+                if ok:
+                    ok = self.safe_processor.apply_corporate_theme(
+                        src, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
+                    )
                 if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für Normal.dotm")
                     ok = self.safe_processor.update_word_template_safely(src, fn, fsw)
@@ -372,6 +377,10 @@ class OfficeTemplateManager:
         if src and src.exists():
             try:
                 ok = self.safe_processor.update_excel_template_xml(src, fn, fse)
+                if ok:
+                    ok = self.safe_processor.apply_corporate_theme(
+                        src, self._theme_path(corporate_design, fn), "xl/theme/theme1.xml", corporate_design
+                    )
                 if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für Mappe.xltx")
                     ok = self.safe_processor.update_excel_template_safely(src, fn, fse)
@@ -387,6 +396,10 @@ class OfficeTemplateManager:
                     self.source_templates['normal_email_dotm'],
                     fn, fsw
                 )
+                if ok:
+                    ok = self.safe_processor.apply_corporate_theme(
+                        self.source_templates['normal_email_dotm'], self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
+                    )
                 result['normal_email_dotm'] = ok
                 # Nach Anpassung: Font auslesen und loggen
                 if not ok and allow_com_fallback and not frozen:
@@ -399,6 +412,13 @@ class OfficeTemplateManager:
                 self.logger.error(f"Fehler bei NormalEmail.dotm-Anpassung: {e}")
                 result['normal_email_dotm'] = False
         return result
+
+    def _theme_path(self, design, font_name):
+        prefixes = {'INN-tegrativ': 'Design_INN-tegrativ-', 'DBK': 'Design_DBK-', 'Careli': 'Design_Careli-'}
+        folders = {'INN-tegrativ': 'Designs_INN-tegrativ', 'DBK': 'Designs_DBK', 'Careli': 'Designs_Careli'}
+        if design not in prefixes:
+            design = 'INN-tegrativ'
+        return self.app_dir / 'data' / 'Datei-Vorlagen' / 'Sonstiges' / folders[design] / f'{prefixes[design]}{font_name}.thmx'
 
     def _modify_excel_template_via_powershell(self, template_path, font_name, font_size):
         """PowerShell-Fallback für Excel-Templates (setzt Schriftart und -größe via Skript)."""

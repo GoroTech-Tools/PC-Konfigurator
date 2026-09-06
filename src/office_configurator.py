@@ -263,7 +263,11 @@ class OfficeConfigurator:
             hidden_items_mode_label = None
             if include_windows:
                 show_hidden_items = self._is_truthy(config.get("show_hidden_items", False))
-                windows_result = self.configure_windows_settings(show_hidden_items=show_hidden_items)
+                taskbar_alignment = config.get("taskbar_alignment", "Center")
+                windows_result = self.configure_windows_settings(
+                    show_hidden_items=show_hidden_items,
+                    taskbar_alignment=taskbar_alignment,
+                )
                 hidden_items_mode_label = "standardmäßig anzeigen" if show_hidden_items else "standardmäßig ausblenden"
                 windows_warning = windows_result.get("warning")
                 if not windows_result.get("success", False):
@@ -974,7 +978,7 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Excel Registry-Einstellungen: {e}")
             raise
 
-    def configure_windows_settings(self, show_hidden_items: bool = False):
+    def configure_windows_settings(self, show_hidden_items: bool = True, taskbar_alignment: str = "Center"):
         """Windows-Explorer- und Taskleisten-Defaults konfigurieren."""
         try:
             self.logger.info("Windows-Einstellungen werden konfiguriert...")
@@ -987,8 +991,9 @@ class OfficeConfigurator:
             )
 
             key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+            taskbar_value = 0 if taskbar_alignment == "Left" else 1
             windows_settings = [
-                ("TaskbarAl", 0, "windows_taskbar_alignment"),
+                ("TaskbarAl", taskbar_value, "windows_taskbar_alignment"),
                 ("TaskbarDa", 0, "windows_hide_widgets"),
                 ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
@@ -1062,7 +1067,7 @@ class OfficeConfigurator:
                         "/t",
                         "REG_DWORD",
                         "/d",
-                        "0",
+                        str(taskbar_value),
                         "/f",
                     ],
                     check=False,
@@ -1071,7 +1076,7 @@ class OfficeConfigurator:
                 )
                 taskbar_al = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, "TaskbarAl")
 
-            if taskbar_al != 0:
+            if taskbar_al != taskbar_value:
                 if "TaskbarAl" not in failed_values:
                     failed_values.append("TaskbarAl")
 

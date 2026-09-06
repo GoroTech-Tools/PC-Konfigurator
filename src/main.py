@@ -744,7 +744,9 @@ class PCKonfiguratorGUI:
         self.ui_mode = tk.StringVar(value="simple")
         self.use_documents = tk.BooleanVar(value=False)
         self.startmenu_mode = tk.StringVar(value="win11")
-        self.hidden_items_mode = tk.StringVar(value="hide")
+        self.hidden_items_mode = tk.StringVar(value="show")
+        self.corporate_design = tk.StringVar(value="INN-tegrativ")
+        self.taskbar_alignment = tk.StringVar(value="Center")
         self.enable_firm_mode = tk.BooleanVar(value=False)
         self.enable_com_sync = tk.BooleanVar(value=False)
         self.enable_office_preclose = tk.BooleanVar(value=True)
@@ -899,7 +901,9 @@ class PCKonfiguratorGUI:
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
             startmenu_mode_var=self.startmenu_mode,
+            corporate_design_var=self.corporate_design,
             hidden_items_mode_var=self.hidden_items_mode,
+            taskbar_alignment_var=self.taskbar_alignment,
             enable_firm_mode_var=self.enable_firm_mode,
             enable_com_sync_var=self.enable_com_sync,
             enable_office_preclose_var=self.enable_office_preclose,
@@ -1082,6 +1086,8 @@ class PCKonfiguratorGUI:
                         'enable_office_preclose': bool(self.enable_office_preclose.get()),
                         'enable_office_warmup': bool(self.enable_office_warmup.get()),
                         'show_hidden_items': self.hidden_items_mode.get() == 'show',
+                        'corporate_design': self.corporate_design.get(),
+                        'taskbar_alignment': self.taskbar_alignment.get(),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }

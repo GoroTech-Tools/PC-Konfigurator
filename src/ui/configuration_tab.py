@@ -13,7 +13,9 @@ def build_configuration_tab(
     use_documents_var,
     target_drive_var,
     startmenu_mode_var,
+    corporate_design_var,
     hidden_items_mode_var,
+    taskbar_alignment_var,
     enable_firm_mode_var,
     enable_com_sync_var,
     enable_office_preclose_var,
@@ -122,6 +124,31 @@ def build_configuration_tab(
         value="classic",
     ).pack(anchor="w", padx=6, pady=(2, 6))
 
+    design_card = ctk.CTkFrame(top_row, corner_radius=10, **CARD_STYLE)
+    design_card.grid(row=1, column=0, sticky="nsew", padx=(0, 5), pady=(6, 0))
+    ctk.CTkLabel(
+        design_card,
+        text="Corporate Design",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+    ctk.CTkLabel(
+        design_card,
+        text="Das gewählte Design wird in Word, Excel und Outlook übernommen.",
+        justify="left",
+        wraplength=440,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+    design_body = ctk.CTkFrame(design_card, fg_color="transparent")
+    design_body.pack(fill="x", padx=12, pady=(0, 8))
+    for label, value in (("INN-tegrativ", "INN-tegrativ"), ("Duisdorfer BüroKonzept (DBK)", "DBK"), ("Careli", "Careli")):
+        ctk.CTkRadioButton(
+            design_body,
+            text=label,
+            variable=corporate_design_var,
+            value=value,
+        ).pack(anchor="w", padx=6, pady=2)
+
     hidden_items_card = ctk.CTkFrame(top_row, corner_radius=10, **CARD_STYLE)
     hidden_items_card.grid(row=1, column=1, sticky="nsew", padx=(5, 0), pady=(6, 0))
     ctk.CTkLabel(
@@ -142,17 +169,38 @@ def build_configuration_tab(
 
     ctk.CTkRadioButton(
         hidden_items_body,
-        text="standardmäßig ausgeblendet lassen (default)",
+        text="standardmäßig ausblenden",
         variable=hidden_items_mode_var,
         value="hide",
     ).pack(anchor="w", padx=6, pady=2)
 
     ctk.CTkRadioButton(
         hidden_items_body,
-        text="standardmäßig anzeigen lassen",
+        text="standardmäßig anzeigen (empfohlen)",
         variable=hidden_items_mode_var,
         value="show",
     ).pack(anchor="w", padx=6, pady=(2, 6))
+
+    taskbar_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    taskbar_card.pack(fill="x", padx=4, pady=(0, 6))
+    ctk.CTkLabel(
+        taskbar_card,
+        text="Taskleisten-Ausrichtung",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+    ctk.CTkRadioButton(
+        taskbar_card,
+        text="Zentriert (Windows-Standard)",
+        variable=taskbar_alignment_var,
+        value="Center",
+    ).pack(anchor="w", padx=20, pady=2)
+    ctk.CTkRadioButton(
+        taskbar_card,
+        text="Linksbündig",
+        variable=taskbar_alignment_var,
+        value="Left",
+    ).pack(anchor="w", padx=20, pady=(2, 10))
 
     _font_card, font_body = create_section_card(
         page,

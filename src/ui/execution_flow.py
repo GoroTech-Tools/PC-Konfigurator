@@ -119,6 +119,7 @@ def run_full_configuration_flow(
                 font_name=font_name,
                 font_size_word=size_word,
                 font_size_excel=size_excel,
+                corporate_design=office_settings.get("corporate_design", "INN-tegrativ"),
             )
             copy_results = template_manager.copy_templates_to_user()
 
