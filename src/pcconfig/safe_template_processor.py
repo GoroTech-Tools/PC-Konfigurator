@@ -66,14 +66,29 @@ class SafeTemplateProcessor:
         if not path.exists():
             self.logger.error("Vorlage nicht gefunden: %s", path)
             return False
+        temp_save = None
+        out_path = None
         try:
             from lxml import etree
             from openpyxl import load_workbook
 
-            workbook = load_workbook(path)
+            suffix = path.suffix.lower()
+            keep_vba = suffix in {".xlsm", ".xltm"}
+            temp_save = path.with_name(path.name + ".pckconfig-save.tmp")
+            out_path = path.with_name(path.name + ".pckconfig-out.tmp")
+            if temp_save.exists():
+                temp_save.unlink()
+            if out_path.exists():
+                out_path.unlink()
+
+            # Nie direkt in die Quelle schreiben: Ein Fehler darf die Vorlage
+            # nicht halb überschrieben zurücklassen.
+            workbook = load_workbook(path, keep_vba=keep_vba)
             workbook.template = path.suffix.lower() == ".xltx"
-            workbook.save(path)
-            with zipfile.ZipFile(path, "r") as source:
+            workbook.save(temp_save)
+            with zipfile.ZipFile(temp_save, "r") as source:
+                if source.testzip() is not None:
+                    raise ValueError("Die temporäre Excel-Vorlage ist nach dem Speichern beschädigt.")
                 styles_name = "xl/styles.xml"
                 styles_root = etree.fromstring(source.read(styles_name))
                 ns = {"x": self.EXCEL_NS}
@@ -87,7 +102,6 @@ class SafeTemplateProcessor:
                     theme_root = etree.fromstring(source.read(theme_name))
                     self._patch_theme_fonts_etree(theme_root, font_name, etree)
                     theme_bytes = etree.tostring(theme_root, encoding="UTF-8", xml_declaration=True)
-                out_path = path.with_suffix(path.suffix + ".tmp")
                 with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as target:
                     for item in source.infolist():
                         if item.filename == styles_name:
@@ -96,11 +110,28 @@ class SafeTemplateProcessor:
                             target.writestr(item, theme_bytes)
                         else:
                             target.writestr(item, source.read(item.filename))
-            out_path.replace(path)
+            # Vor dem Austausch die erzeugte ZIP vollständig prüfen.
+            with zipfile.ZipFile(out_path, "r") as validation_zip:
+                if validation_zip.testzip() is not None:
+                    raise ValueError("Die fertig gepatchte Excel-Vorlage ist beschädigt.")
+                etree.fromstring(validation_zip.read("xl/styles.xml"))
+                if theme_name:
+                    etree.fromstring(validation_zip.read(theme_name))
+
+            # Atomarer Austausch: Bei einem Lock bleibt die intakte Quelle erhalten.
+            os.replace(out_path, path)
             return True
         except Exception as exc:
             self.logger.error("Excel-XML-Verarbeitung fehlgeschlagen: %s", exc)
             return False
+        finally:
+            for temporary in (temp_save, out_path):
+                if temporary is not None:
+                    try:
+                        if temporary.exists():
+                            temporary.unlink()
+                    except Exception:
+                        self.logger.debug("Temporäre Datei konnte nicht entfernt werden: %s", temporary)
 
     def update_word_template_safely(self, template_path, font_name, font_size):
         """XML zuerst, COM nur als optionaler Fallback."""
