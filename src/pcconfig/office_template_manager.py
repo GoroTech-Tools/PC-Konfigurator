@@ -418,7 +418,13 @@ class OfficeTemplateManager:
         folders = {'INN-tegrativ': 'Designs_INN-tegrativ', 'DBK': 'Designs_DBK', 'Careli': 'Designs_Careli'}
         if design not in prefixes:
             design = 'INN-tegrativ'
-        return self.app_dir / 'data' / 'Datei-Vorlagen' / 'Sonstiges' / folders[design] / f'{prefixes[design]}{font_name}.thmx'
+        # Die Fontauswahl kann detailliertere Familiennamen enthalten als die
+        # vorbereiteten Office-Themes (z. B. Futura Cyrillic -> Futura).
+        theme_font_name = {
+            'Futura Cyrillic': 'Futura',
+            'PT Sans Narrow': 'PT Sans',
+        }.get(str(font_name), str(font_name))
+        return self.app_dir / 'data' / 'Datei-Vorlagen' / 'Sonstiges' / folders[design] / f'{prefixes[design]}{theme_font_name}.thmx'
 
     def _modify_excel_template_via_powershell(self, template_path, font_name, font_size):
         """PowerShell-Fallback für Excel-Templates (setzt Schriftart und -größe via Skript)."""
