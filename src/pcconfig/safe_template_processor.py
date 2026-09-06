@@ -92,6 +92,23 @@ class SafeTemplateProcessor:
                 styles_name = "xl/styles.xml"
                 styles_root = etree.fromstring(source.read(styles_name))
                 ns = {"x": self.EXCEL_NS}
+
+                # Excel liest die Standardschrift aus der ersten Fontdefinition
+                # und nicht nur aus cellXfs. Beide Stellen müssen konsistent
+                # gesetzt werden, sonst meldet die Verifikation weiterhin z. B.
+                # Aptos, obwohl die Registry bereits Arial enthält.
+                fonts = styles_root.find(f"{{{self.EXCEL_NS}}}fonts")
+                if fonts is not None and len(fonts) > 0:
+                    default_font = fonts[0]
+                    name_element = default_font.find(f"{{{self.EXCEL_NS}}}name")
+                    if name_element is None:
+                        name_element = etree.SubElement(default_font, f"{{{self.EXCEL_NS}}}name")
+                    name_element.set("val", str(font_name))
+                    size_element = default_font.find(f"{{{self.EXCEL_NS}}}sz")
+                    if size_element is None:
+                        size_element = etree.SubElement(default_font, f"{{{self.EXCEL_NS}}}sz")
+                    size_element.set("val", str(float(font_size)))
+
                 for xf in styles_root.xpath("//x:cellXfs/x:xf[@xfId='0']", namespaces=ns):
                     xf.set("fontId", "0")
                     xf.set("applyFont", "1")
