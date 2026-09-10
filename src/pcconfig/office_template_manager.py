@@ -168,7 +168,7 @@ class OfficeTemplateManager:
                 }
             else:
                 name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
-                size_ok = self._size_matches(info.get('font_size'), font_size_outlook)
+                size_ok = self._size_matches(info.get('font_size'), font_size_word)
                 details['normal_dotm'] = {
                     'ok': bool(name_ok and size_ok),
                     'reason': None if (name_ok and size_ok) else 'Abweichende Word-Defaults',
@@ -243,7 +243,7 @@ class OfficeTemplateManager:
                 }
             else:
                 name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
-                size_ok = self._size_matches(info.get('font_size'), font_size_word)
+                size_ok = self._size_matches(info.get('font_size'), font_size_outlook)
                 details['normal_email_dotm'] = {
                     'ok': bool(name_ok and size_ok),
                     'reason': None if (name_ok and size_ok) else 'Abweichende Outlook-Template-Defaults',
@@ -428,7 +428,7 @@ class OfficeTemplateManager:
                 prepared_matches = bool(
                     prepared_info
                     and self._normalize_font_name(prepared_info.get('font_name')) == self._normalize_font_name(fn)
-                    and self._size_matches(prepared_info.get('font_size'), fso)
+                    and self._size_matches(prepared_info.get('font_size'), fsw)
                 )
                 ok = (
                     True
