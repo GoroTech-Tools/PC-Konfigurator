@@ -444,10 +444,13 @@ class OfficeTemplateManager:
                         fn,
                         fsw,
                     )
+                # Word-Theme-Fonts werden bereits in der XML-Patch-Phase direkt in
+                # word/theme/theme1.xml gesetzt. Ein nachträglicher Austausch mit
+                # einem .thmx Corporate-Theme kann das DOTM-Paket destabilisieren
+                # und Word beim Öffnen "reparieren" lassen. Deshalb hier bewusst
+                # nicht erneut überschreiben.
                 if ok:
-                    ok = self.safe_processor.apply_corporate_theme(
-                        src, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
-                    )
+                    self.logger.info("Word-Theme für %s direkt im DOTM gelassen; Corporate-Theme-Overwrite übersprungen.", src.name)
                 if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für Normal.dotm")
                     ok = self.safe_processor.update_word_template_safely(src, fn, fsw)
@@ -498,10 +501,12 @@ class OfficeTemplateManager:
                         fn,
                         fso,
                     )
+                # Outlook-Template wird ebenfalls direkt im Word-Theme gepatcht.
+                # Das Wechseln auf ein Corporate-Theme-THMX hier zu wiederholen,
+                # ist für DOTM-Templates unnötig und kann Word-Template-Container
+                # destabilisieren; daher bewusst übersprungen.
                 if ok:
-                    ok = self.safe_processor.apply_corporate_theme(
-                        email_source, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
-                    )
+                    self.logger.info("Outlook-Theme für %s direkt im DOTM gelassen; Corporate-Theme-Overwrite übersprungen.", email_source.name)
                 result['normal_email_dotm'] = ok
                 # Nach Anpassung: Font auslesen und loggen
                 if not ok and allow_com_fallback and not frozen:

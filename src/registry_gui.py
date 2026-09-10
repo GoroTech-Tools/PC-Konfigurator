@@ -322,13 +322,23 @@ class RegistryExplanationWindow:
             if s is None:
                 return
             key = s.key_path.replace("{version}", "16.0")
+            versions_text = ", ".join(s.office_versions) if s.office_versions else "nicht spezifiziert"
+            version_note = (
+                "\n\nHinweis zu Versionen:\n"
+                "- 14.0 = Office 2010\n"
+                "- 15.0 = Office 2013\n"
+                "- 16.0 = Office 2016/2019/2021/2024 LTSC/365\n"
+                "- Für Office 2024 LTSC/Profil-Umgebungen wird diese Einstellung zusätzlich per COM synchronisiert,\n"
+                "  weil die UI manche Registry-Werte nicht zuverlässig widerspiegelt."
+            )
             text = (
                 f"Registry-Pfad:  HKEY_CURRENT_USER\\{key}\n"
                 f"Wertname:        {s.value_name}\n"
                 f"Typ:             {s.value_type}    "
-                f"Standardwert: {s.default_value}\n\n"
+                f"Standardwert: {s.default_value}\n"
+                f"Office-Versionen: {versions_text}\n\n"
                 f"Beschreibung:\n{s.description}\n\n"
-                f"Auswirkung:\n{s.impact}"
+                f"Auswirkung:\n{s.impact}{version_note}"
             )
             detail_title.configure(text=f"{icon} {s.value_name}")
             detail_text.configure(state="normal")
