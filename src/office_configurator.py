@@ -59,6 +59,11 @@ class OfficeConfigurator:
 
             pythoncom.CoInitialize()
             try:
+                # Der Initialwert ist True (COM überspringen). Nach einem
+                # erfolgreichen Precheck muss der Zustand explizit auf False
+                # wechseln, sonst werden die COM-Synchronisierungen trotz
+                # aktivem Firmenmodus übersprungen.
+                result["skip_com"] = False
                 result["details"] = {
                     "pythoncom": "ok",
                     "win32com": "ok",
@@ -244,6 +249,14 @@ class OfficeConfigurator:
             else:
                 self.logger.info("Outlook-Template-Schritt erfolgreich abgeschlossen (Kopie + Synchronisation).")
 
+            # Das Kopieren von Normal.dotm kann Word-AutoCorrect-Einstellungen
+            # aus dem gerade ersetzten Profil wiederherstellen. Deshalb die
+            # COM-Synchronisierung nach dem Template-Schritt einmal wiederholen.
+            if not com_bootstrap.get("skip_com"):
+                post_template_word_warning = self._apply_word_options_via_com()
+                if post_template_word_warning:
+                    sync_warnings.append(f"Word: {post_template_word_warning}")
+
             if outlook_result.get("com_warning"):
                 warning_text = outlook_result.get("com_warning")
                 if outlook_warning:
@@ -360,7 +373,7 @@ class OfficeConfigurator:
                 self.logger.info("Word-COM übersprungen (Precheck meldete COM nicht verfügbar).")
 
             # Word-Startbildschirm deaktivieren (direkt in leeres Dokument starten)
-            for version in ["16.0", "15.0"]:
+            for version in ["16.0", "15.0", "14.0"]:
                 general_key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Common\\General"
                 self._set_registry_values_with_explanation(
                     winreg.HKEY_CURRENT_USER,
@@ -444,7 +457,7 @@ class OfficeConfigurator:
                 "DefaultMailFont": (font_name, "outlook_default_mail_font_legacy"),
             }
 
-            office_versions = ["16.0", "15.0"]
+            office_versions = ["16.0", "15.0", "14.0"]
             for version in office_versions:
                 key_path = f"SOFTWARE\\Microsoft\\Office\\{version}\\Outlook\\Options"
                 self._set_registry_values_with_explanation(
@@ -718,7 +731,7 @@ class OfficeConfigurator:
 
     def _apply_outlook_mailsettings_registry(self, font_name: str, font_size: int) -> str | None:
         """Setzt Outlook-Schriftwerte im Common\\MailSettings-Zweig (COM-freier Hauptpfad)."""
-        office_versions = ["16.0", "15.0"]
+        office_versions = ["16.0", "15.0", "14.0"]
         errors: list[str] = []
 
         value_map = {
@@ -807,7 +820,7 @@ class OfficeConfigurator:
         """Word Registry-Einstellungen anwenden"""
         try:
             # Word-Versionen finden
-            office_versions = ["16.0", "15.0"]  # Office 2016/2019/2021 und Office 2013
+            office_versions = ["16.0", "15.0", "14.0"]  # Office 2016/2019/2021/2024/365, 2013 und 2010
             
             for version in office_versions:
                 try:
@@ -830,11 +843,13 @@ class OfficeConfigurator:
             raise
 
     def _apply_word_options_via_com(self) -> str | None:
-        """Setzt kritische Word-AutoFormat-Optionen direkt über COM.
+        """Setzt kritische Word-AutoFormat- und AutoKorrektur-Optionen über COM.
 
         Hintergrund: Auf manchen Office-Builds (insb. mit Roaming-Profilen) spiegelt
         die UI diese Optionen nicht aus den einfachen DWORD-Keys unter
-        HKCU\\...\\Word\\Options, sondern aus internen Word-Optionen.
+        HKCU\\...\\Word\\Options, sondern aus internen Word-Optionen. Die
+        Satz-Großschreibung gehört dabei nicht zu ``word.Options``, sondern zum
+        separaten ``word.AutoCorrect``-Objekt.
         """
         try:
             import win32com.client  # type: ignore
@@ -842,6 +857,14 @@ class OfficeConfigurator:
             word = win32com.client.Dispatch("Word.Application")
             try:
                 options = word.Options
+                autocorrect = word.AutoCorrect
+
+                # Word 2024 LTSC übernimmt CorrectSentenceCaps aus der Registry
+                # nicht zuverlässig in die UI. Die Checkbox "Jeden Satz mit
+                # einem Großbuchstaben beginnen" wird über AutoCorrect gesteuert.
+                autocorrect.CorrectSentenceCaps = False
+                autocorrect.CorrectCapsLock = False
+
                 options.AutoFormatAsYouTypeApplyBulletedLists = False
                 options.AutoFormatAsYouTypeApplyNumberedLists = False
                 options.AutoFormatApplyBulletedLists = False
@@ -849,15 +872,22 @@ class OfficeConfigurator:
                 options.AutoFormatAsYouTypeFormatListItemBeginning = False
 
                 try:
+                    # Word speichert AutoCorrect-Änderungen sonst nur im
+                    # laufenden COM-Prozess. NormalTemplate explizit als
+                    # geändert markieren und mit SaveChanges beenden.
+                    word.NormalTemplate.Saved = False
                     word.NormalTemplate.Save()
                 except Exception as save_error:
                     self.logger.warning(f"NormalTemplate konnte nicht gespeichert werden: {save_error}")
 
-                self.logger.info("Word AutoFormat-Optionen zusätzlich per COM synchronisiert")
+                self.logger.info(
+                    "Word AutoFormat- und AutoKorrektur-Optionen zusätzlich per COM synchronisiert "
+                    "(CorrectSentenceCaps=False)"
+                )
                 return None
             finally:
                 try:
-                    word.Quit()
+                    word.Quit(-1)
                 except Exception:
                     pass
         except Exception as e:
@@ -956,7 +986,7 @@ class OfficeConfigurator:
         """Excel Registry-Einstellungen anwenden"""
         try:
             # Excel-Versionen finden
-            office_versions = ["16.0", "15.0"]  # Office 2016/2019/2021 und Office 2013
+            office_versions = ["16.0", "15.0", "14.0"]  # Office 2016/2019/2021/2024/365, 2013 und 2010
             
             for version in office_versions:
                 try:

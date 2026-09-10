@@ -319,6 +319,8 @@ class OfficeTemplateManager:
                 'mappe_xltx': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "Mappe.xltx",
                 'normal_email_dotm': self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards" / "NormalEmail.dotm"
             }
+            self._generic_source_templates = dict(self.source_templates)
+            self._working_template_dir = None
         except Exception as e:
             self.logger.error(f"Fehler bei source_templates-Initialisierung: {e}")
             self.source_templates = {}
@@ -332,6 +334,42 @@ class OfficeTemplateManager:
         except Exception as e:
             self.logger.error(f"Fehler bei target_paths-Initialisierung: {e}")
             self.target_paths = {}
+
+    def _select_font_specific_templates(self, font_name, font_size_word, font_size_excel):
+        """Verwendet vorbereitete, schrift- und größenbezogene Kopiervorlagen."""
+        standard_dir = self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards"
+        aliases = {
+            "Futura Cyrillic": "Futura",
+            "PT Sans Narrow": "PT Sans",
+        }
+        template_font = aliases.get(font_name, font_name)
+
+        self.source_templates = dict(self._generic_source_templates)
+
+        def size_text(value):
+            try:
+                numeric = float(value)
+                return str(int(numeric)) if numeric.is_integer() else str(numeric).rstrip("0").rstrip(".")
+            except (TypeError, ValueError):
+                return str(value)
+
+        word_size = size_text(font_size_word)
+        excel_size = size_text(font_size_excel)
+        candidates = {
+            "normal_dotm": standard_dir / f"Normal-{template_font}-{word_size}.dotm",
+            "normal_email_dotm": standard_dir / f"NormalEmail-{template_font}-{word_size}.dotm",
+            "mappe_xltx": standard_dir / f"Mappe-{template_font}-{excel_size}.xltx",
+        }
+        for key, candidate in candidates.items():
+            if candidate.is_file():
+                self.source_templates[key] = candidate
+                self.logger.info("Verwende Kopiervorlage: %s", candidate.name)
+            else:
+                self.logger.warning(
+                    "Keine benannte Kopiervorlage für %s gefunden (%s); generische Vorlage bleibt Fallback.",
+                    key,
+                    candidate.name,
+                )
 
     def update_font_in_templates(
         self,
@@ -354,13 +392,38 @@ class OfficeTemplateManager:
         fn = font_name or 'Arial'
         fsw = font_size_word or 11
         fse = font_size_excel or 10
+        self._select_font_specific_templates(fn, fsw, fse)
+
+        # Quelldateien niemals direkt verändern. Die ausgewählten Kopiervorlagen
+        # werden in ein temporäres Arbeitsverzeichnis kopiert und ausschließlich
+        # dort verarbeitet. copy_templates_to_user() übernimmt danach nur diese
+        # validierten Arbeitskopien.
+        if self._working_template_dir is not None:
+            shutil.rmtree(self._working_template_dir, ignore_errors=True)
+        self._working_template_dir = Path(tempfile.mkdtemp(prefix="pcconfig-templates-"))
+        working_sources = {}
+        for key, source_path in self.source_templates.items():
+            if source_path.exists():
+                working_path = self._working_template_dir / source_path.name
+                shutil.copy2(source_path, working_path)
+                working_sources[key] = working_path
+        self.source_templates = working_sources
+        self.logger.info("Verarbeite Vorlagen ausschließlich in temporären Kopien: %s", self._working_template_dir)
 
         # Word Normal.dotm
         src = self.source_templates.get('normal_dotm')
         if src and src.exists():
             try:
-                ok = self.safe_processor.update_word_template_xml(src, fn, fsw)
-                if ok:
+                # Benannte Normal-*.dotm-Dateien sind bereits vollständig
+                # vorbereitete Word-Kopiervorlagen. Besonders Normal.dotm kann
+                # VBA-Bestandteile enthalten; ein erneutes Serialisieren von
+                # styles.xml kann Word anschließend zu einer Reparatur zwingen.
+                # Daher diese Kopien nicht erneut per XML umschreiben.
+                prepared = src.name.lower().startswith('normal-')
+                ok = True if prepared else self.safe_processor.update_word_template_xml(src, fn, fsw)
+                if prepared:
+                    self.logger.info("Word-Kopiervorlage bytegenau übernommen: %s", src.name)
+                if ok and not prepared:
                     ok = self.safe_processor.apply_corporate_theme(
                         src, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
                     )
@@ -392,20 +455,21 @@ class OfficeTemplateManager:
         # Outlook NormalEmail.dotm
         if 'normal_email_dotm' in self.source_templates and self.source_templates['normal_email_dotm'].exists():
             try:
-                ok = self.safe_processor.update_word_template_xml(
-                    self.source_templates['normal_email_dotm'],
-                    fn, fsw
-                )
-                if ok:
+                email_source = self.source_templates['normal_email_dotm']
+                prepared = email_source.name.lower().startswith('normalemail-')
+                ok = True if prepared else self.safe_processor.update_word_template_xml(email_source, fn, fsw)
+                if prepared:
+                    self.logger.info("Outlook-Kopiervorlage bytegenau übernommen: %s", email_source.name)
+                if ok and not prepared:
                     ok = self.safe_processor.apply_corporate_theme(
-                        self.source_templates['normal_email_dotm'], self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
+                        email_source, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
                     )
                 result['normal_email_dotm'] = ok
                 # Nach Anpassung: Font auslesen und loggen
                 if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für NormalEmail.dotm")
                     ok = self.safe_processor.update_word_template_safely(
-                        self.source_templates['normal_email_dotm'], fn, fsw
+                        email_source, fn, fsw
                     )
                 result['normal_email_dotm'] = ok
             except Exception as e:
@@ -547,49 +611,70 @@ class OfficeTemplateManager:
             self.logger.warning(f"Konnte WINWORD.EXE nicht beenden: {e}")
 
         results = {}
-        for template_key, source_path in self.source_templates.items():
-            target_path = self.target_paths.get(template_key)
-            if target_path is None:
-                self.logger.error(f"Kein Zielpfad für Template-Key: {template_key}")
-                results[template_key] = False
-                continue
-            if not source_path.exists():
-                self.logger.warning(f"Quelldatei nicht gefunden: {source_path}")
-                results[template_key] = False
-                continue
-            max_retries = 5
-            for attempt in range(1, max_retries + 1):
-                try:
-                    target_path = Path(target_path)
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    from shutil import copy2
-                    copy2(str(source_path), str(target_path))
-                    self.logger.info(f"Kopiert: {source_path} -> {target_path}")
-                    results[template_key] = True
-                    break
-                except Exception as e:
-                    self.logger.error(f"Fehler beim Kopieren {source_path} -> {target_path} (Versuch {attempt}/{max_retries}): {e}")
-                    results[template_key] = False
-                    if attempt < max_retries:
-                        time.sleep(2)
-            else:
-                self.logger.error(f"Konnte {source_path} nach {max_retries} Versuchen nicht kopieren.")
 
-        # Zusätzliche Excel-Vorlage: book.xltx aus Mappe.xltx ableiten
-        mappe_target = self.target_paths.get('mappe_xltx')
-        book_target = self.target_paths.get('book_xltx')
-        if mappe_target and book_target:
-            if results.get('mappe_xltx') and Path(mappe_target).exists():
-                try:
-                    Path(book_target).parent.mkdir(parents=True, exist_ok=True)
-                    from shutil import copy2
-                    copy2(str(mappe_target), str(book_target))
-                    self.logger.info(f"Zusatzvorlage kopiert: {mappe_target} -> {book_target}")
-                    results['book_xltx'] = True
-                except Exception as e:
-                    self.logger.error(f"Fehler beim Kopieren der Zusatzvorlage {mappe_target} -> {book_target}: {e}")
+        def copy_validated(source_path, target_path):
+            with zipfile.ZipFile(source_path, "r") as archive:
+                if archive.testzip() is not None:
+                    raise ValueError(f"Beschädigte Office-Kopie: {source_path}")
+            target_path = Path(target_path)
+            temporary_target = target_path.with_name(target_path.name + ".pckconfig-copy.tmp")
+            try:
+                shutil.copy2(str(source_path), str(temporary_target))
+                with zipfile.ZipFile(temporary_target, "r") as archive:
+                    if archive.testzip() is not None:
+                        raise ValueError(f"Beschädigte Zielkopie: {temporary_target}")
+                os.replace(temporary_target, target_path)
+            finally:
+                if temporary_target.exists():
+                    temporary_target.unlink()
+
+        try:
+            for template_key, source_path in self.source_templates.items():
+                target_path = self.target_paths.get(template_key)
+                if target_path is None:
+                    self.logger.error(f"Kein Zielpfad für Template-Key: {template_key}")
+                    results[template_key] = False
+                    continue
+                if not source_path.exists():
+                    self.logger.warning(f"Quelldatei nicht gefunden: {source_path}")
+                    results[template_key] = False
+                    continue
+                max_retries = 5
+                for attempt in range(1, max_retries + 1):
+                    try:
+                        target_path = Path(target_path)
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                        copy_validated(source_path, target_path)
+                        self.logger.info(f"Validiert kopiert: {source_path} -> {target_path}")
+                        results[template_key] = True
+                        break
+                    except Exception as e:
+                        self.logger.error(f"Fehler beim Kopieren {source_path} -> {target_path} (Versuch {attempt}/{max_retries}): {e}")
+                        results[template_key] = False
+                        if attempt < max_retries:
+                            time.sleep(2)
+                else:
+                    self.logger.error(f"Konnte {source_path} nach {max_retries} Versuchen nicht kopieren.")
+
+            # Zusätzliche Excel-Vorlage: book.xltx aus Mappe.xltx ableiten
+            mappe_target = self.target_paths.get('mappe_xltx')
+            book_target = self.target_paths.get('book_xltx')
+            if mappe_target and book_target:
+                if results.get('mappe_xltx') and Path(mappe_target).exists():
+                    try:
+                        Path(book_target).parent.mkdir(parents=True, exist_ok=True)
+                        copy_validated(mappe_target, book_target)
+                        self.logger.info(f"Zusatzvorlage kopiert: {mappe_target} -> {book_target}")
+                        results['book_xltx'] = True
+                    except Exception as e:
+                        self.logger.error(f"Fehler beim Kopieren der Zusatzvorlage {mappe_target} -> {book_target}: {e}")
+                        results['book_xltx'] = False
+                else:
+                    self.logger.warning("Zusatzvorlage book.xltx übersprungen: Mappe.xltx wurde nicht erfolgreich kopiert.")
                     results['book_xltx'] = False
-            else:
-                self.logger.warning("Zusatzvorlage book.xltx übersprungen: Mappe.xltx wurde nicht erfolgreich kopiert.")
-                results['book_xltx'] = False
-        return results
+            return results
+        finally:
+            if self._working_template_dir is not None:
+                shutil.rmtree(self._working_template_dir, ignore_errors=True)
+                self._working_template_dir = None
+            self.source_templates = dict(self._generic_source_templates)

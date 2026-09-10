@@ -227,6 +227,59 @@ function New-ReleaseNotesFile {
     return $notesPath
 }
 
+function Move-PreviousReleaseArtifacts {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ReleaseDir,
+        [Parameter(Mandatory = $true)]
+        [string]$CurrentVersion
+    )
+
+    if (-not (Test-Path $ReleaseDir)) {
+        return
+    }
+
+    $archiveDir = Join-Path $ReleaseDir '_Archiv'
+    $versionPattern = '^(?:PC-Konfigurator-v|RELEASE_NOTES_v)(?<Version>\d+\.\d+\.\d+)(?:\.zip|\.md)?$'
+    $previousArtifacts = Get-ChildItem -Path $ReleaseDir -Force -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match $versionPattern -and $matches.Version -ne $CurrentVersion
+        }
+
+    if (-not $previousArtifacts) {
+        return
+    }
+
+    New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
+    foreach ($artifact in $previousArtifacts) {
+        $targetPath = Join-Path $archiveDir $artifact.Name
+        if (Test-Path $targetPath) {
+            Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
+        }
+
+        $archived = $false
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                Move-Item -LiteralPath $artifact.FullName -Destination $targetPath -Force -ErrorAction Stop
+                $archived = $true
+                break
+            } catch {
+                if ($attempt -lt 3) {
+                    Write-Host "Archivierung wartet auf OneDrive-Freigabe ($attempt/3): $($artifact.Name)" -ForegroundColor Yellow
+                    Start-Sleep -Milliseconds 1000
+                } else {
+                    throw
+                }
+            }
+        }
+
+        if ($archived) {
+            Write-Host "Älteres Release archiviert: $($artifact.Name) -> release/_Archiv/" -ForegroundColor DarkGray
+        }
+    }
+}
+
 if (-not $Quiet -or $Help) {
     Show-Usage
 }
@@ -599,6 +652,7 @@ if ($buildDir) {
 
     $releaseDir = Join-Path $PSScriptRoot 'release'
     $notesVersion = if ($newVersion) { $newVersion } else { 'manual' }
+    Move-PreviousReleaseArtifacts -ReleaseDir $releaseDir -CurrentVersion $notesVersion
     $null = New-ReleaseNotesFile `
         -Version $notesVersion `
         -BuildDirName $buildDir.Name `

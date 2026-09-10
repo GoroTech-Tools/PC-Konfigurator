@@ -828,6 +828,25 @@ class PCKonfiguratorGUI:
             
         # Hidden-Attribute für Ordner setzen
         self.set_hidden_directories()
+
+        # Nach dem Start beziehungsweise nach der Runtime-Bereitstellung
+        # ausdrücklich sichtbar und fokussiert öffnen. Topmost wird nur kurz
+        # verwendet, damit Windows das Fenster zuverlässig aktiviert; danach
+        # bleibt das normale Z-Order-Verhalten erhalten.
+        self.root.after(50, self._bring_main_window_to_foreground)
+
+    def _bring_main_window_to_foreground(self):
+        """Aktiviert das Hauptfenster im Vordergrund, ohne es dauerhaft topmost zu halten."""
+        try:
+            self.root.deiconify()
+            self.root.state("normal")
+            self.root.lift()
+            self.root.attributes("-topmost", True)
+            self.root.focus_force()
+            self.root.after(250, lambda: self.root.attributes("-topmost", False))
+        except Exception:
+            # Die GUI soll auch bei restriktiven Window-Manager-Regeln starten.
+            pass
             
     def set_hidden_directories(self):
         """Setzt Hidden-Attribute für Laufzeitordner."""

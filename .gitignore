@@ -11,6 +11,10 @@ dist/
 data/
 logs/
 **/_archive/
+release/_Archiv/
+!release/_Archiv/
+release/_Archiv/*.zip
+release/_Archiv/PC-Konfigurator-v*/
 release/*.zip
 release/PC-Konfigurator-v*/
 *.spec
