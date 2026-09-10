@@ -937,6 +937,13 @@ class PCKonfiguratorGUI:
         
     def create_configuration_tab(self):
         """Konfiguration-Tab erstellen"""
+        configuration_frame = self.tabview.tab(TAB_CONFIG)
+        for child in configuration_frame.winfo_children():
+            try:
+                child.destroy()
+            except Exception:
+                pass
+
         refs = build_configuration_tab(
             self.tabview,
             advanced_mode=self._is_advanced_mode(),

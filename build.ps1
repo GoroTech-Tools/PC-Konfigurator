@@ -269,7 +269,7 @@ function Move-PreviousReleaseArtifacts {
                     Write-Host "Archivierung wartet auf OneDrive-Freigabe ($attempt/3): $($artifact.Name)" -ForegroundColor Yellow
                     Start-Sleep -Milliseconds 1000
                 } else {
-                    throw
+                    Write-Host "Warnung: Älteres Release konnte wegen einer Dateisperre nicht archiviert werden: $($artifact.Name)" -ForegroundColor Yellow
                 }
             }
         }
