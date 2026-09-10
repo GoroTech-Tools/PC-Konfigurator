@@ -420,9 +420,26 @@ class OfficeTemplateManager:
                 # styles.xml kann Word anschließend zu einer Reparatur zwingen.
                 # Daher diese Kopien nicht erneut per XML umschreiben.
                 prepared = src.name.lower().startswith('normal-')
-                ok = True if prepared else self.safe_processor.update_word_template_xml(src, fn, fsw)
-                if prepared:
+                prepared_info = self._read_word_font_info_from_template(src) if prepared else None
+                prepared_matches = bool(
+                    prepared_info
+                    and self._normalize_font_name(prepared_info.get('font_name')) == self._normalize_font_name(fn)
+                    and self._size_matches(prepared_info.get('font_size'), fsw)
+                )
+                ok = (
+                    True
+                    if prepared_matches
+                    else self.safe_processor.update_word_template_xml(src, fn, fsw)
+                )
+                if prepared_matches:
                     self.logger.info("Word-Kopiervorlage bytegenau übernommen: %s", src.name)
+                elif prepared:
+                    self.logger.warning(
+                        "Vorbereitete Word-Kopiervorlage %s enthielt abweichende Defaults; XML-Korrektur auf %s %spt durchgeführt.",
+                        src.name,
+                        fn,
+                        fsw,
+                    )
                 if ok and not prepared:
                     ok = self.safe_processor.apply_corporate_theme(
                         src, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
@@ -457,9 +474,26 @@ class OfficeTemplateManager:
             try:
                 email_source = self.source_templates['normal_email_dotm']
                 prepared = email_source.name.lower().startswith('normalemail-')
-                ok = True if prepared else self.safe_processor.update_word_template_xml(email_source, fn, fsw)
-                if prepared:
+                prepared_info = self._read_word_font_info_from_template(email_source) if prepared else None
+                prepared_matches = bool(
+                    prepared_info
+                    and self._normalize_font_name(prepared_info.get('font_name')) == self._normalize_font_name(fn)
+                    and self._size_matches(prepared_info.get('font_size'), fsw)
+                )
+                ok = (
+                    True
+                    if prepared_matches
+                    else self.safe_processor.update_word_template_xml(email_source, fn, fsw)
+                )
+                if prepared_matches:
                     self.logger.info("Outlook-Kopiervorlage bytegenau übernommen: %s", email_source.name)
+                elif prepared:
+                    self.logger.warning(
+                        "Vorbereitete Outlook-Kopiervorlage %s enthielt abweichende Defaults; XML-Korrektur auf %s %spt durchgeführt.",
+                        email_source.name,
+                        fn,
+                        fsw,
+                    )
                 if ok and not prepared:
                     ok = self.safe_processor.apply_corporate_theme(
                         email_source, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design

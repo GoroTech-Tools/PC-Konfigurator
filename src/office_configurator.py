@@ -1083,9 +1083,9 @@ class OfficeConfigurator:
 
             # Taskleisten-Ausrichtung hart verifizieren (einige Systeme überschreiben den Wert sofort)
             taskbar_al = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, "TaskbarAl")
-            if taskbar_al != 0:
+            if taskbar_al != taskbar_value:
                 self.logger.warning(
-                    f"TaskbarAl nach Setzen unerwartet: {taskbar_al}. Fallback via reg.exe wird versucht."
+                    f"TaskbarAl nach Setzen unerwartet: {taskbar_al} (Sollwert {taskbar_value}). Fallback via reg.exe wird versucht."
                 )
                 subprocess.run(
                     [
