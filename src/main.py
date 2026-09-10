@@ -437,6 +437,13 @@ class PCKonfiguratorGUI:
     def _on_ui_mode_changed(self, *_args):
         """Persistiert den UI-Modus und aktualisiert die sichtbaren Bereiche."""
         def _apply_mode_change():
+            if not self._is_advanced_mode():
+                # Im einfachen Modus darf keine zuvor gespeicherte robuste oder
+                # optionale Auswahl unsichtbar weiterlaufen.
+                self.enable_firm_mode.set(False)
+                self.enable_com_sync.set(False)
+                self.enable_office_warmup.set(False)
+                self.enable_office_preclose.set(True)
             self._save_gui_state()
             self.apply_ui_mode()
 
@@ -709,8 +716,15 @@ class PCKonfiguratorGUI:
         """Wendet den aktiven Bedienmodus (Einfach/Erweitert) auf die GUI an."""
         advanced_mode = self._is_advanced_mode()
 
+        if not advanced_mode:
+            self.enable_firm_mode.set(False)
+            self.enable_com_sync.set(False)
+            self.enable_office_warmup.set(False)
+            self.enable_office_preclose.set(True)
+
         self._set_registry_tab_visible(advanced_mode)
         self.create_start_tab()
+        self.create_configuration_tab()
         self.create_execution_tab()
         self._set_execution_log_visible(advanced_mode)
         self.add_tools_menu()
@@ -925,6 +939,7 @@ class PCKonfiguratorGUI:
         """Konfiguration-Tab erstellen"""
         refs = build_configuration_tab(
             self.tabview,
+            advanced_mode=self._is_advanced_mode(),
             use_documents_var=self.use_documents,
             target_drive_var=self.target_drive,
             startmenu_mode_var=self.startmenu_mode,

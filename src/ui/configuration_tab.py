@@ -10,6 +10,7 @@ from ui.theme import CARD_STYLE, CARD_TITLE_COLOR, CONTINUE_BUTTON_STYLE, PAGE_H
 def build_configuration_tab(
     tabview,
     *,
+    advanced_mode,
     use_documents_var,
     target_drive_var,
     startmenu_mode_var,
@@ -274,8 +275,30 @@ def build_configuration_tab(
     ctk.CTkLabel(size_inner, text="Excel:").pack(anchor="w", padx=2)
     ctk.CTkOptionMenu(size_inner, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=2, pady=(2, 2))
 
+    if not advanced_mode:
+        recommended_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+        recommended_card.pack(fill="x", padx=4, pady=(6, 6))
+        ctk.CTkLabel(
+            recommended_card,
+            text="Empfohlene Routine",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            text_color=CARD_TITLE_COLOR,
+        ).pack(anchor="w", padx=14, pady=(10, 3))
+        ctk.CTkLabel(
+            recommended_card,
+            text=(
+                "Die EXE verwendet die empfohlene Standardkonfiguration. "
+                "Optionale COM-/Warm-up-Einstellungen und der robuste Firmenmodus "
+                "sind im erweiterten Modus verfügbar."
+            ),
+            justify="left",
+            wraplength=960,
+            text_color=("#4B5563", "#D1D5DB"),
+        ).pack(anchor="w", padx=14, pady=(0, 10))
+
     com_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    com_card.pack(fill="x", padx=4, pady=(6, 6))
+    if advanced_mode:
+        com_card.pack(fill="x", padx=4, pady=(6, 6))
 
     ctk.CTkLabel(
         com_card,
@@ -305,7 +328,8 @@ def build_configuration_tab(
     ).pack(anchor="w", padx=14, pady=(0, 10))
 
     preclose_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    preclose_card.pack(fill="x", padx=4, pady=(0, 6))
+    if advanced_mode:
+        preclose_card.pack(fill="x", padx=4, pady=(0, 6))
 
     ctk.CTkLabel(
         preclose_card,
@@ -334,7 +358,8 @@ def build_configuration_tab(
     ).pack(anchor="w", padx=14, pady=(0, 10))
 
     warmup_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    warmup_card.pack(fill="x", padx=4, pady=(0, 6))
+    if advanced_mode:
+        warmup_card.pack(fill="x", padx=4, pady=(0, 6))
 
     ctk.CTkLabel(
         warmup_card,
@@ -363,7 +388,8 @@ def build_configuration_tab(
     ).pack(anchor="w", padx=14, pady=(0, 10))
 
     firm_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    firm_card.pack(fill="x", padx=4, pady=(0, 6))
+    if advanced_mode:
+        firm_card.pack(fill="x", padx=4, pady=(0, 6))
 
     ctk.CTkLabel(
         firm_card,
