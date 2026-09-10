@@ -440,7 +440,7 @@ class OfficeTemplateManager:
                         fn,
                         fsw,
                     )
-                if ok and not prepared:
+                if ok:
                     ok = self.safe_processor.apply_corporate_theme(
                         src, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
                     )
@@ -494,7 +494,7 @@ class OfficeTemplateManager:
                         fn,
                         fsw,
                     )
-                if ok and not prepared:
+                if ok:
                     ok = self.safe_processor.apply_corporate_theme(
                         email_source, self._theme_path(corporate_design, fn), "word/theme/theme1.xml", corporate_design
                     )
