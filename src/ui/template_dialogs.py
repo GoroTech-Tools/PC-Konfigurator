@@ -12,6 +12,7 @@ def run_safe_restore_templates_dialog(
     font_size_word: int,
     font_size_excel: int,
     office_font_name: str,
+    font_size_outlook: int = 12,
     install_all_fonts,
     safe_office_config,
     on_refresh_status,
@@ -26,7 +27,8 @@ def run_safe_restore_templates_dialog(
             "✅ Schriftart-Einstellungen werden über Registry gesetzt (sicher!)\n"
             "✅ Keine direkte Template-Manipulation\n\n"
             f"Gewählte Schriftart: {font_name_display}\n"
-            f"Word/Outlook-Größe: {font_size_word}pt\n"
+            f"Word-Größe: {font_size_word}pt\n"
+            f"Outlook-Größe: {font_size_outlook}pt\n"
             f"Excel-Größe: {font_size_excel}pt\n\n"
             "Fortfahren?",
             icon="question",
@@ -55,7 +57,8 @@ def run_safe_restore_templates_dialog(
         results = safe_office_config.safe_font_setup(
             font_name=office_font_name,
             font_size_word=font_size_word,
-            font_size_excel=font_size_excel,
+            font_size_outlook=font_size_outlook,
+                font_size_excel=font_size_excel,
         )
 
         progress_window.destroy()
@@ -73,7 +76,8 @@ def run_safe_restore_templates_dialog(
                 f"🔤 Installierte Font-Dateien: {installed_font_count}\n\n"
                 f"🎯 Neue Einstellungen:\n"
                 f"• Schriftart: {font_name_display}\n"
-                f"• Word/Outlook: {font_size_word}pt\n"
+                f"• Word: {font_size_word}pt\n"
+                f"• Outlook: {font_size_outlook}pt\n"
                 f"• Excel: {font_size_excel}pt\n\n"
                 f"➤ Starten Sie Office-Programme neu für beste Ergebnisse!",
             )
@@ -98,6 +102,7 @@ def run_update_office_templates_dialog(
     font_size_word: int,
     font_size_excel: int,
     template_manager,
+    font_size_outlook: int = 12,
     on_refresh_status,
 ) -> None:
     """Kopiert und aktualisiert Office-Templates mit Benutzerdialogen."""
@@ -154,6 +159,7 @@ def run_update_office_templates_dialog(
         font_results = template_manager.update_font_in_templates(
             font_name=font_name_display,
             font_size_word=font_size_word,
+            font_size_outlook=font_size_outlook,
             font_size_excel=font_size_excel,
         )
 
@@ -198,7 +204,7 @@ def run_update_office_templates_dialog(
                 f"Erfolgreiche Templates:\n"
                 + "\n".join(successful_templates)
                 + f"\n\nNeue Standard-Schriftart: {font_name_display}\n"
-                f"Word/Outlook-Größe: {font_size_word}pt, Excel-Größe: {font_size_excel}pt\n\n"
+                f"Word-Größe: {font_size_word}pt, Outlook-Größe: {font_size_outlook}pt, Excel-Größe: {font_size_excel}pt\n\n"
                 f"➤ Neue Word-Dokumente verwenden jetzt {font_name_display}!\n"
                 f"➤ Neue Excel-Dokumente verwenden jetzt {font_name_display}!\n"
                 f"➤ Neue E-Mails verwenden jetzt {font_name_display}!",

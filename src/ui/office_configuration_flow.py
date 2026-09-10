@@ -14,8 +14,9 @@ def configure_office_settings_flow(
     try:
         font_name = config.get("font_name", "Aptos")
         font_size_word = config.get("font_size_word", 11)
+        font_size_outlook = config.get("font_size_outlook", 12)
         font_size_excel = config.get("font_size_excel", 10)
-        add_status_text(f"🔧 Konfiguriere Office mit {font_name} (Word: {font_size_word}pt, Excel: {font_size_excel}pt)")
+        add_status_text(f"🔧 Konfiguriere Office mit {font_name} (Word: {font_size_word}pt, Outlook: {font_size_outlook}pt, Excel: {font_size_excel}pt)")
 
         add_status_text("📄 Standards-Templates werden angepasst...")
         mod_success = 0
@@ -30,6 +31,7 @@ def configure_office_settings_flow(
             mod_result = template_manager.update_font_in_templates(
                 font_name=font_name,
                 font_size_word=font_size_word,
+                font_size_outlook=font_size_outlook,
                 font_size_excel=font_size_excel,
             )
             modification_phase = {k: {"success": v} for k, v in mod_result.items()}
@@ -74,6 +76,7 @@ def configure_office_settings_flow(
             font_name,
             font_size_word,
             font_size_excel,
+            font_size_outlook,
         )
         if registry_results["success"]:
             add_status_text("✅ Registry-Konfiguration erfolgreich")

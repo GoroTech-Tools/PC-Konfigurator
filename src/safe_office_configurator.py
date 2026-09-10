@@ -75,7 +75,7 @@ class SafeOfficeConfigurator:
         
         return results
     
-    def configure_fonts_via_registry(self, font_name="Aptos", font_size_word=11, font_size_excel=10):
+    def configure_fonts_via_registry(self, font_name="Aptos", font_size_word=11, font_size_excel=10, font_size_outlook=12):
         """
         Konfiguriert Schriftarten über Registry-Einstellungen (sicherer Ansatz)
         """
@@ -91,7 +91,7 @@ class SafeOfficeConfigurator:
             results['excel'] = excel_results
             
             # Outlook-Schriftart-Einstellungen
-            outlook_results = self._configure_outlook_font_registry(font_name, font_size_word)
+            outlook_results = self._configure_outlook_font_registry(font_name, font_size_outlook)
             results['outlook'] = outlook_results
             
         except Exception as e:
@@ -153,7 +153,7 @@ class SafeOfficeConfigurator:
             self.logger.error(f"Fehler bei Excel-Registry-Konfiguration: {e}")
             return False
     
-    def _configure_outlook_font_registry(self, font_name, font_size=11):
+    def _configure_outlook_font_registry(self, font_name, font_size=12):
         """Konfiguriert Outlook-Schriftarten über Registry"""
         try:
             outlook_versions = ['16.0', '15.0', '14.0']
@@ -213,7 +213,7 @@ class SafeOfficeConfigurator:
         
         return status
     
-    def safe_font_setup(self, font_name="Aptos", font_size_word=11, font_size_excel=10):
+    def safe_font_setup(self, font_name="Aptos", font_size_word=11, font_size_excel=10, font_size_outlook=12):
         """
         Komplette sichere Schriftart-Konfiguration:
         1. Templates wiederherstellen falls beschädigt
@@ -238,7 +238,7 @@ class SafeOfficeConfigurator:
             results['template_recovery'] = {k: True for k in self.target_paths.keys()}
         
         # 3. Registry-basierte Schriftart-Konfiguration
-        font_results = self.configure_fonts_via_registry(font_name, font_size_word, font_size_excel)
+        font_results = self.configure_fonts_via_registry(font_name, font_size_word, font_size_excel, font_size_outlook)
         results['font_configuration'] = font_results
         
         # 4. Gesamtergebnis bewerten
@@ -249,7 +249,7 @@ class SafeOfficeConfigurator:
         
         return results
     
-    def configure_safe_office_defaults(self, font_name="Aptos", font_size_word=11, font_size_excel=10):
+    def configure_safe_office_defaults(self, font_name="Aptos", font_size_word=11, font_size_excel=10, font_size_outlook=12):
         """
         Sichere Office-Standardkonfiguration mit Schriftart-Einstellungen
         
@@ -261,7 +261,7 @@ class SafeOfficeConfigurator:
         Returns:
             dict: Ergebnisse der Konfiguration
         """
-        self.logger.info(f"🔧 Konfiguriere Office mit {font_name} (Word: {font_size_word}pt, Excel: {font_size_excel}pt)")
+        self.logger.info(f"🔧 Konfiguriere Office mit {font_name} (Word: {font_size_word}pt, Outlook: {font_size_outlook}pt, Excel: {font_size_excel}pt)")
         
         results = {
             'template_status': {},
@@ -285,7 +285,7 @@ class SafeOfficeConfigurator:
                 results['template_recovery'] = {k: True for k in self.target_paths.keys()}
             
             # 3. Registry-basierte Schriftart-Konfiguration
-            font_results = self.configure_fonts_via_registry(font_name, font_size_word, font_size_excel)
+            font_results = self.configure_fonts_via_registry(font_name, font_size_word, font_size_excel, font_size_outlook)
             results['font_configuration'] = font_results
             
             # 4. Gesamtergebnis bewerten

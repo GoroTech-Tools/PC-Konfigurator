@@ -332,6 +332,7 @@ class PCKonfiguratorGUI:
                 "enable_office_warmup": bool(self.enable_office_warmup.get()),
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
+                "font_size_outlook": int(self.font_size_outlook.get()),
                 "font_size_excel": int(self.font_size_excel.get()),
                 "appearance_mode": self.appearance_mode.get(),
             },
@@ -387,6 +388,11 @@ class PCKonfiguratorGUI:
             self.font_size_excel.set(int(settings.get("font_size_excel", 10)))
         except Exception:
             self.font_size_excel.set(10)
+
+        try:
+            self.font_size_outlook.set(int(settings.get("font_size_outlook", 12)))
+        except Exception:
+            self.font_size_outlook.set(12)
 
         appearance_mode = str(settings.get("appearance_mode", "Hell")).strip()
         if appearance_mode in APPEARANCE_OPTIONS:
@@ -753,6 +759,7 @@ class PCKonfiguratorGUI:
         self.enable_office_warmup = tk.BooleanVar(value=False)
         self.font_name = tk.StringVar(value=default_font_family)
         self.font_size_word = tk.IntVar(value=11)
+        self.font_size_outlook = tk.IntVar(value=12)
         self.font_size_excel = tk.IntVar(value=10)
         self.appearance_mode = tk.StringVar(value="Hell")
         self.run_controller: ExecutionRunController | None = None
@@ -792,6 +799,7 @@ class PCKonfiguratorGUI:
         self.enable_office_warmup.trace_add("write", self._on_setting_changed)
         self.font_name.trace_add("write", self._on_setting_changed)
         self.font_size_word.trace_add("write", self._on_setting_changed)
+        self.font_size_outlook.trace_add("write", self._on_setting_changed)
         self.font_size_excel.trace_add("write", self._on_setting_changed)
 
         self.apply_ui_mode()
@@ -929,6 +937,7 @@ class PCKonfiguratorGUI:
             enable_office_warmup_var=self.enable_office_warmup,
             font_name_var=self.font_name,
             font_size_word_var=self.font_size_word,
+            font_size_outlook_var=self.font_size_outlook,
             font_size_excel_var=self.font_size_excel,
             available_font_families=self.available_font_families,
             on_continue_to_execution=lambda: self._switch_to_tab(TAB_EXECUTION),
@@ -1067,6 +1076,7 @@ class PCKonfiguratorGUI:
             safe_office_config=self.safe_office_config,
             get_office_font_name=self._get_office_font_name,
             get_font_size_word=self.font_size_word.get,
+            get_font_size_outlook=self.font_size_outlook.get,
             get_font_size_excel=self.font_size_excel.get,
             advance_step=self._advance_execution_step,
             append_status=self._append_execution_status,
@@ -1100,6 +1110,7 @@ class PCKonfiguratorGUI:
         return {
               'font_name': self._get_office_font_name(),
             'font_size_word': self.font_size_word.get(),
+            'font_size_outlook': self.font_size_outlook.get(),
             'font_size_excel': self.font_size_excel.get(),
                         'enable_com_sync': bool(self.enable_com_sync.get()),
                         'enable_office_preclose': bool(self.enable_office_preclose.get()),
@@ -1123,10 +1134,11 @@ class PCKonfiguratorGUI:
                 'path': path,
                 'font': self._get_office_font_name(),
                 'font_size_word': self.font_size_word.get(),
+                'font_size_outlook': self.font_size_outlook.get(),
                 'font_size_excel': self.font_size_excel.get(),
             }
         except Exception:
-            return {'path': str(Path.home() / "Documents"), 'font': 'Aptos', 'font_size_word': 11, 'font_size_excel': 10}
+            return {'path': str(Path.home() / "Documents"), 'font': 'Aptos', 'font_size_word': 11, 'font_size_outlook': 12, 'font_size_excel': 10}
         
     def create_logs_tab(self):
         """Logs-Tab erstellen"""
@@ -1237,6 +1249,7 @@ class PCKonfiguratorGUI:
             font_size_word=self.font_size_word.get(),
             font_size_excel=self.font_size_excel.get(),
             office_font_name=self._get_office_font_name(),
+            font_size_outlook=self.font_size_outlook.get(),
             install_all_fonts=self._install_all_fonts,
             safe_office_config=self.safe_office_config,
             on_refresh_status=self.check_safe_template_status,
@@ -1264,6 +1277,7 @@ class PCKonfiguratorGUI:
             font_size_word=self.font_size_word.get(),
             font_size_excel=self.font_size_excel.get(),
             template_manager=self.template_manager,
+            font_size_outlook=self.font_size_outlook.get(),
             on_refresh_status=self.check_safe_template_status,
         )
     

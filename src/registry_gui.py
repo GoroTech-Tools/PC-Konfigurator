@@ -23,7 +23,7 @@ class RegistryExplanationWindow:
         self.parent = parent
         # config_callback: () -> dict mit 'path', 'font', 'font_size_word', 'font_size_excel'
         # path_callback: Legacy-Support (nur Pfad als str)
-        self.config_callback = config_callback or (lambda: {'path': path_callback(), 'font': '', 'font_size_word': 11, 'font_size_excel': 10} if path_callback else None)
+        self.config_callback = config_callback or (lambda: {'path': path_callback(), 'font': '', 'font_size_word': 11, 'font_size_outlook': 12, 'font_size_excel': 10} if path_callback else None)
         self.registry_explainer = RegistryExplainer()
         self.window = None
         self.tabview = None
@@ -232,6 +232,7 @@ class RegistryExplanationWindow:
         current_path = cfg.get('path', '')
         current_font = cfg.get('font', '')
         current_size_word = cfg.get('font_size_word', '')
+        current_size_outlook = cfg.get('font_size_outlook', 12)
         current_size_excel = cfg.get('font_size_excel', '')
 
         datei_vorlagen_path_keys = {
@@ -269,8 +270,8 @@ class RegistryExplanationWindow:
                 display_value = current_font
             elif setting_name in font_size_word_keys and current_size_word:
                 display_value = f"{current_size_word} pt"
-            elif setting_name in outlook_font_size_keys and current_size_word:
-                display_value = f"{current_size_word} pt"
+            elif setting_name in outlook_font_size_keys and current_size_outlook:
+                display_value = f"{current_size_outlook} pt"
             elif setting_name in font_size_excel_keys and current_size_excel:
                 display_value = f"{current_size_excel} pt"
             elif setting_name in datei_vorlagen_path_keys and current_path:

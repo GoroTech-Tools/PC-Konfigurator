@@ -145,7 +145,7 @@ class OfficeTemplateManager:
         except Exception:
             return False
 
-    def verify_user_template_fonts(self, font_name, font_size_word, font_size_excel):
+    def verify_user_template_fonts(self, font_name, font_size_word, font_size_excel, font_size_outlook=12):
         """Verifiziert, ob die Ziel-Templates im Benutzerprofil die erwarteten Font-Defaults tragen."""
         expected_font = str(font_name or '').strip()
         details = {}
@@ -168,7 +168,7 @@ class OfficeTemplateManager:
                 }
             else:
                 name_ok = self._normalize_font_name(info.get('font_name')) == self._normalize_font_name(expected_font)
-                size_ok = self._size_matches(info.get('font_size'), font_size_word)
+                size_ok = self._size_matches(info.get('font_size'), font_size_outlook)
                 details['normal_dotm'] = {
                     'ok': bool(name_ok and size_ok),
                     'reason': None if (name_ok and size_ok) else 'Abweichende Word-Defaults',
@@ -257,6 +257,7 @@ class OfficeTemplateManager:
             'expected': {
                 'font_name': expected_font,
                 'font_size_word': int(font_size_word),
+                'font_size_outlook': int(font_size_outlook),
                 'font_size_excel': int(font_size_excel),
             },
         }
@@ -335,7 +336,7 @@ class OfficeTemplateManager:
             self.logger.error(f"Fehler bei target_paths-Initialisierung: {e}")
             self.target_paths = {}
 
-    def _select_font_specific_templates(self, font_name, font_size_word, font_size_excel):
+    def _select_font_specific_templates(self, font_name, font_size_word, font_size_excel, font_size_outlook=12):
         """Verwendet vorbereitete, schrift- und größenbezogene Kopiervorlagen."""
         standard_dir = self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards"
         aliases = {
@@ -354,10 +355,11 @@ class OfficeTemplateManager:
                 return str(value)
 
         word_size = size_text(font_size_word)
+        outlook_size = size_text(font_size_outlook)
         excel_size = size_text(font_size_excel)
         candidates = {
             "normal_dotm": standard_dir / f"Normal-{template_font}-{word_size}.dotm",
-            "normal_email_dotm": standard_dir / f"NormalEmail-{template_font}-{word_size}.dotm",
+            "normal_email_dotm": standard_dir / f"NormalEmail-{template_font}-{outlook_size}.dotm",
             "mappe_xltx": standard_dir / f"Mappe-{template_font}-{excel_size}.xltx",
         }
         for key, candidate in candidates.items():
@@ -375,6 +377,7 @@ class OfficeTemplateManager:
         self,
         font_name=None,
         font_size_word=None,
+        font_size_outlook=None,
         font_size_excel=None,
         corporate_design="INN-tegrativ",
         skip_excel_com=False,
@@ -391,8 +394,9 @@ class OfficeTemplateManager:
         result = {}
         fn = font_name or 'Arial'
         fsw = font_size_word or 11
+        fso = font_size_outlook or 12
         fse = font_size_excel or 10
-        self._select_font_specific_templates(fn, fsw, fse)
+        self._select_font_specific_templates(fn, fsw, fse, fso)
 
         # Quelldateien niemals direkt verändern. Die ausgewählten Kopiervorlagen
         # werden in ein temporäres Arbeitsverzeichnis kopiert und ausschließlich
@@ -424,7 +428,7 @@ class OfficeTemplateManager:
                 prepared_matches = bool(
                     prepared_info
                     and self._normalize_font_name(prepared_info.get('font_name')) == self._normalize_font_name(fn)
-                    and self._size_matches(prepared_info.get('font_size'), fsw)
+                    and self._size_matches(prepared_info.get('font_size'), fso)
                 )
                 ok = (
                     True
@@ -478,12 +482,12 @@ class OfficeTemplateManager:
                 prepared_matches = bool(
                     prepared_info
                     and self._normalize_font_name(prepared_info.get('font_name')) == self._normalize_font_name(fn)
-                    and self._size_matches(prepared_info.get('font_size'), fsw)
+                    and self._size_matches(prepared_info.get('font_size'), fso)
                 )
                 ok = (
                     True
                     if prepared_matches
-                    else self.safe_processor.update_word_template_xml(email_source, fn, fsw)
+                    else self.safe_processor.update_word_template_xml(email_source, fn, fso)
                 )
                 if prepared_matches:
                     self.logger.info("Outlook-Kopiervorlage bytegenau übernommen: %s", email_source.name)
@@ -492,7 +496,7 @@ class OfficeTemplateManager:
                         "Vorbereitete Outlook-Kopiervorlage %s enthielt abweichende Defaults; XML-Korrektur auf %s %spt durchgeführt.",
                         email_source.name,
                         fn,
-                        fsw,
+                        fso,
                     )
                 if ok:
                     ok = self.safe_processor.apply_corporate_theme(
@@ -503,7 +507,7 @@ class OfficeTemplateManager:
                 if not ok and allow_com_fallback and not frozen:
                     self.logger.info("XML-Fallback auf COM für NormalEmail.dotm")
                     ok = self.safe_processor.update_word_template_safely(
-                        email_source, fn, fsw
+                        email_source, fn, fso
                     )
                 result['normal_email_dotm'] = ok
             except Exception as e:

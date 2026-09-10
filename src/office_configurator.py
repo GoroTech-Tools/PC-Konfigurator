@@ -203,6 +203,7 @@ class OfficeConfigurator:
             
             font_name = config.get("font_name", "Aptos")
             font_size_word = config.get("font_size_word", 11)
+            font_size_outlook = config.get("font_size_outlook", 12)
             font_size_excel = config.get("font_size_excel", 10)
 
             # Zielpfad aus GUI-Auswahl berechnen
@@ -227,7 +228,7 @@ class OfficeConfigurator:
                 return excel_result
 
             # Outlook konfigurieren (Registry + COM-Sync, soweit verfügbar)
-            outlook_result = self.configure_outlook(font_name, font_size_word, com_bootstrap=com_bootstrap)
+            outlook_result = self.configure_outlook(font_name, font_size_outlook, com_bootstrap=com_bootstrap)
             if not outlook_result["success"]:
                 return outlook_result
 
@@ -444,7 +445,7 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Excel-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
 
-    def configure_outlook(self, font_name="Aptos", font_size=11, com_bootstrap: dict | None = None):
+    def configure_outlook(self, font_name="Aptos", font_size=12, com_bootstrap: dict | None = None):
         """Outlook-spezifische Registry/COM-Einstellungen konfigurieren."""
         try:
             self.logger.info(f"Outlook konfigurieren: Schriftart={font_name}, Größe={font_size}")

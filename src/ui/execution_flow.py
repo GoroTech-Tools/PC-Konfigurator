@@ -12,6 +12,7 @@ def run_full_configuration_flow(
     safe_office_config,
     get_office_font_name,
     get_font_size_word,
+    get_font_size_outlook,
     get_font_size_excel,
     advance_step,
     append_status,
@@ -106,6 +107,7 @@ def run_full_configuration_flow(
         try:
             font_name = get_office_font_name()
             size_word = get_font_size_word()
+            size_outlook = get_font_size_outlook()
             size_excel = get_font_size_excel()
 
             template_names = {
@@ -118,6 +120,7 @@ def run_full_configuration_flow(
             mod_results = template_manager.update_font_in_templates(
                 font_name=font_name,
                 font_size_word=size_word,
+                font_size_outlook=size_outlook,
                 font_size_excel=size_excel,
                 corporate_design=office_settings.get("corporate_design", "INN-tegrativ"),
             )
@@ -159,6 +162,7 @@ def run_full_configuration_flow(
             verify_result = template_manager.verify_user_template_fonts(
                 font_name=font_name,
                 font_size_word=size_word,
+                font_size_outlook=size_outlook,
                 font_size_excel=size_excel,
             )
 
@@ -188,7 +192,7 @@ def run_full_configuration_flow(
 
             if registry_ok:
                 append_status(f"   ✅ Schriftart konfiguriert: {font_name}\n")
-                append_status(f"   ✅ Word/Outlook: {size_word}pt, Excel: {size_excel}pt\n")
+                append_status(f"   ✅ Word: {size_word}pt, Outlook: {size_outlook}pt, Excel: {size_excel}pt\n")
                 append_status("   ℹ️ Registry-Schriftart wurde bereits in Schritt 3 gesetzt (kein Doppel-Lauf)\n")
             else:
                 append_status("   ⚠️ Registry-Schriftart-Konfiguration teilweise fehlgeschlagen\n")

@@ -22,6 +22,7 @@ def build_configuration_tab(
     enable_office_warmup_var,
     font_name_var,
     font_size_word_var,
+    font_size_outlook_var,
     font_size_excel_var,
     available_font_families: list[str],
     on_continue_to_execution: Callable[[], None],
@@ -264,8 +265,11 @@ def build_configuration_tab(
     size_inner = ctk.CTkFrame(size_frame, fg_color="transparent")
     size_inner.pack(fill="x", padx=10, pady=(4, 8))
 
-    ctk.CTkLabel(size_inner, text="Word/Outlook:").pack(anchor="w", padx=2)
+    ctk.CTkLabel(size_inner, text="Word:").pack(anchor="w", padx=2)
     ctk.CTkOptionMenu(size_inner, variable=font_size_word_var, values=["10", "11", "12"]).pack(anchor="w", padx=2, pady=(2, 6))
+
+    ctk.CTkLabel(size_inner, text="Outlook:").pack(anchor="w", padx=2)
+    ctk.CTkOptionMenu(size_inner, variable=font_size_outlook_var, values=["10", "11", "12", "13", "14"]).pack(anchor="w", padx=2, pady=(2, 6))
 
     ctk.CTkLabel(size_inner, text="Excel:").pack(anchor="w", padx=2)
     ctk.CTkOptionMenu(size_inner, variable=font_size_excel_var, values=["10", "11", "12"]).pack(anchor="w", padx=2, pady=(2, 2))
