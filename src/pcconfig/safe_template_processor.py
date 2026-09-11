@@ -28,6 +28,21 @@ class SafeTemplateProcessor:
             self.logger.error("Vorlage nicht gefunden: %s", path)
             return False
         try:
+            # lxml erhält die vorhandenen Open-XML-Namespace-Präfixe stabiler
+            # als xml.etree.ElementTree. Das ist für Normal.dotm besonders
+            # wichtig, weil die Vorlage VBA-, Glossary- und Theme-Teile enthält.
+            # Der Fallback hält die Anwendung auch in schlanken EXE-Umgebungen
+            # ohne lxml funktionsfähig.
+            try:
+                from lxml import etree
+                use_lxml = True
+            except ImportError:
+                etree = ET
+                use_lxml = False
+                self.logger.warning(
+                    "lxml nicht verfügbar; Word-DOTM wird mit stdlib XML verarbeitet."
+                )
+
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir) / path.name
                 shutil.copy2(path, temp_path)
@@ -37,14 +52,38 @@ class SafeTemplateProcessor:
                     theme_name = next((n for n in names if n.lower() == "word/theme/theme1.xml"), None)
                     if not styles_name:
                         raise ValueError("word/styles.xml fehlt")
-                    styles_root = ET.fromstring(source.read(styles_name))
+                    styles_root = etree.fromstring(source.read(styles_name))
                     self._patch_word_styles(styles_root, font_name, font_size)
-                    styles_bytes = ET.tostring(styles_root, encoding="utf-8", xml_declaration=True)
+                    if use_lxml:
+                        styles_bytes = etree.tostring(
+                            styles_root,
+                            encoding="UTF-8",
+                            xml_declaration=True,
+                            standalone=True,
+                        )
+                    else:
+                        styles_bytes = etree.tostring(
+                            styles_root,
+                            encoding="utf-8",
+                            xml_declaration=True,
+                        )
                     theme_bytes = None
                     if theme_name:
-                        theme_root = ET.fromstring(source.read(theme_name))
+                        theme_root = etree.fromstring(source.read(theme_name))
                         self._patch_theme_fonts(theme_root, font_name)
-                        theme_bytes = ET.tostring(theme_root, encoding="utf-8", xml_declaration=True)
+                        if use_lxml:
+                            theme_bytes = etree.tostring(
+                                theme_root,
+                                encoding="UTF-8",
+                                xml_declaration=True,
+                                standalone=True,
+                            )
+                        else:
+                            theme_bytes = etree.tostring(
+                                theme_root,
+                                encoding="utf-8",
+                                xml_declaration=True,
+                            )
                     out_path = Path(temp_dir) / ("out" + path.suffix)
                     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as target:
                         for item in source.infolist():
@@ -54,6 +93,17 @@ class SafeTemplateProcessor:
                                 target.writestr(item, theme_bytes)
                             else:
                                 target.writestr(item, source.read(item.filename))
+
+                # Nicht nur CRC prüfen: Word-relevante XML-Teile müssen vor dem
+                # Austausch parsebar sein. Die Originaldatei bleibt bei jedem
+                # Fehler unangetastet.
+                with zipfile.ZipFile(out_path, "r") as validation_zip:
+                    if validation_zip.testzip() is not None:
+                        raise ValueError("Die fertig gepatchte Word-Vorlage ist beschädigt.")
+                    for required_name in ("[Content_Types].xml", "word/document.xml", styles_name):
+                        etree.fromstring(validation_zip.read(required_name))
+                    if theme_name:
+                        etree.fromstring(validation_zip.read(theme_name))
                 shutil.move(out_path, path)
             return True
         except Exception as exc:
@@ -154,6 +204,73 @@ class SafeTemplateProcessor:
         """XML zuerst, COM nur als optionaler Fallback."""
         return self.update_word_template_xml(template_path, font_name, font_size)
 
+    @staticmethod
+    def normalize_word_list_indents_xml(template_path) -> bool:
+        """Korrigiert nur vorhandene Word-Listen-Einzüge im bestehenden DOTM."""
+        path = Path(template_path)
+        if not path.exists():
+            return False
+        try:
+            from lxml import etree
+        except ImportError:
+            etree = ET
+
+        word_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        w = f"{{{word_ns}}}"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_path = Path(temp_dir) / path.name
+            with zipfile.ZipFile(path, "r") as source:
+                entries = [(item, source.read(item.filename)) for item in source.infolist()]
+
+            patched_numbering = False
+            patched_styles = False
+            patched_entries = []
+            for item, data in entries:
+                if item.filename.lower() == "word/numbering.xml":
+                    root = etree.fromstring(data)
+                    for level in root.iter(f"{w}lvl"):
+                        ilvl = int(level.get(f"{w}ilvl", "0"))
+                        ppr = level.find(f"{w}pPr")
+                        if ppr is None:
+                            ppr = etree.SubElement(level, f"{w}pPr")
+                        ind = ppr.find(f"{w}ind")
+                        if ind is None:
+                            ind = etree.SubElement(ppr, f"{w}ind")
+                        ind.set(f"{w}left", str(ilvl * 283))
+                        ind.set(f"{w}hanging", "283")
+                        patched_numbering = True
+                    data = etree.tostring(root, encoding="UTF-8", xml_declaration=True)
+                elif item.filename.lower() == "word/styles.xml":
+                    root = etree.fromstring(data)
+                    for style in root.findall(f"{w}style"):
+                        name = style.find(f"{w}name")
+                        style_name = (name.get(f"{w}val", "") if name is not None else "").lower()
+                        if "list paragraph" not in style_name and "listenabsatz" not in style_name:
+                            continue
+                        ppr = style.find(f"{w}pPr")
+                        if ppr is None:
+                            ppr = etree.SubElement(style, f"{w}pPr")
+                        ind = ppr.find(f"{w}ind")
+                        if ind is None:
+                            ind = etree.SubElement(ppr, f"{w}ind")
+                        ind.set(f"{w}left", "0")
+                        ind.set(f"{w}firstLine", "0")
+                        ind.attrib.pop(f"{w}hanging", None)
+                        patched_styles = True
+                    data = etree.tostring(root, encoding="UTF-8", xml_declaration=True)
+                patched_entries.append((item, data))
+
+            if not patched_numbering and not patched_styles:
+                return True
+            with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as target:
+                for item, data in patched_entries:
+                    target.writestr(item, data)
+            with zipfile.ZipFile(out_path, "r") as validation:
+                if validation.testzip() is not None:
+                    raise ValueError("Word-Vorlage nach Einzugspatch beschädigt")
+            os.replace(out_path, path)
+        return True
+
     def apply_corporate_theme(self, template_path, theme_path, target_entry, design_name=None):
         """Ersetzt die Theme-XML direkt und registriert das Farbschema für Office."""
         template_path = Path(template_path)
@@ -211,7 +328,7 @@ class SafeTemplateProcessor:
         for rpr in root.findall(".//" + w + "rPr"):
             rfonts = rpr.find(w + "rFonts")
             if rfonts is None:
-                rfonts = ET.SubElement(rpr, w + "rFonts")
+                rfonts = self._sub_element(rpr, w + "rFonts")
             for attr in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme", "cstheme"):
                 rfonts.attrib.pop(w + attr, None)
             for attr in ("ascii", "hAnsi", "eastAsia", "cs"):
@@ -219,7 +336,7 @@ class SafeTemplateProcessor:
             for tag in ("sz", "szCs"):
                 size = rpr.find(w + tag)
                 if size is None:
-                    size = ET.SubElement(rpr, w + tag)
+                    size = self._sub_element(rpr, w + tag)
                 size.set(w + "val", str(int(font_size) * 2))
 
     def _patch_theme_fonts(self, root, font_name):
@@ -229,9 +346,16 @@ class SafeTemplateProcessor:
             if section is not None:
                 latin = section.find(a + "latin")
                 if latin is None:
-                    latin = ET.SubElement(section, a + "latin")
+                    latin = self._sub_element(section, a + "latin")
                 latin.set("typeface", str(font_name))
                 latin.attrib.pop("panose", None)
+
+    @staticmethod
+    def _sub_element(parent, tag):
+        """Erzeugt ein XML-Kind passend zum verwendeten XML-Backend."""
+        if hasattr(parent, "makeelement"):
+            return parent.makeelement(tag, {})
+        return ET.SubElement(parent, tag)
 
     def _patch_theme_fonts_etree(self, root, font_name, etree):
         a = "{" + self.DRAWING_NS + "}"

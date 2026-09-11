@@ -112,11 +112,16 @@ class FontInstaller:
                 }
 
             installed_fonts = []
+            skipped_fonts = []
             failed_fonts = []
             installed_paths = []
             fonts_user_dir = self._ensure_user_fonts_dir()
 
             for font_file in family_files:
+                target_file = fonts_user_dir / font_file.name
+                if target_file.exists():
+                    skipped_fonts.append(font_file.name)
+                    continue
                 if self._install_single_font(font_file):
                     installed_fonts.append(font_file.name)
                     installed_paths.append(str(fonts_user_dir / font_file.name))
@@ -126,9 +131,10 @@ class FontInstaller:
             self._refresh_font_cache()
 
             return {
-                "success": len(installed_fonts) > 0 and not failed_fonts,
+                "success": bool(installed_fonts or skipped_fonts) and not failed_fonts,
                 "family_name": normalized_family,
                 "installed_fonts": installed_fonts,
+                "skipped_fonts": skipped_fonts,
                 "failed_fonts": failed_fonts,
                 "installed_paths": installed_paths,
                 "total_processed": len(family_files)
@@ -175,13 +181,12 @@ class FontInstaller:
                 try:
                     target_file = fonts_user_dir / font_file.name
                     already_installed = target_file.exists()
+                    if already_installed:
+                        skipped_fonts.append(font_file.name)
+                        continue
                     success = self._install_single_font(font_file)
                     if success:
-                        if already_installed:
-                            if font_file.name not in refreshed_fonts:
-                                refreshed_fonts.append(font_file.name)
-                        else:
-                            installed_fonts.append(font_file.name)
+                        installed_fonts.append(font_file.name)
                         self.logger.info(f"Font verarbeitet: {font_file.name}")
                     else:
                         failed_fonts.append(font_file.name)
@@ -191,6 +196,13 @@ class FontInstaller:
                     failed_fonts.append(font_file.name)
                     self.logger.error(f"Fehler bei Font-Installation {font_file.name}: {e}")
             
+            self.logger.info(
+                "Fonts verarbeitet: %d von %d neu hinzugefügt, %d bereits vorhanden",
+                len(installed_fonts),
+                len(font_files),
+                len(skipped_fonts),
+            )
+
             # System nur bei echten Neuinstallationen benachrichtigen
             if installed_fonts:
                 self._refresh_font_cache()

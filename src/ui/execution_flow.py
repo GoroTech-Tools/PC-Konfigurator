@@ -33,14 +33,13 @@ def run_full_configuration_flow(
         font_result = install_all_fonts()
         if font_result.get("success"):
             installed_count = len(font_result.get("installed_fonts", []))
-            refreshed_count = len(font_result.get("refreshed_fonts", []))
             skipped_count = len(font_result.get("skipped_fonts", []))
-            if installed_count > 0:
-                append_status(f"   Erfolg: {installed_count} Schrift-Datei(en) neu im Benutzerprofil installiert\n")
-            elif refreshed_count > 0:
-                append_status(f"   Erfolg: {refreshed_count} Schrift-Datei(en) im Benutzerprofil neu registriert\n")
-            elif skipped_count > 0:
-                append_status("   Alle Schriften sind bereits vorhanden – keine neuen Installationen erforderlich.\n")
+            total_count = font_result.get("total_processed", installed_count + skipped_count)
+            if total_count > 0:
+                append_status(
+                    f"   Erfolg: {installed_count} von {total_count} Schrift-Datei(en) neu hinzugefügt"
+                    f" ({skipped_count} bereits vorhanden)\n"
+                )
             else:
                 append_status("   Keine Schrift-Dateien im Fonts-Ordner gefunden.\n")
         else:
@@ -232,11 +231,13 @@ def run_office_configuration_flow(
         font_result = install_all_fonts()
         if font_result.get("success"):
             installed_count = len(font_result.get("installed_fonts", []))
-            refreshed_count = len(font_result.get("refreshed_fonts", []))
-            if installed_count > 0:
-                append_status(f"Alle Schriften installiert: {installed_count} Dateien im Benutzerprofil\n")
-            elif refreshed_count > 0:
-                append_status(f"Alle Schriften neu registriert: {refreshed_count} Dateien im Benutzerprofil\n")
+            skipped_count = len(font_result.get("skipped_fonts", []))
+            total_count = font_result.get("total_processed", installed_count + skipped_count)
+            if total_count > 0:
+                append_status(
+                    f"{installed_count} von {total_count} Schrift-Datei(en) neu hinzugefügt"
+                    f" ({skipped_count} bereits vorhanden)\n"
+                )
             else:
                 append_status("Keine neuen Schrift-Dateien gefunden.\n")
         else:

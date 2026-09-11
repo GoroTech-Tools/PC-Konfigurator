@@ -850,7 +850,9 @@ class OfficeConfigurator:
         die UI diese Optionen nicht aus den einfachen DWORD-Keys unter
         HKCU\\...\\Word\\Options, sondern aus internen Word-Optionen. Die
         Satz-Großschreibung gehört dabei nicht zu ``word.Options``, sondern zum
-        separaten ``word.AutoCorrect``-Objekt.
+        separaten ``word.AutoCorrect``-Objekt. Das gilt auch für die Option
+        "Jede Tabellenzelle mit einem Großbuchstaben beginnen", deren
+        Registry-Namen je nach Office-Version variieren können.
         """
         try:
             import win32com.client  # type: ignore
@@ -866,29 +868,42 @@ class OfficeConfigurator:
                 autocorrect.CorrectSentenceCaps = False
                 autocorrect.CorrectCapsLock = False
 
+                # Office 2024 LTSC und neuere Builds übernehmen die
+                # Tabellenzellen-Autokorrektur nicht immer zuverlässig aus
+                # Word\Options. Die fachlich passende COM-Eigenschaft liegt
+                # am AutoCorrect-Objekt; ältere Word-Versionen können sie
+                # allerdings nicht anbieten.
+                try:
+                    autocorrect.CorrectTableCells = False
+                    self.logger.info(
+                        "Word-Autokorrektur deaktiviert: Tabellenzellen nicht automatisch großschreiben"
+                    )
+                except (AttributeError, TypeError, ValueError) as table_error:
+                    self.logger.info(
+                        "Word-Version unterstützt AutoCorrect.CorrectTableCells nicht; "
+                        "Registry-Aliase bleiben aktiv: %s",
+                        table_error,
+                    )
+
                 options.AutoFormatAsYouTypeApplyBulletedLists = False
                 options.AutoFormatAsYouTypeApplyNumberedLists = False
                 options.AutoFormatApplyBulletedLists = False
                 options.AutoFormatApplyLists = False
                 options.AutoFormatAsYouTypeFormatListItemBeginning = False
 
-                try:
-                    # Word speichert AutoCorrect-Änderungen sonst nur im
-                    # laufenden COM-Prozess. NormalTemplate explizit als
-                    # geändert markieren und mit SaveChanges beenden.
-                    word.NormalTemplate.Saved = False
-                    word.NormalTemplate.Save()
-                except Exception as save_error:
-                    self.logger.warning(f"NormalTemplate konnte nicht gespeichert werden: {save_error}")
-
                 self.logger.info(
                     "Word AutoFormat- und AutoKorrektur-Optionen zusätzlich per COM synchronisiert "
-                    "(CorrectSentenceCaps=False)"
+                    "(CorrectSentenceCaps=False; Normal.dotm wird nicht gespeichert)"
                 )
                 return None
             finally:
                 try:
-                    word.Quit(-1)
+                    # Die verwaltete Normal.dotm kann unmittelbar zuvor als
+                    # geprüfte Open-XML-Datei kopiert worden sein. Word darf
+                    # diese Datei hier nicht erneut serialisieren, da das die
+                    # Vorlage beschädigen und beim nächsten Start eine
+                    # Reparaturmeldung auslösen kann.
+                    word.Quit(0)
                 except Exception:
                     pass
         except Exception as e:

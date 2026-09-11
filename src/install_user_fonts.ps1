@@ -18,18 +18,26 @@ if (-Not (Test-Path -Path $targetFolder)) {
 }
 
 $fontFiles = Get-ChildItem -Path $SourceDirectory -Recurse -Include *.ttf,*.otf -File
+$newlyAddedFonts = @()
+$existingFonts = @()
+$failedFonts = @()
 
 foreach ($fontFile in $fontFiles) {
     $targetFontPath = Join-Path $targetFolder $fontFile.Name
     if (Test-Path -Path $targetFontPath) {
-        Write-Host "Die Schriftart '$($fontFile.Name)' ist bereits vorhanden und wird übersprungen." -ForegroundColor Yellow
+        $existingFonts += $fontFile.Name
         continue
     }
     try {
         Copy-Item -Path $fontFile.FullName -Destination $targetFontPath -Force
-        Write-Host "Schriftart installiert: $($fontFile.Name)" -ForegroundColor Green
+        $newlyAddedFonts += $fontFile.Name
     } catch {
+        $failedFonts += $fontFile.Name
         Write-Host "Fehler beim Installieren von $($fontFile.Name): $($_.Exception.Message)" -ForegroundColor Red
     }
 }
-Write-Host "Alle Schriftarten wurden verarbeitet." -ForegroundColor Green
+$totalFonts = $fontFiles.Count
+Write-Host "$($newlyAddedFonts.Count) von $totalFonts Schrift(en) neu hinzugefügt ($($existingFonts.Count) bereits vorhanden)." -ForegroundColor Green
+if ($failedFonts.Count -gt 0) {
+    Write-Host "$($failedFonts.Count) Schrift(en) konnten nicht installiert werden." -ForegroundColor Red
+}

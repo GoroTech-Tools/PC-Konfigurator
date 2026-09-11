@@ -1,16 +1,16 @@
 ﻿# Build-Informationen
 
 **Build:** PC-Konfigurator
-**Datum:** 2026-09-10T19:59:04
-**Version:** 3.3.50 (Release)
+**Datum:** 2026-09-11T18:11:33
+**Version:** 3.3.63 (Release)
 
 ## Build-Details
 
 - **Python-Version:** 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
 - **PyInstaller:** 6.17.0
 - **Build-Modus:** --onefile --windowed
-- **Build-Datum:** 2026-09-10T19:59:04
-- **Build-Version:** 3.3.50
+- **Build-Datum:** 2026-09-11T18:11:33
+- **Build-Version:** 3.3.63
 - **Plattform:** win32
 - **EXE-Name:** PC-Konfigurator.exe
 

@@ -91,12 +91,11 @@ from runtime.runtime_bundle import (
 # Schlüssel  = Anzeigename im Dropdown
 # Wert       = Schriftname, den Windows/Office intern kennt
 FONT_OPTIONS: dict[str, str] = {
-    "Arial":              "Arial",
     "Aptos":              "Aptos",
     "Aptos Narrow":       "Aptos Narrow",
+    "Arial":              "Arial",
     "Calibri":            "Calibri",
-    "Futura Cyrillic":    "Futura Cyrillic",
-    "Glacial Indifference": "Glacial Indifference",
+    "Futura":             "Futura",
     "Montserrat":         "Montserrat",
     "PT Sans":            "PT Sans",
     "PT Sans Narrow":     "PT Sans Narrow",
