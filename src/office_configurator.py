@@ -1030,7 +1030,9 @@ class OfficeConfigurator:
             self.logger.info("Windows-Einstellungen werden konfiguriert...")
 
             hidden_value = 1 if show_hidden_items else 2
-            show_super_hidden_value = 1 if show_hidden_items else 0
+            # Geschützte Systemdateien müssen unabhängig von der normalen
+            # Anzeige versteckter Elemente ausgeblendet bleiben.
+            show_super_hidden_value = 0
             self.logger.info(
                 "Explorer-Sichtbarkeit: ausgeblendete Elemente %s",
                 "anzeigen" if show_hidden_items else "ausblenden",
