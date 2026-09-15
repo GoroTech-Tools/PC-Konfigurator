@@ -87,7 +87,9 @@ def _restart_explorer_and_wait(timeout_seconds: float = 20.0) -> tuple[bool, str
     return False, "Taskleiste blieb unsichtbar (auch nach Shell-Recovery/userinit-Fallback)"
 
 
-def restart_windows_explorer_with_prompt(office_configurator, status_textbox) -> None:
+def restart_windows_explorer_with_prompt(
+    office_configurator, status_textbox, taskbar_alignment: str = "Center"
+) -> None:
     """Startet den Windows-Explorer mit Rückfrage neu."""
     confirm = messagebox.askyesno(
         "Windows-Explorer neu starten",
@@ -101,7 +103,9 @@ def restart_windows_explorer_with_prompt(office_configurator, status_textbox) ->
         return
 
     try:
-        windows_result = office_configurator.configure_windows_settings()
+        windows_result = office_configurator.configure_windows_settings(
+            taskbar_alignment=taskbar_alignment
+        )
         if not windows_result.get("success", False):
             status_textbox.insert(
                 "end",
