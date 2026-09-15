@@ -1,0 +1,106 @@
+name: Build and release PC-Konfigurator
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows application
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-build.txt
+
+      - name: Create build virtual environment
+        shell: pwsh
+        run: python -m venv .venv
+
+      - name: Install Python build dependencies
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+
+      - name: Install Markdown lint tooling
+        shell: pwsh
+        run: npm install --global markdownlint-cli
+
+      - name: Align build version with release tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v(\d+\.\d+\.\d+)$') {
+            throw "Ungültiger Release-Tag: $env:RELEASE_TAG"
+          }
+          $version = $Matches[1]
+          $path = 'src/build_info.py'
+          $content = Get-Content $path -Raw
+          $updated = $content -replace "'version': '\d+\.\d+\.\d+'", "'version': '$version'"
+          Set-Content $path $updated -Encoding UTF8
+          Write-Host "Build-Version auf $version gesetzt."
+
+      - name: Build and package application
+        shell: pwsh
+        run: .\build.ps1 -PreferredVenv .venv -NoVersionBump
+
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: PC-Konfigurator-${{ github.sha }}
+          path: |
+            dist/PC-Konfigurator-v*/
+            release/RELEASE_NOTES_v*.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: PC-Konfigurator-release-${{ github.sha }}
+          path: release/PC-Konfigurator-v*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download release ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: PC-Konfigurator-release-${{ github.sha }}
+          path: release
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: PC-Konfigurator ${{ github.ref_name }}
+          files: release/PC-Konfigurator-v*.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true

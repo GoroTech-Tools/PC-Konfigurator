@@ -86,13 +86,25 @@ def build_execution_tab(
     _on_button_frame_resize()
     button_frame.bind("<Configure>", _on_button_frame_resize, add="+")
 
-    ctk.CTkButton(
-        actions_body,
-        text="Windows-Explorer neu starten",
-        command=on_restart_explorer,
-        width=260,
-        height=34,
-    ).pack(anchor="w", padx=4, pady=(0, 2))
+    if advanced_mode:
+        explorer_restart_frame = ctk.CTkFrame(actions_body, fg_color="transparent")
+        explorer_restart_frame.pack(fill="x", padx=4, pady=(0, 2))
+
+        ctk.CTkButton(
+            explorer_restart_frame,
+            text="Windows-Explorer neu starten",
+            command=on_restart_explorer,
+            width=260,
+            height=34,
+        ).pack(anchor="w", pady=(0, 2))
+
+        ctk.CTkLabel(
+            explorer_restart_frame,
+            text="Nur erforderlich, wenn etwas nicht wie erwartet/gewünscht umgesetzt worden ist.",
+            anchor="w",
+            justify="left",
+            wraplength=520,
+        ).pack(anchor="w", pady=(0, 2))
 
     _status_card, status_body = create_section_card(
         page,
