@@ -287,10 +287,41 @@ für die Beseitigung von MD-Fehlern bei Doku-Änderungen.
 
 Prüfroutinen:
 
-- Manuell: `tools/lint-markdown.ps1`
+- Manuell: `src/tools/lint-markdown.ps1`
 - Automatisch im Build: `build.ps1` (abschaltbar mit `-SkipMarkdownLint`)
-  - Stufe 1: Auto-Fix (`lint-markdown.ps1 -Fix`)
+  - Stufe 1: Auto-Fix (`src/tools/lint-markdown.ps1 -Fix`)
   - Stufe 2: Verifikation ohne Fix (Gate-Lauf)
+
+## Hilfs- und Prüfroutinen
+
+Die unterstützenden Projektroutinen liegen unter `src/tools/`:
+
+- `src/tools/lint-markdown.ps1` – führt Markdownlint für alle Markdown-Dateien im Repository aus.
+- `src/tools/check-office-registry.ps1` – prüft zentrale Office-Registry-Sollwerte einschließlich offener Validierungspunkte.
+
+### Markdown linten
+
+```powershell
+.\src\tools\lint-markdown.ps1
+```
+
+### Markdown linten und Auto-Fixes anwenden
+
+```powershell
+.\src\tools\lint-markdown.ps1 -Fix
+```
+
+### Office-Registry-Sollwerte prüfen
+
+```powershell
+.\src\tools\check-office-registry.ps1
+```
+
+### Office-Registry-Sollwerte als JSON ausgeben
+
+```powershell
+.\src\tools\check-office-registry.ps1 -AsJson
+```
 
 ---
 

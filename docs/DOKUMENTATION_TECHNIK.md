@@ -69,7 +69,7 @@ der Office-Registry-Konfiguration des `PC-Konfigurator` hinterlegt.
 
 Der technische Prüfpfad dafür ist:
 
-- `tools/check-office-registry.ps1`
+- `src/tools/check-office-registry.ps1`
 - `docs/OFFENE_OFFICE_PUNKTE.md`
 
 Der fachliche Praxisnachweis auf einem realen Testclient bleibt als separate

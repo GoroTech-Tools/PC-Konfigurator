@@ -32,7 +32,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 
 Für laufende Prüfungen der offenen Office-Detailpunkte bitte kombiniert nutzen:
 
-- `tools/check-office-registry.ps1` für den Soll/Ist-Registry-Check
+- `src/tools/check-office-registry.ps1` für den Soll/Ist-Registry-Check
 - `docs/OFFENE_OFFICE_PUNKTE.md` für die strukturierte Testdokumentation
 
 Aktueller Status: Die beiden Word-Optionen („Jede Tabellenzeile mit einem Großbuchstaben beginnen" und „Bilder einfügen" = „Mit Text in Zeile") sind inzwischen als Standardkonfiguration im `PC-Konfigurator` hinterlegt; offen bleibt nur noch der praktische Nachweis auf einem Testclient.

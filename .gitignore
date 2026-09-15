@@ -23,9 +23,6 @@ release/PC-Konfigurator-v*/
 # IDE
 .vscode/
 
-# Lokale Arbeitsdateien
-tools/Checkliste_Firma.txt
-
 # Betriebssystem
 Thumbs.db
 desktop.ini

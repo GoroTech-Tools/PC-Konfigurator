@@ -28,7 +28,7 @@ Die folgenden Abschnitte bleiben als Nachweis-/Prüfvorlage für Testclienten er
 
 ## Vorgehen pro Testlauf
 
-1. `tools/check-office-registry.ps1` ausführen und Ergebnis sichern.
+1. `src/tools/check-office-registry.ps1` ausführen und Ergebnis sichern.
 2. Word starten und die beiden offenen Punkte in den Optionen prüfen.
 3. Einen kurzen Praxistest mit Einfügen/Tabellen durchführen.
 4. Ergebnis unten als neuen Eintrag ergänzen.
@@ -48,7 +48,7 @@ Die folgenden Abschnitte bleiben als Nachweis-/Prüfvorlage für Testclienten er
 
 #### Registry-Check
 
-- Script: `tools/check-office-registry.ps1`
+- Script: `src/tools/check-office-registry.ps1`
 - Ergebnis (Treffer):
 - Auffällige Werte:
 
@@ -122,7 +122,7 @@ Ein Punkt kann als „stabil verifiziert" markiert werden, wenn:
 
 #### Registry-Check
 
-- Script: `tools/check-office-registry.ps1 -OfficeVersions 16.0`
+- Script: `src/tools/check-office-registry.ps1 -OfficeVersions 16.0`
 - Ergebnis (Treffer): `0/9`
 - Auffällige Werte: alle geprüften Sollwerte nicht compliant (vor manuellem Office-Lauf)
 
@@ -162,7 +162,7 @@ Ein Punkt kann als „stabil verifiziert" markiert werden, wenn:
 
 #### Registry-Check
 
-- Script: `tools/check-office-registry.ps1`
+- Script: `src/tools/check-office-registry.ps1`
 - Ergebnis (Treffer):
 - Auffällige Werte:
 
@@ -202,7 +202,7 @@ Ein Punkt kann als „stabil verifiziert" markiert werden, wenn:
 
 #### Registry-Check
 
-- Script: `tools/check-office-registry.ps1`
+- Script: `src/tools/check-office-registry.ps1`
 - Ergebnis (Treffer):
 - Auffällige Werte:
 

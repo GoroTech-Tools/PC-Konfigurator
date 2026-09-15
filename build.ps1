@@ -303,7 +303,7 @@ foreach ($mdPath in @(
 if ($SkipMarkdownLint) {
     Write-Host "Markdownlint-Prüfung übersprungen (-SkipMarkdownLint)." -ForegroundColor Yellow
 } else {
-    $mdLintScript = Join-Path $PSScriptRoot 'tools\lint-markdown.ps1'
+    $mdLintScript = Join-Path $PSScriptRoot 'src\tools\lint-markdown.ps1'
     if (Test-Path $mdLintScript) {
         Write-Host "Markdownlint-Auto-Fix läuft..." -ForegroundColor Cyan
         & $mdLintScript -Fix -Quiet:$Quiet

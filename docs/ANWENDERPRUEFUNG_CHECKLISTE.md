@@ -55,7 +55,7 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 
 ### D1) Office-Detailcheck (Registry + GUI)
 
-- [ ] `tools/check-office-registry.ps1` ausgeführt
+- [ ] `src/tools/check-office-registry.ps1` ausgeführt
 - [ ] Registry-Sollwerte für Word/Excel plausibel (`IsCompliant = True`) geprüft
 - [ ] Offener Punkt in Word geprüft: „Jede Tabellenzeile mit einem Großbuchstaben beginnen" deaktiviert
 - [ ] Offener Punkt in Word geprüft: „Bilder einfügen = Mit Text in Zeile"
