@@ -1124,7 +1124,11 @@ class PCKonfiguratorGUI:
 
     def restart_windows_explorer(self):
         """Startet den Windows-Explorer mit Rückfrage neu."""
-        restart_windows_explorer_with_prompt(self.office_configurator, self.execution_status)
+        restart_windows_explorer_with_prompt(
+            self.office_configurator,
+            self.execution_status,
+            taskbar_alignment=self.taskbar_alignment.get(),
+        )
     
     def _get_office_settings_from_gui(self):
         """Office-Einstellungen aus GUI-Eingaben extrahieren"""
