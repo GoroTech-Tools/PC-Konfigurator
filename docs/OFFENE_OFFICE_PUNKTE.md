@@ -21,6 +21,14 @@ die nicht vollständig belastbar per Registry verifiziert sind.
 
 - `AutoFormatCapitalizeTableCells = 0`
 - `PictureInsertLayout = 1`
+- `PasteFormattingWithinDocument = 0` (ursprüngliche Formatierung beibehalten)
+- `PasteFormattingBetweenDocuments = 1` (Formatierung zusammenführen)
+- `PasteFormattingTwoDocumentsNoStyles = 3` (Zielformatvorlagen verwenden)
+- `PasteFormattingOtherApp = 2` (Nur den Text übernehmen)
+
+Die Schriftart- und Schriftgrößenanpassung der Word-Vorlage ist auf die
+Absatzformatvorlagen `Standard`/`Normal` und `Kein Leerraum`/`No Spacing`
+begrenzt. Überschrift- und Titel-Formatvorlagen bleiben unverändert.
 
 Die folgenden Abschnitte bleiben als Nachweis-/Prüfvorlage für Testclienten erhalten.
 

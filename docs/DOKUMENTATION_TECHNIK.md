@@ -58,6 +58,7 @@ PC-Konfigurator/
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung
    - Edge-Profile und E-Mail-Signaturen sichern/aktualisieren
+   - Word-Einfügeoptionen per Registry und optional per COM synchronisieren
 5. Ausführungsmodus:
    - `Einfach`: Vollständige Konfiguration
    - `Erweitert`: Vollständige Konfiguration oder Office-only
@@ -76,6 +77,17 @@ Der technische Prüfpfad dafür ist:
 
 Der fachliche Praxisnachweis auf einem realen Testclient bleibt als separate
 Abnahmeaufgabe bestehen.
+
+Die Word-Schriftart- und Schriftgrößenanpassung ist auf die Absatzformatvorlagen
+`Standard`/`Normal` und `Kein Leerraum`/`No Spacing` begrenzt. `docDefaults`,
+Überschrift- und Titel-Formatvorlagen sowie die Word-Theme-Schrift werden nicht
+global überschrieben.
+
+Die vier Word-Einfügewerte werden als DWORD gesetzt: `0` für ursprüngliche
+Formatierung innerhalb desselben Dokuments, `1` für Formatierung zusammenführen
+zwischen Dokumenten, `3` für Zielformatvorlagen bei Formatvorlagenkonflikten und
+`2` für Nur-Text aus anderen Programmen. Die verwendeten Werte erscheinen im
+Registry-Detailfenster.
 
 ```mermaid
 flowchart TD

@@ -1,6 +1,6 @@
 ﻿# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.75 (16.09.2026)
+**Version:** 3.3.76 (16.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -112,6 +112,17 @@ von Edge-Profilen und E-Mail-Signaturen als eigene Schritte angezeigt.
 
 - Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und „Bilder einfügen" = „Mit Text in Zeile" sind im `PC-Konfigurator` inzwischen als Standardkonfiguration hinterlegt.
 - Der praktische Nachweis auf einem echten Testclient wird weiterhin in `docs/OFFENE_OFFICE_PUNKTE.md` dokumentiert.
+
+**Word-Einfügeoptionen:**
+
+- innerhalb desselben Dokuments: **Ursprüngliche Formatierung beibehalten**
+- zwischen zwei Dokumenten: **Formatierung zusammenführen**
+- bei nicht übereinstimmenden Formatvorlagen: **Formatvorlagen des Ziels verwenden**
+- aus anderen Programmen: **Nur den Text übernehmen**
+
+Die Schriftart- und Schriftgrößenanpassung betrifft ausschließlich die
+Absatzformatvorlagen **Standard** und **Kein Leerraum**. Überschriften, Titel und
+andere Formatvorlagen werden nicht verändert.
 
 **Excel-Optimierungen:**
 

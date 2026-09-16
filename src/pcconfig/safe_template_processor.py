@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+from copy import deepcopy
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -69,21 +70,11 @@ class SafeTemplateProcessor:
                         )
                     theme_bytes = None
                     if theme_name:
-                        theme_root = etree.fromstring(source.read(theme_name))
-                        self._patch_theme_fonts(theme_root, font_name)
-                        if use_lxml:
-                            theme_bytes = etree.tostring(
-                                theme_root,
-                                encoding="UTF-8",
-                                xml_declaration=True,
-                                standalone=True,
-                            )
-                        else:
-                            theme_bytes = etree.tostring(
-                                theme_root,
-                                encoding="utf-8",
-                                xml_declaration=True,
-                            )
+                        # Die Word-Theme-Schrift bleibt unverändert. Eine
+                        # globale Theme-Anpassung würde auch Überschrift 1/2,
+                        # Titel usw. beeinflussen. Die gewünschte Schrift wird
+                        # ausschließlich in Standard/Kein Leerraum gesetzt.
+                        theme_bytes = source.read(theme_name)
                     out_path = Path(temp_dir) / ("out" + path.suffix)
                     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as target:
                         for item in source.infolist():
@@ -217,6 +208,11 @@ class SafeTemplateProcessor:
                 if not theme_entry:
                     return False
                 theme_bytes = source.read(theme_entry)
+            original_theme_bytes = None
+            if target_entry == "word/theme/theme1.xml":
+                with zipfile.ZipFile(template_path) as template_zip:
+                    if target_entry in template_zip.namelist():
+                        original_theme_bytes = template_zip.read(target_entry)
             if design_name:
                 theme_root = ET.fromstring(theme_bytes)
                 color_scheme = theme_root.find(
@@ -231,6 +227,9 @@ class SafeTemplateProcessor:
                         + ET.tostring(color_scheme, encoding="utf-8")
                     )
                     self.logger.info("Office-Farbschema installiert: %s", colors_path)
+                if original_theme_bytes is not None:
+                    self._preserve_word_theme_fonts(theme_root, ET.fromstring(original_theme_bytes))
+                    theme_bytes = ET.tostring(theme_root, encoding="utf-8")
             with tempfile.TemporaryDirectory() as temp_dir:
                 out_path = Path(temp_dir) / template_path.name
                 replaced = False
@@ -258,7 +257,20 @@ class SafeTemplateProcessor:
 
     def _patch_word_styles(self, root, font_name, font_size):
         w = "{" + self.WORD_NS + "}"
-        for rpr in root.findall(".//" + w + "rPr"):
+        target_style_ids = {"normal", "no spacing", "nospacing"}
+        target_style_names = {"standard", "normal", "kein leerraum", "no spacing"}
+        patched_styles = []
+        for style in root.findall(".//" + w + "style"):
+            if style.get(w + "type", "paragraph") != "paragraph":
+                continue
+            style_id = str(style.get(w + "styleId", "")).strip().casefold()
+            name_element = style.find(w + "name")
+            style_name = str(name_element.get(w + "val", "")) if name_element is not None else ""
+            if style_id not in target_style_ids and style_name.strip().casefold() not in target_style_names:
+                continue
+            rpr = style.find(w + "rPr")
+            if rpr is None:
+                rpr = self._sub_element(style, w + "rPr")
             rfonts = rpr.find(w + "rFonts")
             if rfonts is None:
                 rfonts = self._sub_element(rpr, w + "rFonts")
@@ -271,6 +283,20 @@ class SafeTemplateProcessor:
                 if size is None:
                     size = self._sub_element(rpr, w + tag)
                 size.set(w + "val", str(int(font_size) * 2))
+            patched_styles.append(style_id or style_name)
+        self.logger.info("Word-Formatvorlagen angepasst: %s", ", ".join(patched_styles) or "keine")
+
+    def _preserve_word_theme_fonts(self, target_root, original_root):
+        """Übernimmt die Original-Theme-Schriften und lässt nur Theme-Farben zu."""
+        a = "{" + self.DRAWING_NS + "}"
+        target_scheme = target_root.find(".//" + a + "themeElements/" + a + "fontScheme")
+        original_scheme = original_root.find(".//" + a + "themeElements/" + a + "fontScheme")
+        if target_scheme is None or original_scheme is None:
+            return
+        target_scheme.clear()
+        target_scheme.attrib.update(original_scheme.attrib)
+        for child in original_scheme:
+            target_scheme.append(deepcopy(child))
 
     def _patch_theme_fonts(self, root, font_name):
         a = "{" + self.DRAWING_NS + "}"

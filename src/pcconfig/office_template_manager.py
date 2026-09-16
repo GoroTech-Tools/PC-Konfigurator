@@ -30,19 +30,31 @@ class OfficeTemplateManager:
             root = ET.fromstring(styles_xml)
             ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 
-            # 1) docDefaults bevorzugen
-            rpr = root.find('.//w:docDefaults/w:rPrDefault/w:rPr', ns)
-
-            # 2) Fallback auf Normal/Standard-Stil oder Default-Paragraph-Style
-            if rpr is None:
-                for style in root.findall('.//w:style', ns):
-                    style_id = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}styleId', '')
-                    style_type = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', '')
-                    is_default = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}default', '') == '1'
-                    if style_id in {'Normal', 'Standard'} or (style_type == 'paragraph' and is_default):
-                        rpr = style.find('w:rPr', ns)
-                        if rpr is not None:
+            # Die Konfiguration ändert ausschließlich die Absatzformatvorlagen
+            # Standard/Normal und Kein Leerraum/No Spacing. Diese direkten
+            # Stildefinitionen müssen daher auch für die Verifikation Vorrang
+            # vor globalen docDefaults haben.
+            rpr = None
+            target_style_ids = {'normal', 'nospacing', 'no spacing'}
+            target_style_names = {'standard', 'normal', 'kein leerraum', 'no spacing'}
+            for style in root.findall('.//w:style', ns):
+                style_id = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}styleId', '')
+                style_type = style.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', '')
+                name_element = style.find('w:name', ns)
+                style_name = name_element.attrib.get('{' + ns['w'] + '}val', '') if name_element is not None else ''
+                if style_type == 'paragraph' and (
+                    style_id.strip().casefold() in target_style_ids
+                    or style_name.strip().casefold() in target_style_names
+                ):
+                    candidate = style.find('w:rPr', ns)
+                    if candidate is not None:
+                        rpr = candidate
+                        if style_id.strip().casefold() in {'normal', 'standard'} or style_name.strip().casefold() in {'standard', 'normal'}:
                             break
+
+            # Fallback für Vorlagen ohne explizite Ziel-Formatvorlagen.
+            if rpr is None:
+                rpr = root.find('.//w:docDefaults/w:rPrDefault/w:rPr', ns)
 
             if rpr is None:
                 return None

@@ -347,8 +347,13 @@ class OfficeConfigurator:
                 "CorrectTableCells": (0, "word_capitalize_table_cells_compat"),
                 "PictureInsertLayout": (1, "word_picture_insert_inline"),
                 "AutoFormatAsYouTypeReplaceQuotes": (1, "word_smart_quotes"),
+                # Word-Einfügeverhalten (WdPasteOptions):
+                # 0 = ursprüngliche Formatierung, 1 = Formatierung zusammenführen,
+                # 2 = nur Text, 3 = Zielformatvorlagen verwenden.
+                "PasteFormattingWithinDocument": (0, "word_paste_within_document"),
+                "PasteFormattingBetweenDocuments": (1, "word_paste_between_documents"),
+                "PasteFormattingTwoDocumentsNoStyles": (3, "word_paste_style_conflict"),
                 "PasteFormattingOtherApp": (2, "word_paste_other_app"),
-                "PasteFormattingTwoDocumentsNoStyles": (1, "word_paste_text_only_keep_lists"),
                 # Schriftart-Anzeige und Ersetzungen:
                 "Font": (font_name, "word_font_override"),
                 "Fontsubstitutes": ("", "word_font_substitutes"),
@@ -891,6 +896,25 @@ class OfficeConfigurator:
                 options.AutoFormatApplyBulletedLists = False
                 options.AutoFormatApplyLists = False
                 options.AutoFormatAsYouTypeFormatListItemBeginning = False
+
+                # Ergänzend per COM setzen, weil einzelne Word-Versionen die
+                # Paste-Registrywerte erst nach einer internen Synchronisierung
+                # in der erweiterten Oberfläche übernehmen.
+                paste_options = {
+                    "PasteFormatWithinDocument": 0,
+                    "PasteFormatBetweenDocuments": 1,
+                    "PasteFormatBetweenDocumentsNoStyles": 3,
+                    "PasteFormatFromOtherPrograms": 2,
+                }
+                for property_name, value in paste_options.items():
+                    try:
+                        setattr(options, property_name, value)
+                    except (AttributeError, TypeError, ValueError) as paste_error:
+                        self.logger.info(
+                            "Word-COM-Einfügeoption %s nicht verfügbar: %s",
+                            property_name,
+                            paste_error,
+                        )
 
                 self.logger.info(
                     "Word AutoFormat- und AutoKorrektur-Optionen zusätzlich per COM synchronisiert "
