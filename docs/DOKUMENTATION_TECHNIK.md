@@ -125,6 +125,11 @@ Besonderheiten:
 - Long-Path-Handling
 - optionale Teilfreigabe bei Template-Lücken via `PCONFIG_ALLOW_PARTIAL_TEMPLATES=1`
 
+Bei einem Release müssen lokal geänderte Dateien unter `data/Datei-Vorlagen/`
+vor dem Commit geprüft und ausdrücklich mit veröffentlicht werden. Der
+Release-Commit darf diese Vorlagen nicht stillschweigend auslassen; andere
+unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
+
 ## 5. CI/CD und Releases
 
 - Release-Artefakte liegen in `release/`

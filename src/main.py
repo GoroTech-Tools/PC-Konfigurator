@@ -32,6 +32,7 @@ from edge_profile_manager import EdgeProfileManager
 from logger_config import setup_logging
 from registry_gui import RegistryExplanationWindow
 from build_info import BUILD_INFO
+from user_paths import get_documents_directory
 from ui.state_store import GuiStateStore
 from ui.run_controller import ExecutionRunController
 from ui.start_tab import build_start_tab
@@ -1155,10 +1156,10 @@ class PCKonfiguratorGUI:
         """Gibt die aktuelle Konfiguration für die Registry-Info-Anzeige zurück."""
         try:
             if self.use_documents.get():
-                path = str(Path.home() / "Documents")
+                path = str(get_documents_directory())
             else:
                 drive = self.target_drive.get()
-                path = (drive + "\\") if drive and Path(drive + "\\").exists() else str(Path.home() / "Documents")
+                path = (drive + "\\") if drive and Path(drive + "\\").exists() else str(get_documents_directory())
             return {
                 'path': path,
                 'font': self._get_office_font_name(),
@@ -1167,7 +1168,7 @@ class PCKonfiguratorGUI:
                 'font_size_excel': self.font_size_excel.get(),
             }
         except Exception:
-            return {'path': str(Path.home() / "Documents"), 'font': 'Aptos', 'font_size_word': 11, 'font_size_outlook': 12, 'font_size_excel': 10}
+            return {'path': str(get_documents_directory()), 'font': 'Aptos', 'font_size_word': 11, 'font_size_outlook': 12, 'font_size_excel': 10}
         
     def create_logs_tab(self):
         """Logs-Tab erstellen"""

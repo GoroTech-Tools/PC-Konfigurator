@@ -12,6 +12,7 @@ import os
 import logging
 import shutil
 import time
+from user_paths import get_documents_directory
 import subprocess
 import re
 from pathlib import Path
@@ -209,7 +210,7 @@ class OfficeConfigurator:
             # Zielpfad aus GUI-Auswahl berechnen
             use_documents = config.get("use_documents_folder", False)
             if use_documents:
-                target_path = str(Path.home() / "Documents")
+                target_path = str(get_documents_directory())
             else:
                 drive = config.get("target_drive", "")
                 if drive:
@@ -1406,13 +1407,13 @@ class OfficeConfigurator:
     def _get_default_docs_path(self):
         """Standard-Dokumentenpfad ermitteln"""
         try:
-            # Z:\ bevorzugen (BFW), sonst Documents
+            # Z:\ bevorzugen (BFW), sonst den umgeleiteten Dokumente-Ordner
             if os.path.exists("Z:\\"):
                 return "Z:\\"
             else:
-                return str(Path.home() / "Documents")
+                return str(get_documents_directory())
         except Exception:
-            return str(Path.home() / "Documents")
+            return str(get_documents_directory())
     
     def _get_datei_vorlagen_path(self, target_path):
         """Datei-Vorlagen-Ordner-Pfad ermitteln (als Unterpfad des Zielverzeichnisses)"""
@@ -1427,7 +1428,7 @@ class OfficeConfigurator:
                 return str(datei_vorlagen.resolve())
         except Exception as e:
             self.logger.error(f"Fehler beim Ermitteln des Datei-Vorlagen-Pfads: {e}")
-            return str(Path.home() / "Documents" / "Datei-Vorlagen")
+            return str(get_documents_directory() / "Datei-Vorlagen")
     
     def _get_outlook_templates_dir(self):
         """Outlook-Vorlagenverzeichnis ermitteln"""

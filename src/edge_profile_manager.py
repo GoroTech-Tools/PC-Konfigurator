@@ -20,6 +20,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from user_paths import get_documents_directory
+
 
 class EdgeProfileManager:
     """Sichert und restauriert Edge-Profile und Outlook-Signaturen."""
@@ -61,10 +63,10 @@ class EdgeProfileManager:
     def target_backup_dir(cls, office_settings: dict) -> Path:
         """Ermittelt den portablen Backup-Ordner aus den GUI-Einstellungen."""
         if office_settings.get("use_documents_folder"):
-            base = Path.home() / "Documents"
+            base = get_documents_directory()
         else:
             drive = str(office_settings.get("target_drive", "")).strip()
-            base = Path(drive + "\\") if drive else Path.home() / "Documents"
+            base = Path(drive + "\\") if drive else get_documents_directory()
         return base / "Datei-Vorlagen" / cls.BACKUP_FOLDER_NAME
 
     @classmethod
