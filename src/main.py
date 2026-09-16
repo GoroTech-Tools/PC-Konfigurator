@@ -1055,6 +1055,19 @@ class PCKonfiguratorGUI:
     def execute_all_configurations(self):
         """Alle Konfigurationen ausführen"""
         try:
+            confirmed = messagebox.askyesno(
+                "Anwendungen geschlossen?",
+                (
+                    "Sind Microsoft Edge, Microsoft Outlook, Microsoft Excel und Microsoft Word "
+                    "vollständig beendet?\n\n"
+                    "Nur wenn alle genannten Anwendungen geschlossen sind, darf die Konfiguration gestartet werden."
+                ),
+                parent=self.root,
+                default="no",
+            )
+            if not confirmed:
+                return
+
             self._switch_to_tab(TAB_EXECUTION)
             self._reset_execution_progress(
                 mode="full",

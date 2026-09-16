@@ -37,11 +37,14 @@ Für laufende Prüfungen der offenen Office-Detailpunkte bitte kombiniert nutzen
 
 Aktueller Status: Die beiden Word-Optionen („Jede Tabellenzeile mit einem Großbuchstaben beginnen" und „Bilder einfügen" = „Mit Text in Zeile") sind inzwischen als Standardkonfiguration im `PC-Konfigurator` hinterlegt; offen bleibt nur noch der praktische Nachweis auf einem Testclient.
 
-## Aktueller Betriebsstatus (Stand 2026-06-20)
+## Aktueller Betriebsstatus (Stand 2026-09-16)
 
 - Explorer-Neustart in der GUI wurde für verzögerte Shell-Reinitialisierung gehärtet (Taskleisten-Sichtbarkeitsprüfung + Recovery-Fallback).
 - Bekannte Einschränkung dokumentiert: Moderne Outlook-Compose-Oberfläche kann lokale Standardfont-Vorgaben trotz Registry-/Template-Konfiguration teilweise übersteuern.
 - Office-Konfiguration nutzt standardmäßig den robusten Registry/XML-Pfad; COM-Synchronisierung ist nur noch optional.
+- Edge-Profile und Outlook-Signaturen werden getrennt gesichert und im Laufstatus angezeigt.
+- Der Dokumente-Zielpfad berücksichtigt OneDrive-Umleitungen und verwendet ohne Umleitung den deutschen Ordner `Dokumente`.
+- Der vollständige Lauf verlangt vor dem Start eine Bestätigung, dass Edge und die Office-Anwendungen beendet wurden.
 
 ## Projektkontext
 

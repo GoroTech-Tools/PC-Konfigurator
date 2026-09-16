@@ -31,14 +31,18 @@ class ExecutionRunController:
         if mode == "office":
             return [
                 "Schriften installieren",
+                "Edge-Profile wiederherstellen",
                 "Office konfigurieren",
+                "Edge-Profile und E-Mail-Signaturen aktualisieren",
                 "Abschluss",
             ]
         return [
             "System-Check",
             "Schriften installieren",
+            "Edge-Profile wiederherstellen",
             "Office konfigurieren",
             "Templates verarbeiten",
+            "Edge-Profile und E-Mail-Signaturen aktualisieren",
             "Abschluss",
         ]
 

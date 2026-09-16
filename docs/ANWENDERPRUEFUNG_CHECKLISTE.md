@@ -35,6 +35,8 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Bezeichnungen in Tabs/Buttons sind verständlich
 - [ ] Reihenfolge „Konfiguration -> Ausführung -> Ergebnis" ist nachvollziehbar
 - [ ] Hinweise/Fehlermeldungen sind verständlich formuliert
+- [ ] Start-Tab zeigt die ausführliche Konfigurationsübersicht
+- [ ] Hinweis zum Beenden von Edge, Outlook, Excel und Word ist sichtbar
 
 ## C) Funktionsprüfung „Vollständige Konfiguration"
 
@@ -44,6 +46,8 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Office-Konfiguration wird ohne kritischen Fehler abgeschlossen
 - [ ] Template-Anpassung/Kopie wird durchgeführt
 - [ ] Abschlussmeldung ist konsistent mit dem realen Ergebnis
+- [ ] Bestätigungsdialog wird bei „Nein“ abgebrochen und bei „Ja“ fortgesetzt
+- [ ] Laufstatus zeigt Edge-Profil- und Signaturvorgänge
 
 ## D) Funktionsprüfung „Nur Office konfigurieren" (nur im erweiterten Modus)
 
@@ -88,6 +92,9 @@ Die PowerShell-Variante gilt bereits als stabiler Referenzpfad.
 - [ ] Test mit teilweise nicht lokal verfügbaren Dateien durchgeführt
 - [ ] Anwendung reagiert robust auf OneDrive-Sperren/Platzhalter
 - [ ] Fehlerbild ist reproduzierbar dokumentiert (falls aufgetreten)
+- [ ] Edge-Profile werden unter `Datei-Vorlagen\Edge-Profile` gesichert
+- [ ] E-Mail-Signaturen werden unter `Datei-Vorlagen\E-Mail-Signaturen` gesichert
+- [ ] OneDrive-umgeleitetes Dokumente-Verzeichnis wird als Ziel verwendet
 
 ## H) Abschlussbewertung
 

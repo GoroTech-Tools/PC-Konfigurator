@@ -22,6 +22,9 @@ Angleichung an den `AP1-Konfigurator`.
 - [x] Schaltfläche `Nur Office konfigurieren` ist in `Einfach` ausgeblendet und in `Erweitert` sichtbar
 - [x] Fortschrittsbalken und Schritt-Checkliste werden korrekt aktualisiert
 - [x] Statusfarben/-texte wechseln plausibel (Info/Success/Error)
+- [x] Start-Tab zeigt Konfigurationsübersicht und Hinweis zum Beenden von Edge/Office
+- [x] Vollständiger Lauf verlangt die Bestätigung „Anwendungen geschlossen?“
+- [x] Laufstatus zeigt Edge-/Signatur-Wiederherstellung und -Aktualisierung
 
 ## 3) Ergebnis- und Logverhalten
 
@@ -39,6 +42,8 @@ Angleichung an den `AP1-Konfigurator`.
 
 - [x] GUI-Settings werden gespeichert (z. B. Font, Größen, Zielpfad)
 - [x] Gespeicherte Werte werden beim Neustart korrekt geladen
+- [x] Edge-Profile werden im gewählten Datei-Vorlagen-Ziel gesichert
+- [x] E-Mail-Signaturen werden separat gesichert und vorhandene lokale Signaturen nicht überschrieben
 
 ## 6) Abschlussbewertung
 

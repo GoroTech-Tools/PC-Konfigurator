@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.74 (Build: 16.09.2026, Python 3.13.7)
+**Version:** 3.3.75 (Build: 16.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -67,6 +67,15 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
   - Automatische Nummerierung
   - Ersten Buchstaben groß schreiben
 
+  ### Edge-Profile und E-Mail-Signaturen
+
+  - Microsoft-Edge-Profile werden bei jedem vollständigen Lauf erkannt und im
+    gewählten `Datei-Vorlagen\Edge-Profile`-Ordner gesichert.
+  - Outlook-Signaturen werden getrennt im Ordner
+    `Datei-Vorlagen\E-Mail-Signaturen` gesichert.
+  - Vorhandene Backups werden beim nächsten Lauf wiederhergestellt; vorhandene
+    lokale Signaturen werden dabei nicht überschrieben.
+
 ### Schriftart-Management
 
 - Font-Familien werden dynamisch aus dem Ordner `data/Fonts` erkannt
@@ -125,6 +134,10 @@ PC-Konfigurator-v3.3.1/
 3. Gewünschte Schriftfamilie auswählen.
 4. `Vollständige Konfiguration starten` für die komplette Einrichtung wählen.
 5. Templates werden automatisch sicher angepasst und kopiert.
+
+Vor dem Start der vollständigen Konfiguration müssen Microsoft Edge sowie
+Microsoft Outlook, Excel und Word vollständig beendet werden. Der Konfigurator
+fragt dies vor dem Lauf ausdrücklich ab.
 
 ### Entwicklung und Build-System
 

@@ -130,7 +130,14 @@ class EdgeProfileManager:
         has_edge_backup = self._has_backup(backup_dir)
         has_signature_backup = self._has_files(backup_signatures)
         if not has_edge_backup and not has_signature_backup:
-            return {"success": True, "restored": False, "message": "Kein Edge-Backup vorhanden."}
+            return {
+                "success": True,
+                "restored": False,
+                "profiles": 0,
+                "signatures": False,
+                "signature_backup_available": False,
+                "message": "Kein Edge- oder Signatur-Backup vorhanden.",
+            }
 
         if has_edge_backup:
             self._close_edge()
@@ -167,6 +174,7 @@ class EdgeProfileManager:
                 "restored": bool(restored_profiles or restored_signatures),
                 "profiles": restored_profiles,
                 "signatures": restored_signatures,
+                "signature_backup_available": has_signature_backup,
                 "message": message,
             }
         except Exception as exc:
@@ -178,7 +186,13 @@ class EdgeProfileManager:
         profiles = self._profile_dirs(self.edge_user_data_dir)
         signatures_exist = self._has_files(self.signatures_dir)
         if not profiles and not signatures_exist:
-            return {"success": True, "backed_up": False, "message": "Keine Edge-Profile oder Signaturen gefunden."}
+            return {
+                "success": True,
+                "backed_up": False,
+                "profiles": 0,
+                "signatures": False,
+                "message": "Keine Edge-Profile oder E-Mail-Signaturen gefunden.",
+            }
 
         if profiles:
             self._close_edge()
@@ -224,7 +238,13 @@ class EdgeProfileManager:
                 parts.append("E-Mail-Signaturen")
             message = " und ".join(parts) + " gesichert."
             self.logger.info("%s Ziel: %s", message, backup_dir)
-            return {"success": True, "backed_up": True, "profiles": len(profiles), "message": message}
+            return {
+                "success": True,
+                "backed_up": True,
+                "profiles": len(profiles),
+                "signatures": signatures_exist,
+                "message": message,
+            }
         except Exception as exc:
             self.logger.error("Edge-Profile konnten nicht gesichert werden: %s", exc)
             shutil.rmtree(temporary_dir, ignore_errors=True)

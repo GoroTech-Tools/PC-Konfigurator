@@ -1,6 +1,6 @@
 ﻿# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.74 (16.09.2026)
+**Version:** 3.3.75 (16.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -84,6 +84,14 @@ damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wi
 - **Vollständige Konfiguration starten** – führt alle Anpassungen und Kopiervorgänge automatisiert aus
 - **Nur Office konfigurieren** – nur im **erweiterten Modus**, schnelle Registry-Optimierungen und Template-Handling nur für Office
 
+Vor der vollständigen Konfiguration müssen Microsoft Edge, Microsoft Outlook,
+Microsoft Excel und Microsoft Word vollständig beendet werden. Beim Klick auf
+**„Vollständige Konfiguration starten“** wird dies mit **Ja** bestätigt. Nur
+dann beginnt der Lauf.
+
+Im Laufstatus werden die Wiederherstellung sowie die Sicherung/Aktualisierung
+von Edge-Profilen und E-Mail-Signaturen als eigene Schritte angezeigt.
+
 ## Features im Detail
 
 ### Registry- und System-Einstellungen
@@ -138,6 +146,16 @@ damit der Startmenü-Modus bei jeder Windows-Anmeldung automatisch angewendet wi
 - Templates werden vor jeder Änderung automatisch gesichert (Backup/Restore)
 - Schriftarten werden systemweit und Office-sicher gesetzt
 - Keine Korruption der Originaldateien durch `SafeTemplateProcessor`
+
+### Edge-Profile und E-Mail-Signaturen
+
+Edge-Profile werden unter `Datei-Vorlagen\Edge-Profile` gesichert.
+Outlook-Signaturen werden separat unter `Datei-Vorlagen\E-Mail-Signaturen`
+abgelegt. Vorhandene lokale Signaturen werden bei der Wiederherstellung nicht
+überschrieben.
+
+Das Ziel „Dokumente“ berücksichtigt OneDrive-Umleitungen. Ohne Umleitung wird
+`C:\Users\<Benutzer>\Dokumente` verwendet.
 
 ## Datenstruktur
 

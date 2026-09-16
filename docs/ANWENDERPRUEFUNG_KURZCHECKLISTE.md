@@ -15,6 +15,8 @@ um früh sichtbar zu machen, ob grundlegende Nutzung stabil funktioniert.
 - [ ] Bedienmodus auf **Erweitert** gestellt und **Nur Office konfigurieren** einmal ausgeführt
 - [ ] Keine kritische Fehlermeldung / kein Absturz
 - [ ] Log-Eintrag wurde erzeugt
+- [ ] Vor dem vollständigen Lauf werden Edge, Outlook, Excel und Word beendet
+- [ ] Bestätigungsdialog mit „Nein“ bricht den Lauf ab
 
 ## Optional (wenn Zeit vorhanden)
 
@@ -24,6 +26,7 @@ um früh sichtbar zu machen, ob grundlegende Nutzung stabil funktioniert.
 - [ ] Ergebnis in Word/Excel/Outlook kurz plausibilisiert
 - [ ] Taskleiste erscheint nach Explorer-Neustart wieder innerhalb ~20 Sekunden
 - [ ] Outlook-Hinweis zur modernen Compose-Ansicht ist verständlich sichtbar
+- [ ] Edge-Profil- und Signatur-Schritte erscheinen im Laufstatus
 
 ## Kurzfeedback (Pflicht)
 

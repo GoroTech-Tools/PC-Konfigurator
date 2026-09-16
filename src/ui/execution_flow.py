@@ -48,16 +48,26 @@ def run_full_configuration_flow(
                 f"   Warnung: Font-Installation fehlgeschlagen ({font_result.get('error', 'Unbekannter Fehler')})\n"
             )
 
-        advance_step("3. Office-Konfiguration...\n")
-        root_update()
-
         office_settings = get_office_settings_from_gui()
 
+        advance_step("3. Edge-Profile und E-Mail-Signaturen wiederherstellen...")
+        root_update()
         edge_restore = edge_profile_manager.restore(office_settings)
         if edge_restore.get("restored"):
-            append_status(f"   ✅ Edge-Profile: {edge_restore.get('message')}\n")
+            append_status(f"   ✅ Edge-/Signatur-Backup: {edge_restore.get('message')}\n")
+        elif edge_restore.get("signature_backup_available"):
+            append_status("   ℹ️ Edge-/Signatur-Backup: Lokale E-Mail-Signaturen waren bereits vorhanden\n")
+        else:
+            append_status(f"   ℹ️ Edge-/Signatur-Backup: {edge_restore.get('message', 'Kein Backup vorhanden.')}\n")
+        if edge_restore.get("success") and edge_restore.get("signature_backup_available") and not edge_restore.get("signatures"):
+            append_status("   ℹ️ E-Mail-Signaturen: Vorhandene lokale Signaturen wurden beibehalten\n")
+        elif edge_restore.get("success") and not edge_restore.get("signature_backup_available"):
+            append_status("   ℹ️ E-Mail-Signaturen: Kein Backup vorhanden oder keine Wiederherstellung erforderlich\n")
         elif not edge_restore.get("success"):
             append_status(f"   ⚠️ Edge-Backup konnte nicht wiederhergestellt werden: {edge_restore.get('error', 'Unbekannter Fehler')}\n")
+
+        advance_step("4. Office-Konfiguration...\n")
+        root_update()
 
         if office_settings.get("enable_office_preclose"):
             append_status("   ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vorab beendet...\n")
@@ -107,7 +117,7 @@ def run_full_configuration_flow(
             append_status(f"   Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
             overall_success = False
 
-        advance_step("4. Office-Templates anpassen und kopieren...\n")
+        advance_step("5. Office-Templates anpassen und kopieren...\n")
         root_update()
 
         try:
@@ -208,13 +218,21 @@ def run_full_configuration_flow(
             append_status(f"   ❌ Template-Fehler: {template_error}\n")
             overall_success = False
 
+        advance_step("6. Edge-Profile und E-Mail-Signaturen sichern/aktualisieren...")
+        root_update()
         edge_backup = edge_profile_manager.backup(office_settings)
         if edge_backup.get("backed_up"):
-            append_status(f"   ✅ Edge-Profile: {edge_backup.get('message')}\n")
-        elif not edge_backup.get("success"):
+            append_status(f"   ✅ Edge-/Signatur-Backup: {edge_backup.get('message')}\n")
+            if edge_backup.get("signatures"):
+                append_status("   ✅ E-Mail-Signaturen: Sicherung aktualisiert\n")
+            else:
+                append_status("   ℹ️ E-Mail-Signaturen: Keine lokalen Signaturen vorhanden\n")
+        else:
+            append_status(f"   ℹ️ Edge-/Signatur-Backup: {edge_backup.get('message', 'Keine Daten gefunden.')}\n")
+        if not edge_backup.get("success"):
             append_status(f"   ⚠️ Edge-Backup konnte nicht erstellt werden: {edge_backup.get('error', 'Unbekannter Fehler')}\n")
 
-        advance_step("5. Abschluss...\n")
+        advance_step("7. Abschluss...\n")
         append_status("\nKonfiguration abgeschlossen!\n")
         add_registry_restart_notice()
         finish_progress(success=overall_success)
@@ -260,13 +278,21 @@ def run_office_configuration_flow(
             )
         root_update()
 
-        advance_step("2. Office konfigurieren...\n")
         office_settings = get_office_settings_from_gui()
+        advance_step("2. Edge-Profile und E-Mail-Signaturen wiederherstellen...")
         edge_restore = edge_profile_manager.restore(office_settings)
         if edge_restore.get("restored"):
-            append_status(f"Edge-Profile: {edge_restore.get('message')}\n")
-        elif not edge_restore.get("success"):
+            append_status(f"Edge-/Signatur-Backup: {edge_restore.get('message')}\n")
+        elif edge_restore.get("signature_backup_available"):
+            append_status("ℹ️ E-Mail-Signaturen: Vorhandene lokale Signaturen wurden beibehalten\n")
+        else:
+            append_status(f"ℹ️ Edge-/Signatur-Backup: {edge_restore.get('message', 'Kein Backup vorhanden.')}\n")
+            if edge_restore.get("success"):
+                append_status("ℹ️ E-Mail-Signaturen: Kein Backup vorhanden oder keine Wiederherstellung erforderlich\n")
+        if not edge_restore.get("success"):
             append_status(f"⚠️ Edge-Backup konnte nicht wiederhergestellt werden: {edge_restore.get('error', 'Unbekannter Fehler')}\n")
+
+        advance_step("3. Office konfigurieren...\n")
         result = office_configurator.configure_all_settings(office_settings, include_windows=False)
 
         if result["success"]:
@@ -287,14 +313,21 @@ def run_office_configuration_flow(
                 append_status(f"⚠️ Outlook-Template-Schritt: {result['outlook_warning']}\n")
             else:
                 append_status("✅ Outlook-Template-Schritt: Kopie und Synchronisation abgeschlossen\n")
+            advance_step("4. Edge-Profile und E-Mail-Signaturen sichern/aktualisieren...")
             edge_backup = edge_profile_manager.backup(office_settings)
             if edge_backup.get("backed_up"):
-                append_status(f"✅ Edge-Profile: {edge_backup.get('message')}\n")
-            elif not edge_backup.get("success"):
+                append_status(f"✅ Edge-/Signatur-Backup: {edge_backup.get('message')}\n")
+                if edge_backup.get("signatures"):
+                    append_status("✅ E-Mail-Signaturen: Sicherung aktualisiert\n")
+                else:
+                    append_status("ℹ️ E-Mail-Signaturen: Keine lokalen Signaturen vorhanden\n")
+            else:
+                append_status(f"ℹ️ Edge-/Signatur-Backup: {edge_backup.get('message', 'Keine Daten gefunden.')}\n")
+            if not edge_backup.get("success"):
                 append_status(f"⚠️ Edge-Backup konnte nicht erstellt werden: {edge_backup.get('error', 'Unbekannter Fehler')}\n")
             if result.get("outlook_modern_notice"):
                 append_status(f"ℹ️ Outlook modern: {result['outlook_modern_notice']}\n")
-            advance_step("3. Abschluss...\n")
+            advance_step("5. Abschluss...\n")
             append_status("Office-Konfiguration abgeschlossen!\n")
             add_registry_restart_notice()
             finish_progress(success=True)

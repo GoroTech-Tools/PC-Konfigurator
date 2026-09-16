@@ -54,8 +54,10 @@ PC-Konfigurator/
    - Explorer-Option „Immer Dateinamen und -inhalte suchen" aktivieren (`SearchFileNameAlways=1`)
    - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
+   - Edge- und Signatur-Backup wiederherstellen
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung
+   - Edge-Profile und E-Mail-Signaturen sichern/aktualisieren
 5. Ausführungsmodus:
    - `Einfach`: Vollständige Konfiguration
    - `Erweitert`: Vollständige Konfiguration oder Office-only
@@ -130,6 +132,24 @@ vor dem Commit geprüft und ausdrücklich mit veröffentlicht werden. Der
 Release-Commit darf diese Vorlagen nicht stillschweigend auslassen; andere
 unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
 
+### 4.4 Benutzerpfade und Edge-Backup
+
+- `src/user_paths.py` liest `User Shell Folders\Personal` und berücksichtigt
+   dadurch OneDrive-Umleitungen des Dokumente-Ordners.
+- Ohne Umleitung wird `C:\Users\<Benutzer>\Dokumente` verwendet.
+- `src/edge_profile_manager.py` verarbeitet Microsoft Edge unter
+   `%LOCALAPPDATA%\Microsoft\Edge\User Data`.
+- Outlook-Signaturen werden unter `%APPDATA%\Microsoft\Signatures` gelesen
+   und separat in `Datei-Vorlagen\E-Mail-Signaturen` abgelegt.
+- Lokale Signaturen werden bei der Wiederherstellung nur ergänzt, wenn noch
+   keine Signaturdateien vorhanden sind.
+- Cache- und temporäre Edge-Daten werden nicht gesichert.
+
+Bei einem Release müssen lokal geänderte Dateien unter `data/Datei-Vorlagen/`
+vor dem Commit geprüft und ausdrücklich mit veröffentlicht werden. Der
+Release-Commit darf diese Vorlagen nicht stillschweigend auslassen; andere
+unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
+
 ## 5. CI/CD und Releases
 
 - Release-Artefakte liegen in `release/`
@@ -175,6 +195,9 @@ Single Source of Truth zur Build-Version:
 2. EXE starten
 3. Konfiguration mit Standardwerten durchführen
 4. Logausgabe auf Fehler/Warnungen prüfen
+5. Prüfen, dass die Edge-/Signatur-Schritte im Laufstatus erscheinen
+6. Bestätigungsdialog beim vollständigen Lauf mit „Nein“ und anschließend mit
+   „Ja“ prüfen
 
 ### Behobene Fehler (v3.3.9)
 

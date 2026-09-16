@@ -46,12 +46,37 @@ def build_start_tab(
     _config_card, config_body = create_section_card(
         page,
         title="Konfiguration",
-        description="Schriftarten, Zielpfad und Template-Optionen finden Sie im Tab 'Konfiguration'.",
+        description="Im Tab 'Konfiguration' legen Sie alle Einstellungen für den vollständigen Konfigurationslauf fest.",
     )
     ctk.CTkLabel(
         config_body,
-        text="Tipp: Für einen schnellen Standardlauf reicht meist die Kontrolle von Schriftart und Zielpfad.",
+        text=(
+            "Dort können Sie unter anderem folgende Einstellungen anpassen:\n"
+            "• Zielverzeichnis für Datei-Vorlagen (umgeleitetes Dokumente-Verzeichnis oder Laufwerk)\n"
+            "• Corporate Design und Schriftart\n"
+            "• Schriftgrößen für Word, Outlook und Excel\n"
+            "• Anzeige ausgeblendeter Elemente und Taskleisten-Ausrichtung\n"
+            "• Im erweiterten Modus zusätzlich COM-Synchronisierung, Office-Preclose, Warm-up und Firmenmodus"
+        ),
         justify="left",
+        anchor="w",
+        wraplength=980,
+    ).pack(anchor="w", padx=4, pady=(0, 8))
+
+    _close_apps_card, close_apps_body = create_section_card(
+        page,
+        title="Wichtiger Hinweis vor der Ausführung",
+        description="Vor dem Start müssen alle Anwendungen geschlossen sein, auf deren Benutzerdateien der PC-Konfigurator zugreift.",
+    )
+    ctk.CTkLabel(
+        close_apps_body,
+        text=(
+            "Bitte beenden Sie Microsoft Edge, Microsoft Outlook, Microsoft Excel und Microsoft Word vollständig, "
+            "bevor Sie die vollständige Konfiguration starten. Dies verhindert gesperrte Profil-, Template- und Signaturdateien."
+        ),
+        justify="left",
+        anchor="w",
+        wraplength=980,
     ).pack(anchor="w", padx=4, pady=(0, 8))
 
     startmenu_mode_label = ctk.CTkLabel(
