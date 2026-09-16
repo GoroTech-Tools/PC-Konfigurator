@@ -70,14 +70,6 @@ Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und
 „Bilder einfügen" = „Mit Text in Zeile" sind inzwischen als Standardwerte in
 der Office-Registry-Konfiguration des `PC-Konfigurator` hinterlegt.
 
-Der technische Prüfpfad dafür ist:
-
-- `src/tools/check-office-registry.ps1`
-- `docs/OFFENE_OFFICE_PUNKTE.md`
-
-Der fachliche Praxisnachweis auf einem realen Testclient bleibt als separate
-Abnahmeaufgabe bestehen.
-
 Die Word-Schriftart- und Schriftgrößenanpassung ist auf die Absatzformatvorlagen
 `Standard`/`Normal` und `Kein Leerraum`/`No Spacing` begrenzt. `docDefaults`,
 Überschrift- und Titel-Formatvorlagen sowie die Word-Theme-Schrift werden nicht

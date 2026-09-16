@@ -111,7 +111,6 @@ von Edge-Profilen und E-Mail-Signaturen als eigene Schritte angezeigt.
 **Aktueller Status:**
 
 - Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und „Bilder einfügen" = „Mit Text in Zeile" sind im `PC-Konfigurator` inzwischen als Standardkonfiguration hinterlegt.
-- Der praktische Nachweis auf einem echten Testclient wird weiterhin in `docs/OFFENE_OFFICE_PUNKTE.md` dokumentiert.
 
 **Word-Einfügeoptionen:**
 
@@ -211,18 +210,6 @@ Ja, insbesondere bei Templates über die Backup-/Restore-Mechanik.
 
 **Funktioniert es auch ohne Office?**  
 Ja, die Schriftart-Installation und Windows-Einstellungen funktionieren unabhängig.
-
-## Anwenderprüfung der EXE (Feedback erwünscht)
-
-Für die aktuell laufende Praxisprüfung der EXE-Variante bitte folgende Checklisten
-verwenden:
-
-- `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` (vollständige Testdurchläufe)
-- `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` (Schnelltest 5–10 Minuten)
-- `docs/ANWENDERPRUEFUNG_AUSWERTUNG.md` (zentrale Zusammenfassung der Ergebnisse)
-
-Bitte Rückmeldungen strukturiert dokumentieren (Umgebung, Schritte, Ergebnis,
-Fehlerbild, Verbesserungsvorschläge).
 
 ---
 

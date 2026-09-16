@@ -292,9 +292,6 @@ Der Build-Prozess ergänzt automatisch:
 - `docs/DOKUMENTATION_TECHNIK.md` – Technische Dokumentation
 - `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
 - `docs/DOKUMENTATION_DIAGRAMME.md` – Mermaid-Quellen und SVG-Grafiken
-- `docs/ANWENDERPRUEFUNG_CHECKLISTE.md` – Vollständige EXE-Testcheckliste
-- `docs/ANWENDERPRUEFUNG_KURZCHECKLISTE.md` – 5–10-Minuten-Kurzcheck
-- `docs/ANWENDERPRUEFUNG_AUSWERTUNG.md` – Auswertungsvorlage für Testfeedback
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen
 
