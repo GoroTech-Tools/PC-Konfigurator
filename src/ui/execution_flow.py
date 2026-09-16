@@ -8,6 +8,7 @@ def run_full_configuration_flow(
     install_all_fonts,
     get_office_settings_from_gui,
     office_configurator,
+    edge_profile_manager,
     template_manager,
     safe_office_config,
     get_office_font_name,
@@ -51,6 +52,12 @@ def run_full_configuration_flow(
         root_update()
 
         office_settings = get_office_settings_from_gui()
+
+        edge_restore = edge_profile_manager.restore(office_settings)
+        if edge_restore.get("restored"):
+            append_status(f"   ✅ Edge-Profile: {edge_restore.get('message')}\n")
+        elif not edge_restore.get("success"):
+            append_status(f"   ⚠️ Edge-Backup konnte nicht wiederhergestellt werden: {edge_restore.get('error', 'Unbekannter Fehler')}\n")
 
         if office_settings.get("enable_office_preclose"):
             append_status("   ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vorab beendet...\n")
@@ -201,6 +208,12 @@ def run_full_configuration_flow(
             append_status(f"   ❌ Template-Fehler: {template_error}\n")
             overall_success = False
 
+        edge_backup = edge_profile_manager.backup(office_settings)
+        if edge_backup.get("backed_up"):
+            append_status(f"   ✅ Edge-Profile: {edge_backup.get('message')}\n")
+        elif not edge_backup.get("success"):
+            append_status(f"   ⚠️ Edge-Backup konnte nicht erstellt werden: {edge_backup.get('error', 'Unbekannter Fehler')}\n")
+
         advance_step("5. Abschluss...\n")
         append_status("\nKonfiguration abgeschlossen!\n")
         add_registry_restart_notice()
@@ -219,6 +232,7 @@ def run_office_configuration_flow(
     install_all_fonts,
     get_office_settings_from_gui,
     office_configurator,
+    edge_profile_manager,
     advance_step,
     append_status,
     add_registry_restart_notice,
@@ -248,6 +262,11 @@ def run_office_configuration_flow(
 
         advance_step("2. Office konfigurieren...\n")
         office_settings = get_office_settings_from_gui()
+        edge_restore = edge_profile_manager.restore(office_settings)
+        if edge_restore.get("restored"):
+            append_status(f"Edge-Profile: {edge_restore.get('message')}\n")
+        elif not edge_restore.get("success"):
+            append_status(f"⚠️ Edge-Backup konnte nicht wiederhergestellt werden: {edge_restore.get('error', 'Unbekannter Fehler')}\n")
         result = office_configurator.configure_all_settings(office_settings, include_windows=False)
 
         if result["success"]:
@@ -268,6 +287,11 @@ def run_office_configuration_flow(
                 append_status(f"⚠️ Outlook-Template-Schritt: {result['outlook_warning']}\n")
             else:
                 append_status("✅ Outlook-Template-Schritt: Kopie und Synchronisation abgeschlossen\n")
+            edge_backup = edge_profile_manager.backup(office_settings)
+            if edge_backup.get("backed_up"):
+                append_status(f"✅ Edge-Profile: {edge_backup.get('message')}\n")
+            elif not edge_backup.get("success"):
+                append_status(f"⚠️ Edge-Backup konnte nicht erstellt werden: {edge_backup.get('error', 'Unbekannter Fehler')}\n")
             if result.get("outlook_modern_notice"):
                 append_status(f"ℹ️ Outlook modern: {result['outlook_modern_notice']}\n")
             advance_step("3. Abschluss...\n")

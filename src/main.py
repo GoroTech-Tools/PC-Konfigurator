@@ -28,6 +28,7 @@ from pcconfig.office_template_manager import OfficeTemplateManager
 from safe_office_configurator import SafeOfficeConfigurator
 from file_sync import FileSync
 from font_installer import FontInstaller
+from edge_profile_manager import EdgeProfileManager
 from logger_config import setup_logging
 from registry_gui import RegistryExplanationWindow
 from build_info import BUILD_INFO
@@ -744,6 +745,7 @@ class PCKonfiguratorGUI:
         self.office_configurator = OfficeConfigurator()
         self.file_sync = FileSync()
         self.font_installer = FontInstaller()
+        self.edge_profile_manager = EdgeProfileManager()
         self.registry_gui = RegistryExplanationWindow(self.root, config_callback=self._get_registry_config)
         
         # Office Template Manager initialisieren
@@ -1093,6 +1095,7 @@ class PCKonfiguratorGUI:
             install_all_fonts=self._install_all_fonts,
             get_office_settings_from_gui=self._get_office_settings_from_gui,
             office_configurator=self.office_configurator,
+            edge_profile_manager=self.edge_profile_manager,
             template_manager=self.template_manager,
             safe_office_config=self.safe_office_config,
             get_office_font_name=self._get_office_font_name,
@@ -1112,6 +1115,7 @@ class PCKonfiguratorGUI:
             install_all_fonts=self._install_all_fonts,
             get_office_settings_from_gui=self._get_office_settings_from_gui,
             office_configurator=self.office_configurator,
+            edge_profile_manager=self.edge_profile_manager,
             advance_step=self._advance_execution_step,
             append_status=self._append_execution_status,
             add_registry_restart_notice=self._add_registry_restart_notice,

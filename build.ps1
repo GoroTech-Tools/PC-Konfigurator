@@ -103,7 +103,9 @@ function Copy-DirectoryRobust {
     $copied = 0
     $skipped = 0
 
-    foreach ($item in Get-ChildItem -Path $Source -Recurse -File -ErrorAction SilentlyContinue) {
+    # -Force ist wichtig für OneDrive-/Windows-Dateien mit Hidden-Attribut.
+    # Ohne -Force können vorhandene Vorlagen (z. B. Logos) still fehlen.
+    foreach ($item in Get-ChildItem -Path $Source -Recurse -File -Force -ErrorAction SilentlyContinue) {
         $relativePath = $item.FullName.Substring($sourceRoot.Length)
         $targetFile = Join-Path $Destination $relativePath
         $targetDir = Split-Path $targetFile -Parent
@@ -276,6 +278,47 @@ function Move-PreviousReleaseArtifacts {
 
         if ($archived) {
             Write-Host "Älteres Release archiviert: $($artifact.Name) -> release/_Archiv/" -ForegroundColor DarkGray
+        }
+    }
+}
+
+function Remove-OldDistVersions {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$DistDir,
+        [int]$KeepCount = 5
+    )
+
+    if (-not (Test-Path $DistDir)) {
+        return
+    }
+
+    $versionedDirectories = @(Get-ChildItem -LiteralPath $DistDir -Directory -Force -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -match '^PC-Konfigurator(?:-Portable)?-v(?<Version>\d+\.\d+\.\d+)$'
+    })
+    if ($versionedDirectories.Count -eq 0) {
+        return
+    }
+
+    $versions = @($versionedDirectories | ForEach-Object {
+        if ($_.Name -match '^PC-Konfigurator(?:-Portable)?-v(?<Version>\d+\.\d+\.\d+)$') {
+            [version]$matches.Version
+        }
+    } | Sort-Object -Descending -Unique)
+    $keptVersions = @($versions | Select-Object -First $KeepCount)
+
+    foreach ($directory in $versionedDirectories) {
+        if ($directory.Name -match '^PC-Konfigurator(?:-Portable)?-v(?<Version>\d+\.\d+\.\d+)$') {
+            $directoryVersion = [version]$matches.Version
+            if ($keptVersions -notcontains $directoryVersion) {
+                try {
+                    Remove-Item -LiteralPath $directory.FullName -Recurse -Force -ErrorAction Stop
+                    Write-Host "Älteres dist-Verzeichnis bereinigt: $($directory.Name)" -ForegroundColor DarkGray
+                } catch {
+                    Write-Host "Warnung: Älteres dist-Verzeichnis konnte nicht gelöscht werden: $($directory.Name) - $_" -ForegroundColor Yellow
+                }
+            }
         }
     }
 }
@@ -673,12 +716,15 @@ if ($buildDir) {
         }
 
         $zipPath = Join-Path $releaseDir "$($buildDir.Name).zip"
+
         try {
             if (Test-Path $zipPath) {
                 Remove-Item $zipPath -Force -ErrorAction Stop
             }
 
             # Explorer-kompatibles ZIP ohne Wrapper-Ordner erzeugen
+
+    Remove-OldDistVersions -DistDir $distRoot -KeepCount 5
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             $zipSourceItems = Join-Path $buildDir.FullName '*'
             Compress-Archive -Path $zipSourceItems -DestinationPath $zipPath -CompressionLevel Optimal -Force
