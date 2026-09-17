@@ -30,6 +30,8 @@ class ExecutionRunController:
     def _steps_for_mode(mode: str) -> list[str]:
         if mode == "office":
             return [
+                "Datei-Vorlagen zurücksetzen",
+                "Datei-Vorlagen synchronisieren",
                 "Schriften installieren",
                 "Edge-Profile wiederherstellen",
                 "Office konfigurieren",
@@ -38,6 +40,8 @@ class ExecutionRunController:
             ]
         return [
             "System-Check",
+            "Datei-Vorlagen zurücksetzen",
+            "Datei-Vorlagen synchronisieren",
             "Schriften installieren",
             "Edge-Profile wiederherstellen",
             "Office konfigurieren",

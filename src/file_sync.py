@@ -14,6 +14,9 @@ import subprocess
 import threading
 from datetime import datetime
 
+from security_hints import describe_filesystem_error
+from fs_retry import retry_on_oserror
+
 
 class FileSync:
     """Klasse zur Synchronisation von Dateien und Verzeichnissen"""
@@ -53,7 +56,7 @@ class FileSync:
                 return {"success": False, "error": f"Quellverzeichnis nicht gefunden: {source_path}"}
             
             # Zielverzeichnis erstellen falls nicht vorhanden
-            target_path.mkdir(parents=True, exist_ok=True)
+            retry_on_oserror(lambda: target_path.mkdir(parents=True, exist_ok=True))
             
             # Robocopy verwenden wenn verfügbar und gewünscht
             if use_robocopy and self._is_robocopy_available():
@@ -63,8 +66,36 @@ class FileSync:
                 
         except Exception as e:
             self.logger.error(f"Fehler bei Verzeichnis-Synchronisation: {e}")
-            return {"success": False, "error": str(e)}
-    
+            error_text = describe_filesystem_error(e) if isinstance(e, OSError) else str(e)
+            return {"success": False, "error": error_text}
+
+    def reset_directory_from_source(self, source_path, target_path):
+        """Löscht das Zielverzeichnis vollständig und ersetzt es 1:1 durch die Quelle."""
+        try:
+            source_path = Path(source_path)
+            target_path = Path(target_path)
+
+            if not source_path.exists():
+                return {"success": False, "error": f"Quellverzeichnis nicht gefunden: {source_path}"}
+
+            self.logger.info(f"Datei-Vorlagen-Reset gestartet: {target_path} wird durch {source_path} ersetzt")
+
+            if target_path.exists():
+                shutil.rmtree(target_path)
+
+            retry_on_oserror(lambda: target_path.parent.mkdir(parents=True, exist_ok=True))
+            retry_on_oserror(lambda: shutil.copytree(source_path, target_path))
+
+            self.logger.info(f"Datei-Vorlagen-Reset abgeschlossen: {target_path}")
+            return {
+                "success": True,
+                "message": f"Datei-Vorlagen wurden zurückgesetzt und aus {source_path.name} neu übernommen.",
+            }
+        except Exception as e:
+            self.logger.error(f"Fehler beim Datei-Vorlagen-Reset: {e}")
+            error_text = describe_filesystem_error(e) if isinstance(e, OSError) else str(e)
+            return {"success": False, "error": error_text}
+
     def cancel_synchronization(self):
         """Synchronisation abbrechen"""
         self.cancel_sync = True

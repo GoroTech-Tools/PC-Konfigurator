@@ -1,6 +1,6 @@
 ﻿# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.76 (16.09.2026)
+**Version:** 3.3.88 (17.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -39,6 +39,9 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 
 - Gewünschtes Ziel-Laufwerk wählen (z. B. `Z:` für BFW)
 - Schriftart und Schriftgröße für Word/Excel festlegen
+- Optional: **„Vorhandene Datei-Vorlagen löschen und durch aktuellen
+  Programmstand ersetzen“** aktivieren (siehe Abschnitt „Datei-Vorlagen-Bibliothek
+  und Zurücksetzen-Option“ weiter unten)
 - Über **„Weiter“** unten zum Tab `Ausführung` wechseln
 - Bedienmodus `Einfach`/`Erweitert` im Start-Tab wählen
 
@@ -159,13 +162,43 @@ andere Formatvorlagen werden nicht verändert.
 
 ### Edge-Profile und E-Mail-Signaturen
 
-Edge-Profile werden unter `Datei-Vorlagen\Edge-Profile` gesichert.
-Outlook-Signaturen werden separat unter `Datei-Vorlagen\E-Mail-Signaturen`
+Diese Sicherung/Wiederherstellung ist **standardmäßig deaktiviert**, da das
+ZIP-Komprimieren größerer Edge-Profile spürbar Zeit kosten kann. Über die
+Checkbox „Edge-Profile synchronisieren“ im Tab „Konfiguration“ lässt sie sich
+bei Bedarf aktivieren; ist sie deaktiviert, wird der entsprechende Schritt im
+Ablauf übersprungen (Statushinweis „nicht aktiviert“).
+
+Edge-Profile werden ZIP-komprimiert als `Datei-Vorlagen\Sonstiges\Edge-Profile.zip`
+gesichert (spart deutlich Speicherplatz gegenüber einem unkomprimierten Ordner).
+Outlook-Signaturen werden separat unter `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen`
 abgelegt. Vorhandene lokale Signaturen werden bei der Wiederherstellung nicht
 überschrieben.
 
 Das Ziel „Dokumente“ berücksichtigt OneDrive-Umleitungen. Ohne Umleitung wird
-`C:\Users\<Benutzer>\Dokumente` verwendet.
+`C:\Users\<Benutzer>\Dokumente` verwendet. Läuft OneDrive gerade aktiv im
+Hintergrund und synchronisiert, kann das Anlegen neuer Unterordner kurzzeitig
+fehlschlagen; die Anwendung wiederholt solche Schreibversuche automatisch mit
+steigender Wartezeit (bis zu ca. 15–20 Sekunden), bevor ein Fehler gemeldet wird.
+
+### Datei-Vorlagen-Bibliothek und Zurücksetzen-Option
+
+Bei jedem Lauf wird die mitgelieferte Vorlagenbibliothek (Standard-Templates,
+Corporate-Design-Dateien usw.) automatisch mit dem Zielordner `Datei-Vorlagen`
+abgeglichen. Dabei werden nur fehlende oder neuere Dateien ergänzt; bereits
+vorhandene bzw. neuere Dateien im Ziel bleiben unangetastet.
+
+Im Tab „Konfiguration“ steht zusätzlich die Option **„Vorhandene Datei-Vorlagen
+löschen und durch aktuellen Programmstand ersetzen“** zur Verfügung:
+
+- Standardmäßig deaktiviert.
+- Beim Aktivieren erscheint ein Bestätigungsdialog mit dem ausdrücklichen
+  Hinweis, dass dabei auch eigene, nachträglich hinzugefügte oder geänderte
+  Vorlagendateien im Zielordner unwiderruflich verloren gehen.
+- Wird die Aktion bestätigt, löscht der nächste Lauf den kompletten
+  `Datei-Vorlagen`-Ordner im Ziel und ersetzt ihn 1:1 durch den aktuellen
+  Programmstand.
+- Die Option gilt als einmalige Aktion und wird nach dem Lauf automatisch
+  wieder deaktiviert.
 
 ## Datenstruktur
 
@@ -210,6 +243,12 @@ Ja, insbesondere bei Templates über die Backup-/Restore-Mechanik.
 
 **Funktioniert es auch ohne Office?**  
 Ja, die Schriftart-Installation und Windows-Einstellungen funktionieren unabhängig.
+
+**Warum erscheinen manchmal Meldungen von Windows-Sicherheit während des Laufs?**  
+Windows-Sicherheit (z. B. der Kontrollierte Ordnerzugriff) kann beim Schreiben in
+Ordner wie „Dokumente" informative Meldungen anzeigen. Diese sind in der Regel
+harmlos: Der `PC-Konfigurator` wiederholt betroffene Schreibvorgänge automatisch
+und führt sie erfolgreich aus. Ein Eingreifen ist normalerweise nicht nötig.
 
 ---
 

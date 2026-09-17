@@ -1,8 +1,8 @@
-﻿# PC-Konfigurator
+# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.76 (Build: 16.09.2026, Python 3.13.7)
+**Version:** 3.3.88 (Build: 17.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -80,12 +80,29 @@ oder Titel bleiben unverändert.
 
 ### Edge-Profile und E-Mail-Signaturen
 
-- Microsoft-Edge-Profile werden bei jedem vollständigen Lauf erkannt und im
-    gewählten `Datei-Vorlagen\Edge-Profile`-Ordner gesichert.
+- Microsoft-Edge-Profile werden bei jedem vollständigen Lauf erkannt und
+    ZIP-komprimiert im gewählten `Datei-Vorlagen\Sonstiges\Edge-Profile.zip`
+    gesichert (spart deutlich Speicherplatz gegenüber einem unkomprimierten
+    Ordner). Eine zuvor vorhandene unkomprimierte Sicherung wird nach dem
+    ersten ZIP-Backup automatisch entfernt.
 - Outlook-Signaturen werden getrennt im Ordner
-    `Datei-Vorlagen\E-Mail-Signaturen` gesichert.
+    `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen` gesichert.
 - Vorhandene Backups werden beim nächsten Lauf wiederhergestellt; vorhandene
     lokale Signaturen werden dabei nicht überschrieben.
+- Dateisystem-Operationen auf dem Zielordner werden bei transienten Fehlern
+    (z. B. während OneDrive aktiv synchronisiert) automatisch mit steigender
+    Wartezeit bis zu ca. 15–20 Sekunden wiederholt, bevor ein Fehler gemeldet wird.
+
+### Datei-Vorlagen-Bibliothek
+
+- Bei jedem Lauf wird die mitgelieferte Vorlagenbibliothek (`data/Datei-Vorlagen`)
+    automatisch mit dem Zielordner abgeglichen (Update-Modus: fehlende oder neuere
+    Dateien werden ergänzt, vorhandene/neuere Zieldateien bleiben unangetastet).
+- Im Tab „Konfiguration“ kann optional **„Vorhandene Datei-Vorlagen löschen und
+    durch aktuellen Programmstand ersetzen“** aktiviert werden. Diese Option ist
+    standardmäßig deaktiviert und erfordert eine ausdrückliche Bestätigung, da
+    dabei auch eigene, nachträglich hinzugefügte Vorlagendateien unwiderruflich
+    gelöscht werden.
 
 ### Schriftart-Management
 
@@ -104,8 +121,7 @@ PC-Konfigurator-v3.3.1/
 ├── docs/
 │   ├── README.md
 │   ├── DOKUMENTATION_ANWENDER.md
-│   ├── DOKUMENTATION_TECHNIK.md
-│   └── DOKUMENTATION_CHECKLISTE.md
+│   └── DOKUMENTATION_TECHNIK.md
 ├── data/
 │   ├── Datei-Vorlagen/
 │   │   └── Sonstiges/Standards/
@@ -290,7 +306,6 @@ Der Build-Prozess ergänzt automatisch:
 - `docs/README.md` – Dokumentations-Einstieg
 - `docs/DOKUMENTATION_ANWENDER.md` – Detaillierte Benutzeranleitung
 - `docs/DOKUMENTATION_TECHNIK.md` – Technische Dokumentation
-- `docs/DOKUMENTATION_CHECKLISTE.md` – Doku-Qualitätscheckliste
 - `docs/DOKUMENTATION_DIAGRAMME.md` – Mermaid-Quellen und SVG-Grafiken
 - `src/` – Vollständiger Source-Code
 - Inline-Kommentare in den Modulen

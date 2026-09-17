@@ -88,6 +88,7 @@ from runtime.runtime_bundle import (
     get_bundle_root,
     prepare_runtime_bundle,
 )
+from security_hints import describe_filesystem_error
 
 # Feste Auswahlliste der unterstützten Schriftarten.
 # Schlüssel  = Anzeigename im Dropdown
@@ -331,6 +332,7 @@ class PCKonfiguratorGUI:
                 "enable_com_sync": bool(self.enable_com_sync.get()),
                 "enable_office_preclose": bool(self.enable_office_preclose.get()),
                 "enable_office_warmup": bool(self.enable_office_warmup.get()),
+                "enable_edge_profile_sync": bool(self.enable_edge_profile_sync.get()),
                 "font_name": self.font_name.get(),
                 "font_size_word": int(self.font_size_word.get()),
                 "font_size_outlook": int(self.font_size_outlook.get()),
@@ -375,6 +377,7 @@ class PCKonfiguratorGUI:
         self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
         self.enable_office_preclose.set(bool(settings.get("enable_office_preclose", True)))
         self.enable_office_warmup.set(bool(settings.get("enable_office_warmup", False)))
+        self.enable_edge_profile_sync.set(bool(settings.get("enable_edge_profile_sync", False)))
 
         font_name = str(settings.get("font_name", "")).strip()
         if font_name in self.available_font_families:
@@ -434,6 +437,26 @@ class PCKonfiguratorGUI:
             self.enable_office_preclose.set(True)
             self.enable_office_warmup.set(True)
         self._save_gui_state()
+
+    def _on_reset_templates_changed(self, *_args):
+        """Fordert beim Aktivieren eine ausdrückliche Bestätigung an, da eigene
+        Vorlagendateien im Zielverzeichnis dabei unwiderruflich verloren gehen."""
+        if not bool(self.reset_file_templates.get()):
+            return
+        confirmed = messagebox.askyesno(
+            "Datei-Vorlagen zurücksetzen?",
+            (
+                "Beim nächsten Lauf werden alle vorhandenen Datei-Vorlagen im Zielverzeichnis "
+                "gelöscht und vollständig durch den aktuellen Stand des PC-Konfigurators ersetzt.\n\n"
+                "Achtung: Auch eigene, nachträglich hinzugefügte oder geänderte Vorlagendateien "
+                "gehen dabei unwiderruflich verloren.\n\n"
+                "Möchten Sie fortfahren?"
+            ),
+            parent=self.root,
+            default="no",
+        )
+        if not confirmed:
+            self.reset_file_templates.set(False)
 
     def _on_ui_mode_changed(self, *_args):
         """Persistiert den UI-Modus und aktualisiert die sichtbaren Bereiche."""
@@ -651,6 +674,7 @@ class PCKonfiguratorGUI:
 
             max_text_px = 0
             for button in buttons_dict.values():
+                text = ""
                 try:
                     text = str(button.cget("text") or "")
                     font_def = button.cget("font")
@@ -769,6 +793,8 @@ class PCKonfiguratorGUI:
         self.hidden_items_mode = tk.StringVar(value="show")
         self.corporate_design = tk.StringVar(value="INN-tegrativ")
         self.taskbar_alignment = tk.StringVar(value="Center")
+        self.reset_file_templates = tk.BooleanVar(value=False)
+        self.enable_edge_profile_sync = tk.BooleanVar(value=False)
         self.enable_firm_mode = tk.BooleanVar(value=False)
         self.enable_com_sync = tk.BooleanVar(value=False)
         self.enable_office_preclose = tk.BooleanVar(value=True)
@@ -809,6 +835,8 @@ class PCKonfiguratorGUI:
         self.use_documents.trace_add("write", self._on_setting_changed)
         self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
         self.hidden_items_mode.trace_add("write", self._on_setting_changed)
+        self.reset_file_templates.trace_add("write", self._on_reset_templates_changed)
+        self.enable_edge_profile_sync.trace_add("write", self._on_setting_changed)
         self.enable_firm_mode.trace_add("write", self._on_firm_mode_changed)
         self.enable_com_sync.trace_add("write", self._on_setting_changed)
         self.enable_office_preclose.trace_add("write", self._on_setting_changed)
@@ -955,6 +983,8 @@ class PCKonfiguratorGUI:
             corporate_design_var=self.corporate_design,
             hidden_items_mode_var=self.hidden_items_mode,
             taskbar_alignment_var=self.taskbar_alignment,
+            reset_templates_var=self.reset_file_templates,
+            enable_edge_profile_sync_var=self.enable_edge_profile_sync,
             enable_firm_mode_var=self.enable_firm_mode,
             enable_com_sync_var=self.enable_com_sync,
             enable_office_preclose_var=self.enable_office_preclose,
@@ -1112,6 +1142,8 @@ class PCKonfiguratorGUI:
             edge_profile_manager=self.edge_profile_manager,
             template_manager=self.template_manager,
             safe_office_config=self.safe_office_config,
+            reset_file_templates=self._reset_file_templates,
+            sync_file_templates=self._sync_file_templates,
             get_office_font_name=self._get_office_font_name,
             get_font_size_word=self.font_size_word.get,
             get_font_size_outlook=self.font_size_outlook.get,
@@ -1130,6 +1162,8 @@ class PCKonfiguratorGUI:
             get_office_settings_from_gui=self._get_office_settings_from_gui,
             office_configurator=self.office_configurator,
             edge_profile_manager=self.edge_profile_manager,
+            reset_file_templates=self._reset_file_templates,
+            sync_file_templates=self._sync_file_templates,
             advance_step=self._advance_execution_step,
             append_status=self._append_execution_status,
             add_registry_restart_notice=self._add_registry_restart_notice,
@@ -1158,12 +1192,60 @@ class PCKonfiguratorGUI:
                         'enable_com_sync': bool(self.enable_com_sync.get()),
                         'enable_office_preclose': bool(self.enable_office_preclose.get()),
                         'enable_office_warmup': bool(self.enable_office_warmup.get()),
+                        'enable_edge_profile_sync': bool(self.enable_edge_profile_sync.get()),
                         'show_hidden_items': self.hidden_items_mode.get() == 'show',
                         'corporate_design': self.corporate_design.get(),
                         'taskbar_alignment': self.taskbar_alignment.get(),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }
+
+    def _get_target_datei_vorlagen_dir(self, office_settings: dict) -> Path:
+        """Ermittelt den Ziel-Ordner 'Datei-Vorlagen' aus den GUI-Einstellungen."""
+        if office_settings.get("use_documents_folder"):
+            base = get_documents_directory()
+        else:
+            drive = str(office_settings.get("target_drive", "")).strip()
+            base = Path(drive + "\\") if drive else get_documents_directory()
+        return base / "Datei-Vorlagen"
+
+    def _reset_file_templates(self, office_settings: dict) -> dict:
+        """Löscht das Datei-Vorlagen-Zielverzeichnis und ersetzt es durch den Bundle-Stand.
+
+        Wird nur ausgeführt, wenn der Anwender die Option zuvor bestätigt hat.
+        Die Auswahl gilt als einmalige Aktion und wird danach automatisch zurückgesetzt.
+        """
+        if not bool(self.reset_file_templates.get()):
+            return {"performed": False}
+
+        try:
+            target_dir = self._get_target_datei_vorlagen_dir(office_settings)
+            source_dir = self.app_dir / "data" / "Datei-Vorlagen"
+
+            result = self.file_sync.reset_directory_from_source(source_dir, target_dir)
+            result["performed"] = True
+            return result
+        except Exception as exc:
+            self.logger.error("Datei-Vorlagen-Reset fehlgeschlagen: %s", exc, exc_info=True)
+            error_text = describe_filesystem_error(exc) if isinstance(exc, OSError) else str(exc)
+            return {"performed": True, "success": False, "error": error_text}
+        finally:
+            self.reset_file_templates.set(False)
+
+    def _sync_file_templates(self, office_settings: dict) -> dict:
+        """Kopiert/aktualisiert die mitgelieferte Datei-Vorlagen-Bibliothek im Zielverzeichnis.
+
+        Nutzt robocopy im Update-Modus (überspringt neuere/vorhandene Zieldateien), damit
+        eigene, nachträglich hinzugefügte oder geänderte Vorlagen nicht überschrieben werden.
+        """
+        try:
+            target_dir = self._get_target_datei_vorlagen_dir(office_settings)
+            source_dir = self.app_dir / "data" / "Datei-Vorlagen"
+            return self.file_sync.sync_directories(source_dir, target_dir)
+        except Exception as exc:
+            self.logger.error("Datei-Vorlagen-Synchronisation fehlgeschlagen: %s", exc, exc_info=True)
+            error_text = describe_filesystem_error(exc) if isinstance(exc, OSError) else str(exc)
+            return {"success": False, "error": error_text}
 
     def _get_registry_config(self) -> dict:
         """Gibt die aktuelle Konfiguration für die Registry-Info-Anzeige zurück."""
@@ -1225,10 +1307,12 @@ class PCKonfiguratorGUI:
         if getattr(self, "system_status_label", None) is None:
             self.open_system_status_window()
 
-        try:
-            self.system_status_label.configure(text="Systemprüfung läuft ...", text_color=("#1F2937", "#E5E7EB"), justify="left")
-        except Exception:
-            pass
+        status_label = getattr(self, "system_status_label", None)
+        if status_label is not None:
+            try:
+                status_label.configure(text="Systemprüfung läuft ...", text_color=("#1F2937", "#E5E7EB"), justify="left")
+            except Exception:
+                pass
 
         start_system_requirements_check(
             self.root,

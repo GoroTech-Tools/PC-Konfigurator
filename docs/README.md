@@ -6,8 +6,6 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   Bedienung, Voraussetzungen, Schritt-für-Schritt-Anleitung, Fehlerbehebung
 - **[DOKUMENTATION_TECHNIK.md](./DOKUMENTATION_TECHNIK.md)**  
   Architektur, Build/Release, CI/CD, Wartung und technische Details
-- **[DOKUMENTATION_CHECKLISTE.md](./DOKUMENTATION_CHECKLISTE.md)**  
-  Qualitäts- und Freigabecheck für die Projektdokumentation
 - **[DOKUMENTATION_DIAGRAMME.md](./DOKUMENTATION_DIAGRAMME.md)**  
   Übersicht der Mermaid-Quellen und erzeugten SVG-Diagramme
 - **[Migrationsplan_GUI_Angleichung_AP1.md](./_archive/Migrationsplan_GUI_Angleichung_AP1.md)** *(archiviert)*  
@@ -18,8 +16,17 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 1. Für Benutzer:innen: `DOKUMENTATION_ANWENDER.md`
 2. Für Entwickler:innen/Admins: zusätzlich `DOKUMENTATION_TECHNIK.md`
 
-## Aktueller Betriebsstatus (Stand 2026-09-16)
+## Aktueller Betriebsstatus (Stand 2026-09-17)
 
+- Datei-Vorlagen-Bibliothek wird bei jedem Lauf automatisch mit dem Zielordner
+  abgeglichen (Update-Modus, keine Überschreibung eigener Änderungen).
+- Neue optionale Funktion „Datei-Vorlagen zurücksetzen“ im Konfiguration-Tab
+  (standardmäßig deaktiviert, mit Bestätigungsdialog).
+- Dateisystem-Operationen auf OneDrive-Zielordnern (Edge-/Signatur-Backup,
+  Datei-Vorlagen-Synchronisation) sind jetzt robust gegen kurzzeitige
+  OneDrive-Sync-Races (automatische Wiederholung mit steigender Wartezeit).
+- Fehlermeldungen bei blockiertem Dateizugriff enthalten jetzt einen Hinweis
+  auf mögliche Ursachen (z. B. Kontrollierter Ordnerzugriff von Windows-Sicherheit).
 - Explorer-Neustart in der GUI wurde für verzögerte Shell-Reinitialisierung gehärtet (Taskleisten-Sichtbarkeitsprüfung + Recovery-Fallback).
 - Bekannte Einschränkung dokumentiert: Moderne Outlook-Compose-Oberfläche kann lokale Standardfont-Vorgaben trotz Registry-/Template-Konfiguration teilweise übersteuern.
 - Office-Konfiguration nutzt standardmäßig den robusten Registry/XML-Pfad; COM-Synchronisierung ist nur noch optional.

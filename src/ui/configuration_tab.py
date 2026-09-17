@@ -17,6 +17,8 @@ def build_configuration_tab(
     corporate_design_var,
     hidden_items_mode_var,
     taskbar_alignment_var,
+    reset_templates_var,
+    enable_edge_profile_sync_var,
     enable_firm_mode_var,
     enable_com_sync_var,
     enable_office_preclose_var,
@@ -182,6 +184,59 @@ def build_configuration_tab(
         variable=hidden_items_mode_var,
         value="show",
     ).pack(anchor="w", padx=6, pady=(2, 6))
+
+    reset_templates_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    reset_templates_card.pack(fill="x", padx=4, pady=(0, 6))
+    ctk.CTkLabel(
+        reset_templates_card,
+        text="Datei-Vorlagen zurücksetzen",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+    ctk.CTkLabel(
+        reset_templates_card,
+        text=(
+            "Löscht beim nächsten Lauf alle vorhandenen Datei-Vorlagen im Zielverzeichnis und ersetzt sie "
+            "vollständig durch den aktuellen Stand des PC-Konfigurators. Standardmäßig deaktiviert."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+    ctk.CTkCheckBox(
+        reset_templates_card,
+        text="Vorhandene Datei-Vorlagen löschen und durch aktuellen Programmstand ersetzen",
+        variable=reset_templates_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
+
+    edge_sync_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
+    edge_sync_card.pack(fill="x", padx=4, pady=(0, 6))
+    ctk.CTkLabel(
+        edge_sync_card,
+        text="Edge-Profile synchronisieren",
+        font=ctk.CTkFont(size=15, weight="bold"),
+        text_color=CARD_TITLE_COLOR,
+    ).pack(anchor="w", padx=14, pady=(10, 3))
+    ctk.CTkLabel(
+        edge_sync_card,
+        text=(
+            "Sichert/aktualisiert Microsoft-Edge-Profile und Outlook-Signaturen im Zielverzeichnis "
+            "(ZIP-komprimiert). Das Zippen größerer Edge-Profile kann spürbar Zeit kosten. "
+            "Standardmäßig deaktiviert."
+        ),
+        justify="left",
+        wraplength=960,
+        text_color=("#4B5563", "#D1D5DB"),
+    ).pack(anchor="w", padx=14, pady=(0, 6))
+    ctk.CTkCheckBox(
+        edge_sync_card,
+        text="Edge-Profile und E-Mail-Signaturen bei jedem Lauf sichern/wiederherstellen",
+        variable=enable_edge_profile_sync_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
 
     taskbar_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
     taskbar_card.pack(fill="x", padx=4, pady=(0, 6))

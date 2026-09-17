@@ -50,6 +50,19 @@ def copy_path(src: Path, dst: Path) -> None:
         shutil.copy2(src, dst)
 
 
+def cleanup_old_appdata_versions(*, app_name: str, current_version: str) -> None:
+    """Entfernt veraltete Versionsordner des Anwenders unter %LOCALAPPDATA%."""
+    appdata = os.environ.get("LOCALAPPDATA")
+    base = Path(appdata) if appdata else Path.home() / "AppData" / "Local"
+    app_base = base / app_name
+    if not app_base.is_dir():
+        return
+
+    for entry in app_base.iterdir():
+        if entry.is_dir() and entry.name != str(current_version):
+            shutil.rmtree(entry, ignore_errors=True)
+
+
 def prepare_runtime_bundle(
     *,
     app_name: str,
@@ -58,6 +71,7 @@ def prepare_runtime_bundle(
     runtime_files: list[str],
 ) -> Path:
     bundle_root = get_bundle_root()
+    cleanup_old_appdata_versions(app_name=app_name, current_version=version)
     runtime_root = get_runtime_root(app_name=app_name, version=version)
     runtime_root.mkdir(parents=True, exist_ok=True)
 

@@ -75,6 +75,13 @@ class OfficeTemplateManager:
             if sz is not None:
                 raw_size = sz.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '').strip()
 
+            if not raw_size:
+                # Stil definiert nur die Schriftart und erbt die Größe laut OOXML
+                # regulär aus den docDefaults (z. B. bei NormalEmail.dotm üblich).
+                default_sz = root.find('.//w:docDefaults/w:rPrDefault/w:rPr/w:sz', ns)
+                if default_sz is not None:
+                    raw_size = default_sz.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '').strip()
+
             if not font_name:
                 return None
 

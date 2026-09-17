@@ -49,17 +49,25 @@ def create_scrollable_page(tab_frame):
     return page
 
 
-def create_section_card(parent, *, title: str, description: str | None = None):
-    """Erzeugt eine einheitliche Inhaltskarte mit Titel und optionaler Beschreibung."""
+def create_section_card(parent, *, title: str, description: str | None = None, compact: bool = False):
+    """Erzeugt eine einheitliche Inhaltskarte mit Titel und optionaler Beschreibung.
+
+    ``compact=True`` verringert die Innen-/Außenabstände für platzkritische Tabs.
+    """
+    card_gap = 6 if compact else 10
+    title_pady = (9, 3) if compact else (12, 4)
+    desc_pady = (0, 5) if compact else (0, 8)
+    body_pady = (0, 8) if compact else (0, 12)
+
     card = ctk.CTkFrame(parent, corner_radius=10, **CARD_STYLE)
-    card.pack(fill="x", padx=4, pady=(0, 10))
+    card.pack(fill="x", padx=4, pady=(0, card_gap))
 
     ctk.CTkLabel(
         card,
         text=title,
         font=ctk.CTkFont(size=15, weight="bold"),
         text_color=CARD_TITLE_COLOR,
-    ).pack(anchor="w", padx=14, pady=(12, 4))
+    ).pack(anchor="w", padx=14, pady=title_pady)
 
     if description:
         ctk.CTkLabel(
@@ -68,9 +76,9 @@ def create_section_card(parent, *, title: str, description: str | None = None):
             justify="left",
             wraplength=980,
             text_color=("#4B5563", "#D1D5DB"),
-        ).pack(anchor="w", padx=14, pady=(0, 8))
+        ).pack(anchor="w", padx=14, pady=desc_pady)
 
     body = ctk.CTkFrame(card, fg_color="transparent")
-    body.pack(fill="x", padx=12, pady=(0, 12))
+    body.pack(fill="x", padx=12, pady=body_pady)
 
     return card, body

@@ -49,8 +49,8 @@ PC-Konfigurator/
 2. Navigation `Start` → **Weiter** → `Konfiguration` → **Weiter** → `Ausführung`
 3. Auswahl von Schriftart, Optionen und Zielparametern
 4. Konfigurationspipeline:
-   - Registry-Anpassungen (HKCU)
-   - Empfohlene Dateien/zuletzt verwendete Dateien/Sprunglisten deaktivieren
+   - Registry-Anpassungen (HKCU)   - Datei-Vorlagen zurücksetzen (nur wenn vom Anwender bestätigt aktiviert)
+   - Datei-Vorlagen-Bibliothek synchronisieren (Update-Modus, läuft immer)   - Empfohlene Dateien/zuletzt verwendete Dateien/Sprunglisten deaktivieren
    - Explorer-Option „Immer Dateinamen und -inhalte suchen" aktivieren (`SearchFileNameAlways=1`)
    - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
@@ -144,7 +144,7 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
 - `src/edge_profile_manager.py` verarbeitet Microsoft Edge unter
    `%LOCALAPPDATA%\Microsoft\Edge\User Data`.
 - Outlook-Signaturen werden unter `%APPDATA%\Microsoft\Signatures` gelesen
-   und separat in `Datei-Vorlagen\E-Mail-Signaturen` abgelegt.
+   und separat in `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen` abgelegt.
 - Lokale Signaturen werden bei der Wiederherstellung nur ergänzt, wenn noch
    keine Signaturdateien vorhanden sind.
 - Cache- und temporäre Edge-Daten werden nicht gesichert.
@@ -153,6 +153,40 @@ Bei einem Release müssen lokal geänderte Dateien unter `data/Datei-Vorlagen/`
 vor dem Commit geprüft und ausdrücklich mit veröffentlicht werden. Der
 Release-Commit darf diese Vorlagen nicht stillschweigend auslassen; andere
 unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
+
+### 4.5 Datei-Vorlagen-Reset, -Synchronisation und Fehlerdiagnose
+
+- `src/file_sync.py` (`FileSync`) stellt zwei Operationen bereit:
+  - `sync_directories()` – Update-Modus (robocopy `/XO`/Python-Fallback),
+    kopiert nur fehlende oder neuere Quelldateien, löscht nichts im Ziel.
+    Läuft bei **jedem** Lauf (`_sync_file_templates` in `main.py`), damit die
+    mitgelieferte Vorlagenbibliothek im Ziel `Datei-Vorlagen` immer vollständig ist.
+  - `reset_directory_from_source()` – löscht das Ziel vollständig (`shutil.rmtree`)
+    und ersetzt es 1:1 durch die Quelle (`shutil.copytree`). Wird nur ausgeführt,
+    wenn der Anwender die Option „Datei-Vorlagen zurücksetzen“ im Konfiguration-Tab
+    zuvor per Dialog bestätigt hat (`_reset_file_templates` in `main.py`); die
+    Option wird nach dem Lauf automatisch wieder deaktiviert.
+- `src/fs_retry.py` (`retry_on_oserror`) kapselt eine zentrale Retry-Logik für
+  Dateisystem-Operationen: Bei `OSError` wird mit steigender Wartezeit (Start
+  1,0 s, Faktor 1,3, Obergrenze 3,0 s, bis zu 12 Versuche → ca. 15–20 s Gesamt-
+  wartezeit) wiederholt, bevor der Fehler weitergereicht wird. Grund: OneDrive
+  kann während aktiver Synchronisierung neu angelegte Ordnerpfade kurzzeitig als
+  nicht vorhanden melden (Platzhalter-/Reconciliation-Race). Verwendet von
+  `edge_profile_manager.py` und `file_sync.py`.
+- `src/security_hints.py` (`describe_filesystem_error`) ergänzt `OSError`-Meldungen
+  mit WinError 2/3/5 um einen Hinweis auf mögliche Blockaden durch den
+  Kontrollierten Ordnerzugriff von Windows-Sicherheit oder andere Endpoint-/
+  Antiviren-Richtlinien, ohne Sicherheitsmechanismen selbst zu umgehen.
+- `src/edge_profile_manager.py` sichert Edge-Profile als ZIP-Archiv
+  (`Sonstiges/Edge-Profile.zip`, `zipfile.ZIP_DEFLATED`) statt als unkomprimierten
+  Ordner, da Profile durch IndexedDB/Extensions/Local Storage schnell mehrere
+  hundert MB groß werden. `backup()` packt das Profil zunächst in ein temporäres
+  Staging-Verzeichnis (`tempfile.mkdtemp`), zippt es atomar (`.pckconfig-tmp` +
+  `os.replace`) und entfernt anschließend einen ggf. noch vorhandenen alten,
+  unkomprimierten Backup-Ordner am selben Zielort. `restore()` entpackt das ZIP
+  in ein temporäres Verzeichnis und kopiert von dort wie zuvor ins Live-Profil.
+  E-Mail-Signaturen bleiben unkomprimiert (i. d. R. klein, unkritisch für den
+  Speicherbedarf).
 
 ## 5. CI/CD und Releases
 
@@ -265,6 +299,46 @@ Durchgeführter Verifikationstest der neu ergänzten Windows-Registry-Werte
 
 Damit ist die neue Registry-Logik für „Ausgeblendete Elemente anzeigen“ sowie die
 Startmenü-Fallback-Werte technisch verifiziert.
+
+### Behobene Fehler (v3.3.79–v3.3.84)
+
+#### 1) Edge-/Signatur-Backup schlug unter OneDrive fehl (`WinError 2/3`)
+
+Beim Anlegen von `Datei-Vorlagen\Sonstiges\Edge-Profile` bzw.
+`...\E-Mail-Signaturen` trat sporadisch `FileNotFoundError` auf, wenn OneDrive
+gerade aktiv synchronisierte (Platzhalter-/Reconciliation-Race). Ursprünglich
+zu kurze Retry-Versuche (~1,2 s) reichten nicht aus.
+
+**Fix:** Zentrales Retry-Modul `src/fs_retry.py` (`retry_on_oserror`) mit
+steigender Wartezeit (bis ca. 15–20 s Gesamtwartezeit) in
+`edge_profile_manager.py` und `file_sync.py` verwendet.
+
+#### 2) Datei-Vorlagen-Zielordner blieb (fast) leer
+
+Die mitgelieferte Vorlagenbibliothek (`data/Datei-Vorlagen`) wurde nie ins
+Zielverzeichnis kopiert — nur die Registry (`PersonalTemplates`) zeigte
+dorthin. Die dafür vorgesehene `FileSync`-Klasse war im Code vorhanden, aber
+nicht in den Ablauf eingebunden.
+
+**Fix:** Neuer Schritt „Datei-Vorlagen-Bibliothek synchronisieren“
+(`_sync_file_templates` in `main.py`) läuft bei jedem Lauf im Update-Modus
+(robocopy `/XO`, keine Löschung, keine Überschreibung neuerer Zieldateien).
+
+#### 3) Fehlermeldungen ohne Diagnosehinweis
+
+Fehler wie `WinError 2/3/5` beim Schreiben in geschützte Ordner (z. B. durch
+den Kontrollierten Ordnerzugriff von Windows-Sicherheit) waren für Anwender
+schwer einzuordnen.
+
+**Fix:** Neues Modul `src/security_hints.py` (`describe_filesystem_error`)
+ergänzt betroffene Fehlermeldungen um einen konkreten Hinweis, ohne
+Sicherheitsmechanismen zu umgehen.
+
+#### 4) Neue Option „Datei-Vorlagen zurücksetzen“
+
+Ergänzt im Konfiguration-Tab, standardmäßig deaktiviert, mit
+Bestätigungsdialog (Datenverlust-Hinweis) und automatischer Rücksetzung nach
+dem Lauf. Nutzt `FileSync.reset_directory_from_source()`.
 
 ### Regression
 
