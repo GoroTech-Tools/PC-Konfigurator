@@ -1,8 +1,119 @@
 from __future__ import annotations
 
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
 from tkinter import messagebox
 
 import customtkinter as ctk
+
+
+def _open_word_template_for_edit(template_path: Path) -> None:
+    """Öffnet eine DOTX-Datei selbst zur Bearbeitung, nicht als neues Dokument."""
+    try:
+        import pythoncom  # type: ignore
+        import win32com.client  # type: ignore
+    except Exception as exc:
+        raise RuntimeError(
+            "Microsoft Word/COM ist für die direkte Vorlagenbearbeitung nicht verfügbar."
+        ) from exc
+
+    try:
+        pythoncom.CoInitialize()
+    except Exception:
+        pass
+
+    word = None
+    try:
+        word = win32com.client.DispatchEx("Word.Application")
+        word.Visible = True
+        try:
+            word.DisplayAlerts = 1
+        except Exception:
+            pass
+        document = word.Documents.Open(
+            FileName=str(template_path),
+            ConfirmConversions=False,
+            ReadOnly=False,
+            AddToRecentFiles=False,
+            Revert=False,
+            Visible=True,
+        )
+        document.Activate()
+        word.Activate()
+    except Exception:
+        try:
+            word.Quit()
+        except Exception:
+            pass
+        raise
+
+
+def run_manual_building_blocks_editor(root, *, before_open=None) -> None:
+    """Öffnet die Building-Blocks-Datei des aktuellen Benutzers zur manuellen Bearbeitung.
+
+    Vor dem Öffnen wird eine datierte Sicherung im selben Building-Blocks-Ordner
+    angelegt. Die Datei wird nicht automatisch per XML verändert.
+    """
+    try:
+        if before_open is not None:
+            sync_result = before_open()
+            if not sync_result.get("success"):
+                messagebox.showerror(
+                    "Building Blocks konnten nicht synchronisiert werden",
+                    sync_result.get("error", "Unbekannter Fehler"),
+                    parent=root,
+                )
+                return
+
+        appdata = Path(os.environ.get("APPDATA", ""))
+        building_blocks_dir = appdata / "Microsoft" / "Document Building Blocks"
+        user_candidates = [building_blocks_dir / "1031" / "16" / "Building Blocks.dotx"]
+        if building_blocks_dir.is_dir():
+            user_candidates.extend(sorted(building_blocks_dir.glob("*/*/Building Blocks.dotx")))
+        template_path = next((path for path in user_candidates if path.is_file()), None)
+        if template_path is None:
+            messagebox.showwarning(
+                "Building Blocks nicht gefunden",
+                "Für den aktuellen Benutzer wurde keine Building-Blocks-Datei gefunden.\n\n"
+                f"Erwarteter Pfad:\n{building_blocks_dir}\\<Sprach-ID>\\<Office-Version>\\Building Blocks.dotx",
+                parent=root,
+            )
+            return
+
+        if not messagebox.askyesno(
+            "Building Blocks manuell bearbeiten",
+            "Die Building-Blocks-Datei des aktuellen Benutzers wird in Microsoft Word geöffnet.\n\n"
+            f"Datei:\n{template_path}\n\n"
+            "Vor dem Öffnen wird eine datierte Sicherung angelegt.\n"
+            "Bitte Word danach schließen, damit die Änderungen gespeichert werden können.\n\n"
+            "Fortfahren?",
+            icon="question",
+            parent=root,
+        ):
+            return
+
+        backup_dir = template_path.parent / "_PC-Konfigurator-Backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_path = backup_dir / f"{template_path.stem}-{timestamp}{template_path.suffix}"
+        shutil.copy2(template_path, backup_path)
+        _open_word_template_for_edit(template_path)
+
+        messagebox.showinfo(
+            "Building Blocks geöffnet",
+            "Die Datei wurde in Word geöffnet.\n\n"
+            f"Sicherung:\n{backup_path}\n\n"
+            "Bearbeiten und speichern Sie die Building Blocks anschließend direkt in Word.",
+            parent=root,
+        )
+    except Exception as exc:
+        messagebox.showerror(
+            "Building Blocks konnten nicht geöffnet werden",
+            f"Die manuelle Bearbeitung konnte nicht gestartet werden:\n{exc}",
+            parent=root,
+        )
 
 
 def run_safe_restore_templates_dialog(

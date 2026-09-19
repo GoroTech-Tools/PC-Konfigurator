@@ -1,8 +1,8 @@
-# PC-Konfigurator
+﻿# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.88 (Build: 17.09.2026, Python 3.13.7)
+**Version:** 3.3.90 (Build: 19.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -42,6 +42,9 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 - `SafeTemplateProcessor` mit ZIP-Integritätsprüfung
 - Backup-&-Restore-Mechanismus
 - Automatische Font-Anpassung ohne Template-Beschädigung
+- Benutzerbezogene Building-Blocks-Unterstützung für Word
+- Manuelle Bearbeitung über **Tools → Building Blocks manuell bearbeiten**
+- Datierte Sicherung der persönlichen `Building Blocks.dotx` vor dem Öffnen in Word
 
 ### Windows-System
 
@@ -98,11 +101,26 @@ oder Titel bleiben unverändert.
 - Bei jedem Lauf wird die mitgelieferte Vorlagenbibliothek (`data/Datei-Vorlagen`)
     automatisch mit dem Zielordner abgeglichen (Update-Modus: fehlende oder neuere
     Dateien werden ergänzt, vorhandene/neuere Zieldateien bleiben unangetastet).
+- Die persönliche Word-Datei `Building Blocks.dotx` wird zusätzlich nach
+  `Datei-Vorlagen\Sonstiges\Building Blocks\Building Blocks.dotx` gesichert.
+  Vor dem manuellen Editor-Aufruf gewinnt die jeweils neuere Datei; eine neuere
+  Sicherung wird automatisch nach `%APPDATA%` zurückgespielt.
 - Im Tab „Konfiguration“ kann optional **„Vorhandene Datei-Vorlagen löschen und
     durch aktuellen Programmstand ersetzen“** aktiviert werden. Diese Option ist
     standardmäßig deaktiviert und erfordert eine ausdrückliche Bestätigung, da
     dabei auch eigene, nachträglich hinzugefügte Vorlagendateien unwiderruflich
     gelöscht werden.
+
+### Building Blocks manuell bearbeiten
+
+Über **Tools → Building Blocks manuell bearbeiten** kann die Building-Blocks-Datei
+des aktuell angemeldeten Windows-Benutzers direkt in Word geöffnet werden.
+
+- Standardpfad: `%APPDATA%\Microsoft\Document Building Blocks\<LCID>\16\Building Blocks.dotx`
+- Vor dem Öffnen wird automatisch eine datierte Sicherung im Unterordner
+  `_PC-Konfigurator-Backups` angelegt.
+- Die manuelle Bearbeitung erfolgt anschließend vollständig in Word.
+- Die Anwendung verändert den Inhalt bei diesem Vorgang nicht automatisch.
 
 ### Schriftart-Management
 

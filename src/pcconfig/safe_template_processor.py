@@ -195,6 +195,20 @@ class SafeTemplateProcessor:
         """XML zuerst, COM nur als optionaler Fallback."""
         return self.update_word_template_xml(template_path, font_name, font_size)
 
+    def update_word_building_blocks_xml(self, template_path, font_name, font_size):
+        """Patcht eine Word-Building-Blocks-Datei, falls sie vorhanden ist.
+
+        Diese Methode ist bewusst isoliert und nur als zusätzliches, optionales
+        Feature gedacht. Sie nutzt denselben XML-Pfad wie die Standard-Word-
+        Templates, aber sie wird nur aufgerufen, wenn eine passende Datei
+        tatsächlich gefunden wurde.
+        """
+        path = Path(template_path)
+        if not path.exists():
+            self.logger.info("Building-Blocks-Datei nicht gefunden: %s", path)
+            return False
+        return self.update_word_template_xml(path, font_name, font_size)
+
     def apply_corporate_theme(self, template_path, theme_path, target_entry, design_name=None):
         """Ersetzt die Theme-XML direkt und registriert das Farbschema für Office."""
         template_path = Path(template_path)

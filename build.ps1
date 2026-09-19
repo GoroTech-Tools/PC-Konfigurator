@@ -229,7 +229,7 @@ function New-ReleaseNotesFile {
     return $notesPath
 }
 
-function Move-PreviousReleaseArtifacts {
+function Move-PreviousReleaseArtifact {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -282,7 +282,7 @@ function Move-PreviousReleaseArtifacts {
     }
 }
 
-function Remove-OldDistVersions {
+function Remove-OldDistVersion {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -695,7 +695,7 @@ if ($buildDir) {
 
     $releaseDir = Join-Path $PSScriptRoot 'release'
     $notesVersion = if ($newVersion) { $newVersion } else { 'manual' }
-    Move-PreviousReleaseArtifacts -ReleaseDir $releaseDir -CurrentVersion $notesVersion
+    Move-PreviousReleaseArtifact -ReleaseDir $releaseDir -CurrentVersion $notesVersion
     $null = New-ReleaseNotesFile `
         -Version $notesVersion `
         -BuildDirName $buildDir.Name `
@@ -724,7 +724,7 @@ if ($buildDir) {
 
             # Explorer-kompatibles ZIP ohne Wrapper-Ordner erzeugen
 
-    Remove-OldDistVersions -DistDir $distRoot -KeepCount 5
+    Remove-OldDistVersion -DistDir $distRoot -KeepCount 5
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             $zipSourceItems = Join-Path $buildDir.FullName '*'
             Compress-Archive -Path $zipSourceItems -DestinationPath $zipPath -CompressionLevel Optimal -Force

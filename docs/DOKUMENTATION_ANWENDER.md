@@ -1,6 +1,6 @@
 ﻿# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.88 (17.09.2026)
+**Version:** 3.3.90 (19.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -95,6 +95,26 @@ dann beginnt der Lauf.
 Im Laufstatus werden die Wiederherstellung sowie die Sicherung/Aktualisierung
 von Edge-Profilen und E-Mail-Signaturen als eigene Schritte angezeigt.
 
+### Building Blocks manuell bearbeiten
+
+Für individuelle Word-Bausteine steht im Menü **Tools** der Eintrag
+**Building Blocks manuell bearbeiten** zur Verfügung. Die Funktion arbeitet nur
+mit der Building-Blocks-Datei des aktuell angemeldeten Windows-Benutzers:
+
+1. Alle Office-Programme möglichst schließen.
+2. **Tools → Building Blocks manuell bearbeiten** auswählen.
+3. Die angezeigte Sicherheitsabfrage bestätigen.
+4. Die Datei in Word bearbeiten und dort speichern.
+
+Vor dem Öffnen wird automatisch eine datierte Sicherung im Ordner
+`%APPDATA%\Microsoft\Document Building Blocks\<LCID>\16\_PC-Konfigurator-Backups`
+angelegt. Wird keine passende Datei gefunden, bleibt der bestehende Office- und
+Template-Workflow unverändert. Zusätzlich wird die persönliche Datei beim
+Datei-Vorlagen-Abgleich nach
+`Datei-Vorlagen\Sonstiges\Building Blocks\Building Blocks.dotx` gesichert.
+Ist diese Sicherung neuer als die Datei im Benutzerprofil, wird sie vor dem
+Öffnen des Tools automatisch wieder in `%APPDATA%` übernommen.
+
 ## Features im Detail
 
 ### Registry- und System-Einstellungen
@@ -159,6 +179,8 @@ andere Formatvorlagen werden nicht verändert.
 - Templates werden vor jeder Änderung automatisch gesichert (Backup/Restore)
 - Schriftarten werden systemweit und Office-sicher gesetzt
 - Keine Korruption der Originaldateien durch `SafeTemplateProcessor`
+- Building Blocks werden im normalen Konfigurationslauf optional synchronisiert;
+  die manuelle Bearbeitung wird ausschließlich über das Tools-Menü gestartet.
 
 ### Edge-Profile und E-Mail-Signaturen
 

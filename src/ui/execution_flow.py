@@ -50,6 +50,11 @@ def run_full_configuration_flow(
         sync_result = sync_file_templates(office_settings)
         if sync_result.get("success"):
             append_status(f"   ✅ Datei-Vorlagen synchronisiert: {sync_result.get('message', 'aktuell')}\n")
+            building_blocks_sync = sync_result.get("building_blocks", {})
+            if building_blocks_sync.get("status") == "restored":
+                append_status("   ✅ Neuere Building-Blocks-Sicherung ins Benutzerprofil übernommen\n")
+            elif building_blocks_sync.get("status") == "backed_up":
+                append_status("   ✅ Persönliche Building Blocks in Datei-Vorlagen\\Sonstiges\\Building Blocks gesichert\n")
         else:
             append_status(f"   ⚠️ Datei-Vorlagen-Synchronisation fehlgeschlagen: {sync_result.get('error', 'Unbekannter Fehler')}\n")
             overall_success = False
@@ -166,6 +171,13 @@ def run_full_configuration_flow(
                 font_size_excel=size_excel,
                 corporate_design=office_settings.get("corporate_design", "INN-tegrativ"),
             )
+            building_blocks_result = mod_results.get("building_blocks", {}) if isinstance(mod_results, dict) else {}
+            if isinstance(building_blocks_result, dict) and building_blocks_result:
+                found_names = [name for name, ok in building_blocks_result.items() if ok]
+                if found_names:
+                    append_status(f"   ✅ Building Blocks erkannt und angepasst: {', '.join(found_names)}\n")
+                else:
+                    append_status("   ℹ️ Building Blocks nicht gefunden; der normale Word-Flow blieb unverändert\n")
             copy_results = template_manager.copy_templates_to_user()
 
             mod_ok = bool(mod_results) and all(bool(v) for v in mod_results.values())

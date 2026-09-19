@@ -64,6 +64,30 @@ PC-Konfigurator/
    - `Erweitert`: Vollständige Konfiguration oder Office-only
 6. Logging und Ergebnisanzeige in der Oberfläche
 
+### Building Blocks: benutzerbezogener manueller Editor
+
+Die Word-Building-Blocks-Datei wird ausschließlich im Benutzerprofil gesucht:
+
+`%APPDATA%\Microsoft\Document Building Blocks\<LCID>\<Office-Version>\Building Blocks.dotx`
+
+Der Menüpunkt **Tools → Building Blocks manuell bearbeiten** ist unabhängig vom
+Bedienmodus verfügbar. `run_manual_building_blocks_editor()` prüft zunächst die
+Benutzerdatei, fragt die Aktion per Dialog ab, legt eine datierte Kopie unter
+`_PC-Konfigurator-Backups` an und öffnet danach die Datei mit `os.startfile()`.
+Es erfolgt dabei keine XML-Serialisierung und keine automatische inhaltliche
+Änderung. Der vorhandene automatische Template-Flow bleibt davon getrennt:
+`OfficeTemplateManager.update_building_blocks_template()` patcht eine vorhandene
+Datei nur als optionalen Zusatzschritt bei der Office-Konfiguration.
+
+Zusätzlich verwaltet `OfficeTemplateManager.sync_user_building_blocks_backup()`
+die Sicherung unter
+`Datei-Vorlagen\Sonstiges\Building Blocks\Building Blocks.dotx`. Die Routine
+arbeitet nach dem „newest wins“-Prinzip: Eine neuere Benutzerdatei wird in die
+Ablage kopiert; eine neuere Ablage-Datei wird vor dem manuellen Editor-Aufruf
+ins persönliche `%APPDATA%`-Verzeichnis zurückgespielt. Fehlen beide Dateien,
+wird der Schritt übersprungen. Ein Fehler blockiert den Editor-Aufruf und wird
+dem Anwender angezeigt.
+
 ### Aktueller Status: offene Word-Detailpunkte
 
 Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und

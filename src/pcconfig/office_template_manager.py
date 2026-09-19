@@ -14,6 +14,7 @@ import zipfile
 import tempfile
 from xml.etree import ElementTree as ET
 from pcconfig.safe_template_processor import SafeTemplateProcessor
+from fs_retry import retry_on_oserror
 
 
 class OfficeTemplateManager:
@@ -355,6 +356,177 @@ class OfficeTemplateManager:
             self.logger.error(f"Fehler bei target_paths-Initialisierung: {e}")
             self.target_paths = {}
 
+    def _get_building_blocks_candidates(self):
+        """Liefert potenzielle Word-Building-Blocks-Dateien aus Standardpfaden.
+
+        Der relevante Standardpfad ist pro Nutzer:
+        %APPDATA%\\Microsoft\\Document Building Blocks\\<lcid>\\<version>\\Building Blocks.dotx
+        Für „Alle Benutzer“ gibt es zusätzlich Installationspfade unter Office,
+        aber der user-scoped Pfad ist der klassische Standard für Word.
+        """
+        standard_dir = self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards"
+        roaming_templates = Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Templates"
+        appdata_building_blocks = Path(os.environ.get('APPDATA', '')) / "Microsoft" / "Document Building Blocks"
+        possible_lang_versions = [
+            "1031",  # Deutsch
+            "1033",  # English
+            "1030",  # Danish
+            "1040",  # Italian
+            "1041",  # Japanese
+            "2055",  # German (Germany) / fallback
+        ]
+        version_dirs = ["16", "15", "14"]
+
+        program_roots = []
+        for env_name in ("ProgramFiles", "ProgramFiles(x86)"):
+            value = os.environ.get(env_name)
+            if value:
+                program_roots.append(Path(value))
+        if not program_roots:
+            program_roots.append(Path(r"C:\Program Files"))
+            program_roots.append(Path(r"C:\Program Files (x86)"))
+
+        candidate_names = (
+            "Building Blocks.dotx",
+            "Building Blocks.dotm",
+            "BuildingBlocks.dotx",
+            "BuildingBlocks.dotm",
+            "Document Building Blocks.dotx",
+            "Document Building Blocks.dotm",
+        )
+
+        candidates = []
+        for base in (standard_dir, roaming_templates):
+            for name in candidate_names:
+                candidates.append(base / name)
+
+        # Exakter, realer Standardpfad für Word-Building-Blocks im User-Profil.
+        exact_user_building_blocks = Path(os.environ.get('APPDATA', '')) / 'Microsoft' / 'Document Building Blocks' / '1031' / '16' / 'Building Blocks.dotx'
+        candidates.append(exact_user_building_blocks)
+
+        for lang in possible_lang_versions:
+            for version in version_dirs:
+                candidates.append(appdata_building_blocks / lang / version / "Building Blocks.dotx")
+                candidates.append(appdata_building_blocks / lang / version / "Building Blocks.dotm")
+
+        for root in program_roots:
+            for lang in possible_lang_versions:
+                for version in version_dirs:
+                    for suffix in (root / "Microsoft Office" / "root" / "Office" / version, root / "Microsoft Office" / "root" / "Document Building Blocks"):
+                        candidates.append(suffix / lang / version / "Building Blocks.dotx")
+                        candidates.append(suffix / lang / version / "Building Blocks.dotm")
+                    candidates.append(root / "Microsoft Office" / "root" / "Document Building Blocks" / lang / version / "Building Blocks.dotx")
+                    candidates.append(root / "Microsoft Office" / "root" / "Document Building Blocks" / lang / version / "Building Blocks.dotm")
+                    candidates.append(root / "Microsoft Office" / "root" / "Office" / version / "Document Building Blocks" / lang / version / "Building Blocks.dotx")
+                    candidates.append(root / "Microsoft Office" / "root" / "Office" / version / "Document Building Blocks" / lang / version / "Building Blocks.dotm")
+
+        # Deduplizieren, ohne die ursprüngliche Reihenfolge zu verlieren.
+        unique = []
+        seen = set()
+        for candidate in candidates:
+            resolved = str(candidate)
+            if resolved not in seen:
+                seen.add(resolved)
+                unique.append(candidate)
+        return unique
+
+    def get_user_building_blocks_path(self):
+        """Ermittelt die persönliche Building-Blocks-Datei des aktuellen Benutzers."""
+        building_blocks_dir = Path(os.environ.get('APPDATA', '')) / 'Microsoft' / 'Document Building Blocks'
+        preferred = building_blocks_dir / '1031' / '16' / 'Building Blocks.dotx'
+        candidates = [preferred]
+        if building_blocks_dir.is_dir():
+            candidates.extend(sorted(building_blocks_dir.glob('*/*/Building Blocks.dotx')))
+        seen = set()
+        for candidate in candidates:
+            resolved = str(candidate)
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if candidate.is_file():
+                return candidate
+        return preferred
+
+    def sync_user_building_blocks_backup(self, target_datei_vorlagen_dir):
+        """Spiegelt Building Blocks zwischen Benutzerprofil und Vorlagenablage.
+
+        Die jeweils neuere Datei gewinnt. Eine fehlende Benutzerdatei wird aus
+        der Ablage wiederhergestellt; eine fehlende Ablage wird aus dem Profil
+        angelegt. Andere Dateien im Zielordner werden nicht verändert.
+        """
+        user_path = self.get_user_building_blocks_path()
+        backup_path = Path(target_datei_vorlagen_dir) / 'Sonstiges' / 'Building Blocks' / 'Building Blocks.dotx'
+        try:
+            user_exists = user_path.is_file()
+            backup_exists = backup_path.is_file()
+            if not user_exists and not backup_exists:
+                return {
+                    'success': True,
+                    'status': 'skipped',
+                    'message': 'Keine persönliche Building-Blocks-Datei vorhanden.',
+                }
+
+            def copy_with_retry(source_path: Path, destination_path: Path) -> None:
+                def copy_action() -> None:
+                    destination_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source_path, destination_path)
+
+                retry_on_oserror(copy_action)
+
+            if backup_exists and (not user_exists or backup_path.stat().st_mtime > user_path.stat().st_mtime):
+                copy_with_retry(backup_path, user_path)
+                action = 'restored'
+                message = f'Building Blocks aus der Sicherung wiederhergestellt: {user_path}'
+            elif user_exists and (not backup_exists or user_path.stat().st_mtime > backup_path.stat().st_mtime):
+                copy_with_retry(user_path, backup_path)
+                action = 'backed_up'
+                message = f'Building Blocks in die Vorlagenablage gesichert: {backup_path}'
+            else:
+                action = 'unchanged'
+                message = 'Building-Blocks-Sicherung und Benutzerdatei sind bereits aktuell.'
+
+            self.logger.info(message)
+            return {
+                'success': True,
+                'status': action,
+                'message': message,
+                'user_path': str(user_path),
+                'backup_path': str(backup_path),
+            }
+        except Exception as exc:
+            self.logger.error('Building-Blocks-Synchronisation fehlgeschlagen: %s', exc, exc_info=True)
+            return {
+                'success': False,
+                'status': 'error',
+                'error': str(exc),
+                'user_path': str(user_path),
+                'backup_path': str(backup_path),
+            }
+
+    def update_building_blocks_template(self, font_name=None, font_size_word=None):
+        """Optionales, isoliertes Patchen einer vorhandenen Building-Blocks-Vorlage.
+
+        Falls keine passende Datei gefunden wird, bleibt das Verhalten komplett
+        unverändert und die normalen Office-Templates werden nicht verändert.
+        """
+        fn = str(font_name or 'Arial').strip()
+        fsw = int(font_size_word or 11)
+        results = {}
+        for candidate in self._get_building_blocks_candidates():
+            if not candidate.exists():
+                continue
+            try:
+                ok = self.safe_processor.update_word_building_blocks_xml(candidate, fn, fsw)
+                results[candidate.name] = ok
+                if ok:
+                    self.logger.info("Building-Blocks-Datei erfolgreich angepasst: %s", candidate)
+                else:
+                    self.logger.warning("Building-Blocks-Datei konnte nicht angepasst werden: %s", candidate)
+            except Exception as exc:
+                self.logger.warning("Building-Blocks-Datei %s fehlerhaft: %s", candidate, exc)
+                results[candidate.name] = False
+        return results
+
     def _select_font_specific_templates(self, font_name, font_size_word, font_size_excel, font_size_outlook=12):
         """Verwendet vorbereitete, schrift- und größenbezogene Kopiervorlagen."""
         standard_dir = self.app_dir / "data" / "Datei-Vorlagen" / "Sonstiges" / "Standards"
@@ -425,6 +597,13 @@ class OfficeTemplateManager:
             shutil.rmtree(self._working_template_dir, ignore_errors=True)
         self._working_template_dir = Path(tempfile.mkdtemp(prefix="pcconfig-templates-"))
         working_sources = {}
+
+        # Optional: vorhandene Building-Blocks-Dateien separat patchen.
+        # Keine bestehende Funktion wird dadurch ersetzt; wenn keine Datei
+        # gefunden wird, bleibt das Ergebnis leer und der normale Flow läuft
+        # unverändert weiter.
+        building_blocks_result = self.update_building_blocks_template(fn, fsw)
+        result['building_blocks'] = building_blocks_result
         for key, source_path in self.source_templates.items():
             if source_path.exists():
                 working_path = self._working_template_dir / source_path.name

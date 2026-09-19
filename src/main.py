@@ -13,6 +13,8 @@ import threading
 import sys
 import os
 import subprocess
+import shutil
+import tempfile
 
 # --- sys.path-Anpassung für PyInstaller-Build (src als Datenordner) ---
 if getattr(sys, 'frozen', False):
@@ -60,6 +62,7 @@ from ui.registry_dialogs import show_gpo_theme_check_dialog
 from ui.template_dialogs import (
     run_safe_restore_templates_dialog,
     run_update_office_templates_dialog,
+    run_manual_building_blocks_editor,
 )
 from ui.tools_dialogs import run_bitness_and_com_check
 from ui.logs_panel import (
@@ -522,6 +525,10 @@ class PCKonfiguratorGUI:
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Tools', menu=tools_menu)
         tools_menu.add_command(label='Systemstatus anzeigen', command=self.open_system_status_window)
+        tools_menu.add_command(
+            label='Building Blocks manuell bearbeiten',
+            command=self.edit_building_blocks,
+        )
         if self._is_advanced_mode():
             tools_menu.add_separator()
             tools_menu.add_command(label='Bitness- und COM-Check', command=self.run_bitness_check)
@@ -628,6 +635,13 @@ class PCKonfiguratorGUI:
 
     def run_bitness_check(self):
         run_bitness_and_com_check(self.logger)
+
+    def edit_building_blocks(self):
+        """Synchronisiert Building Blocks und öffnet danach das Bearbeitungstool."""
+        run_manual_building_blocks_editor(
+            self.root,
+            before_open=lambda: self._sync_building_blocks_backup(self._get_office_settings_from_gui()),
+        )
 
     def _has_tab(self, tab_name: str) -> bool:
         try:
@@ -1221,8 +1235,18 @@ class PCKonfiguratorGUI:
         try:
             target_dir = self._get_target_datei_vorlagen_dir(office_settings)
             source_dir = self.app_dir / "data" / "Datei-Vorlagen"
+            building_blocks_backup = target_dir / "Sonstiges" / "Building Blocks" / "Building Blocks.dotx"
+            preserved_building_blocks = None
+            if building_blocks_backup.is_file():
+                temp_fd, temp_path = tempfile.mkstemp(suffix=".dotx")
+                os.close(temp_fd)
+                preserved_building_blocks = Path(temp_path)
+                shutil.copy2(building_blocks_backup, preserved_building_blocks)
 
             result = self.file_sync.reset_directory_from_source(source_dir, target_dir)
+            if result.get("success") and preserved_building_blocks is not None:
+                building_blocks_backup.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(preserved_building_blocks, building_blocks_backup)
             result["performed"] = True
             return result
         except Exception as exc:
@@ -1230,6 +1254,11 @@ class PCKonfiguratorGUI:
             error_text = describe_filesystem_error(exc) if isinstance(exc, OSError) else str(exc)
             return {"performed": True, "success": False, "error": error_text}
         finally:
+            if 'preserved_building_blocks' in locals() and preserved_building_blocks is not None:
+                try:
+                    preserved_building_blocks.unlink(missing_ok=True)
+                except Exception:
+                    pass
             self.reset_file_templates.set(False)
 
     def _sync_file_templates(self, office_settings: dict) -> dict:
@@ -1241,11 +1270,28 @@ class PCKonfiguratorGUI:
         try:
             target_dir = self._get_target_datei_vorlagen_dir(office_settings)
             source_dir = self.app_dir / "data" / "Datei-Vorlagen"
-            return self.file_sync.sync_directories(source_dir, target_dir)
+            result = self.file_sync.sync_directories(source_dir, target_dir)
+            if not result.get("success"):
+                return result
+            building_blocks_result = self._sync_building_blocks_backup(office_settings)
+            result["building_blocks"] = building_blocks_result
+            if not building_blocks_result.get("success"):
+                result["success"] = False
+                result["error"] = building_blocks_result.get("error", "Building-Blocks-Synchronisation fehlgeschlagen")
+            return result
         except Exception as exc:
             self.logger.error("Datei-Vorlagen-Synchronisation fehlgeschlagen: %s", exc, exc_info=True)
             error_text = describe_filesystem_error(exc) if isinstance(exc, OSError) else str(exc)
             return {"success": False, "error": error_text}
+
+    def _sync_building_blocks_backup(self, office_settings: dict) -> dict:
+        """Synchronisiert die persönliche Building-Blocks-Datei mit der Ablage."""
+        try:
+            target_dir = self._get_target_datei_vorlagen_dir(office_settings)
+            return self.template_manager.sync_user_building_blocks_backup(target_dir)
+        except Exception as exc:
+            self.logger.error("Building-Blocks-Synchronisation fehlgeschlagen: %s", exc, exc_info=True)
+            return {"success": False, "error": str(exc)}
 
     def _get_registry_config(self) -> dict:
         """Gibt die aktuelle Konfiguration für die Registry-Info-Anzeige zurück."""

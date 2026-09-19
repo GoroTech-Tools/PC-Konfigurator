@@ -9,6 +9,13 @@ venv/
 build/
 dist/
 data/
+!data/
+data/*
+!data/Datei-Vorlagen/
+data/Datei-Vorlagen/*
+!data/Datei-Vorlagen/Sonstiges/
+data/Datei-Vorlagen/Sonstiges/*
+!data/Datei-Vorlagen/Sonstiges/Building-Blocks-Hinweise.md
 logs/
 **/_archive/
 release/_Archiv/
