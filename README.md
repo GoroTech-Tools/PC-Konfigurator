@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.90 (Build: 19.09.2026, Python 3.13.7)
+**Version:** 3.3.91 (Build: 20.09.2026, Python 3.13.7)
 
 ## Übersicht
 

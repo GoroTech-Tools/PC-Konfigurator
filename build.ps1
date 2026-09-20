@@ -424,7 +424,9 @@ if (Test-Path $buildInfoPath) {
             $newDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
             $content = $content -replace "'version': '\d+\.\d+\.\d+'", "'version': '$newVersion'"
             $content = $content -replace "'build_date': '[^']+'", "'build_date': '$newDate'"
-            Set-Content $buildInfoPath $content -Encoding UTF8
+            $content = $content.TrimEnd() + [Environment]::NewLine
+            $buildInfoEncoding = [Text.UTF8Encoding]::new($false)
+            [IO.File]::WriteAllText($buildInfoPath, $content, $buildInfoEncoding)
             Write-Host "Neue Version: $newVersion (build_info.py aktualisiert)" -ForegroundColor Cyan
 
             # --- README.md und docs/DOKUMENTATION_ANWENDER.md automatisch aktualisieren ---
