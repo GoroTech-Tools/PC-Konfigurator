@@ -148,6 +148,12 @@ function New-ReleaseNotesFile {
     $notesPath = Join-Path $ReleaseDir "RELEASE_NOTES_v$Version.md"
     $buildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
     $displayDate = (Get-Date).ToString('yyyy-MM-dd')
+    $releaseUrl = "https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v$Version"
+    $zipDownloadUrl = if ($ZipFileName) {
+        "https://github.com/GoroTech-Tools/PC-Konfigurator/releases/download/v$Version/$ZipFileName"
+    } else {
+        $null
+    }
 
     $zipArtifactLine = if ($ZipFileName) {
         "- Release-ZIP: release/$ZipFileName"
@@ -187,6 +193,11 @@ function New-ReleaseNotesFile {
         "# Release Notes v$Version",
         "",
         "Datum: $displayDate",
+        "",
+        "## Download",
+        "",
+        "- [Release-Seite v$Version]($releaseUrl)",
+        $(if ($zipDownloadUrl) { "- [ZIP direkt herunterladen]($zipDownloadUrl)" } else { "- ZIP-Direktdownload wird nach der ZIP-Erstellung ergänzt." }),
         "",
         "## Highlights",
         "",

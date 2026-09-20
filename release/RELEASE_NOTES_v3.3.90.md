@@ -2,6 +2,11 @@
 
 Datum: 2026-09-19
 
+## Download
+
+- [Release-Seite v3.3.90](https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v3.3.90)
+- [ZIP direkt herunterladen](https://github.com/GoroTech-Tools/PC-Konfigurator/releases/download/v3.3.90/PC-Konfigurator-v3.3.90.zip)
+
 ## Highlights
 
 - Building Blocks werden benutzerbezogen gesichert und nach dem Prinzip „neueste Datei gewinnt“ wiederhergestellt.

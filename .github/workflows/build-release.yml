@@ -96,6 +96,20 @@ jobs:
           name: PC-Konfigurator-release-${{ github.sha }}
           path: release
 
+      - name: Download release notes
+        uses: actions/download-artifact@v8
+        with:
+          name: PC-Konfigurator-${{ github.sha }}
+          path: build-artifact
+
+      - name: Locate release notes
+        id: release_notes
+        shell: bash
+        run: |
+          notes_path="$(find build-artifact/release -maxdepth 1 -name 'RELEASE_NOTES_v*.md' -print -quit)"
+          test -n "$notes_path"
+          echo "path=$notes_path" >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
@@ -103,4 +117,5 @@ jobs:
           name: PC-Konfigurator ${{ github.ref_name }}
           files: release/PC-Konfigurator-v*.zip
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          body_path: ${{ steps.release_notes.outputs.path }}
+          generate_release_notes: false
