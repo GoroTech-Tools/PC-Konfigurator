@@ -12,6 +12,8 @@ data/
 !data/
 data/*
 !data/Datei-Vorlagen/
+!data/Fonts/
+!data/Fonts/**
 !data/Datei-Vorlagen/**
 logs/
 **/_archive/
