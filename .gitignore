@@ -12,10 +12,7 @@ data/
 !data/
 data/*
 !data/Datei-Vorlagen/
-data/Datei-Vorlagen/*
-!data/Datei-Vorlagen/Sonstiges/
-data/Datei-Vorlagen/Sonstiges/*
-!data/Datei-Vorlagen/Sonstiges/Building-Blocks-Hinweise.md
+!data/Datei-Vorlagen/**
 logs/
 **/_archive/
 release/_Archiv/
@@ -34,3 +31,4 @@ release/PC-Konfigurator-v*/
 Thumbs.db
 desktop.ini
 .DS_Store
+~$*
