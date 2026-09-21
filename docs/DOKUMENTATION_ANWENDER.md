@@ -1,6 +1,6 @@
-﻿# DOKUMENTATION_ANWENDER
+# DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.91 (20.09.2026)
+**Version:** 3.3.92 (21.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -92,6 +92,13 @@ Microsoft Excel und Microsoft Word vollständig beendet werden. Beim Klick auf
 **„Vollständige Konfiguration starten“** wird dies mit **Ja** bestätigt. Nur
 dann beginnt der Lauf.
 
+Wenn der Office-Preclose aktiviert ist, beendet die Anwendung Word, Excel und
+Outlook zusätzlich automatisch **vor** der Datei-Vorlagen-Synchronisation. Ein
+zweiter Konfigurationslauf kann während eines laufenden Laufes nicht gestartet
+werden, damit persönliche Office-Dateien nicht gleichzeitig verarbeitet werden.
+Ein vorübergehendes Problem beim optionalen Building-Blocks-Backup wird als
+Warnung angezeigt; die übrige Konfiguration läuft weiter.
+
 Im Laufstatus werden die Wiederherstellung sowie die Sicherung/Aktualisierung
 von Edge-Profilen und E-Mail-Signaturen als eigene Schritte angezeigt.
 
@@ -180,7 +187,9 @@ andere Formatvorlagen werden nicht verändert.
 - Schriftarten werden systemweit und Office-sicher gesetzt
 - Keine Korruption der Originaldateien durch `SafeTemplateProcessor`
 - Building Blocks werden im normalen Konfigurationslauf optional synchronisiert;
-  die manuelle Bearbeitung wird ausschließlich über das Tools-Menü gestartet.
+  Office wird dafür bei aktiviertem Preclose bereits vor der Synchronisation
+  beendet. Die manuelle Bearbeitung wird ausschließlich über das Tools-Menü
+  gestartet.
 
 ### Edge-Profile und E-Mail-Signaturen
 

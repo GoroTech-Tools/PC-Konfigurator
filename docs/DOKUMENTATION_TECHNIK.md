@@ -64,6 +64,12 @@ PC-Konfigurator/
    - `Erweitert`: Vollständige Konfiguration oder Office-only
 6. Logging und Ergebnisanzeige in der Oberfläche
 
+Vor der Datei-Vorlagen-Synchronisation wird bei aktiviertem
+`enable_office_preclose` ein Office-Preclose ausgeführt. Zusätzlich verhindert
+`PCKonfiguratorGUI._execution_lock` parallele Konfigurationsläufe innerhalb
+derselben Anwendung. Dadurch werden konkurrierende Zugriffe auf persönliche
+Office-Dateien, insbesondere `Building Blocks.dotx`, vermieden.
+
 ### Building Blocks: benutzerbezogener manueller Editor
 
 Die Word-Building-Blocks-Datei wird ausschließlich im Benutzerprofil gesucht:
@@ -85,8 +91,10 @@ die Sicherung unter
 arbeitet nach dem „newest wins“-Prinzip: Eine neuere Benutzerdatei wird in die
 Ablage kopiert; eine neuere Ablage-Datei wird vor dem manuellen Editor-Aufruf
 ins persönliche `%APPDATA%`-Verzeichnis zurückgespielt. Fehlen beide Dateien,
-wird der Schritt übersprungen. Ein Fehler blockiert den Editor-Aufruf und wird
-dem Anwender angezeigt.
+wird der Schritt übersprungen. Das persönliche Backup ist optional: Kann die
+Datei wegen eines vorübergehenden Dateisystemfehlers nicht gelesen werden, wird
+dies als Warnung protokolliert und die übrige Vorlagen-/Office-Konfiguration
+läuft weiter.
 
 ### Aktueller Status: offene Word-Detailpunkte
 
@@ -197,6 +205,10 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
   kann während aktiver Synchronisierung neu angelegte Ordnerpfade kurzzeitig als
   nicht vorhanden melden (Platzhalter-/Reconciliation-Race). Verwendet von
   `edge_profile_manager.py` und `file_sync.py`.
+- `sync_user_building_blocks_backup()` verwendet die Retry-Logik ebenfalls beim
+   Kopieren der persönlichen `Building Blocks.dotx`. Nach ausgeschöpften
+   Versuchen bleibt nur der optionale Backup-Teilschritt fehlgeschlagen; die
+   eigentliche Datei-Vorlagen-Synchronisation wird nicht als Gesamtlauf markiert.
 - `src/security_hints.py` (`describe_filesystem_error`) ergänzt `OSError`-Meldungen
   mit WinError 2/3/5 um einen Hinweis auf mögliche Blockaden durch den
   Kontrollierten Ordnerzugriff von Windows-Sicherheit oder andere Endpoint-/

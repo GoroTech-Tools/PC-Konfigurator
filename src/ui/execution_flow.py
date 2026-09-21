@@ -35,6 +35,14 @@ def run_full_configuration_flow(
 
         advance_step("2. Datei-Vorlagen zurücksetzen (falls aktiviert)...\n")
         root_update()
+        if office_settings.get("enable_office_preclose"):
+            append_status("   ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vor der Vorlagen-Synchronisation beendet...\n")
+            preclose_result = office_configurator.close_office_apps()
+            if preclose_result.get("success"):
+                append_status("   ✅ Office-Prozesse wurden vor der Vorlagen-Synchronisation verarbeitet\n")
+            else:
+                append_status(f"   ⚠️ Office-Preclose mit Hinweis: {preclose_result.get('warning', 'Unbekannt')}\n")
+
         reset_result = reset_file_templates(office_settings)
         if reset_result.get("performed"):
             if reset_result.get("success"):
@@ -55,6 +63,11 @@ def run_full_configuration_flow(
                 append_status("   ✅ Neuere Building-Blocks-Sicherung ins Benutzerprofil übernommen\n")
             elif building_blocks_sync.get("status") == "backed_up":
                 append_status("   ✅ Persönliche Building Blocks in Datei-Vorlagen\\Sonstiges\\Building Blocks gesichert\n")
+            elif building_blocks_sync.get("status") == "error":
+                append_status(
+                    f"   ⚠️ Persönliches Building-Blocks-Backup konnte nicht aktualisiert werden: "
+                    f"{building_blocks_sync.get('error', 'Unbekannter Fehler')}\n"
+                )
         else:
             append_status(f"   ⚠️ Datei-Vorlagen-Synchronisation fehlgeschlagen: {sync_result.get('error', 'Unbekannter Fehler')}\n")
             overall_success = False
@@ -99,14 +112,6 @@ def run_full_configuration_flow(
 
         advance_step("6. Office-Konfiguration...\n")
         root_update()
-
-        if office_settings.get("enable_office_preclose"):
-            append_status("   ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vorab beendet...\n")
-            preclose_result = office_configurator.close_office_apps()
-            if preclose_result.get("success"):
-                append_status("   ✅ Office-Prozesse wurden vorab verarbeitet\n")
-            else:
-                append_status(f"   ⚠️ Office-Preclose mit Hinweis: {preclose_result.get('warning', 'Unbekannt')}\n")
 
         if office_settings.get("enable_office_warmup"):
             append_status("   ℹ️ Office-Warm-up aktiv: Word/Excel werden kurz initialisiert...\n")
@@ -306,6 +311,14 @@ def run_office_configuration_flow(
 
         advance_step("1. Datei-Vorlagen zurücksetzen (falls aktiviert)...\n")
         append_status("Office-Konfiguration startet...\n")
+        if office_settings.get("enable_office_preclose"):
+            append_status("ℹ️ Office-Preclose aktiv: Word/Excel/Outlook werden vor der Vorlagen-Synchronisation beendet...\n")
+            preclose_result = office_configurator.close_office_apps()
+            if preclose_result.get("success"):
+                append_status("✅ Office-Prozesse wurden vor der Vorlagen-Synchronisation verarbeitet\n")
+            else:
+                append_status(f"⚠️ Office-Preclose mit Hinweis: {preclose_result.get('warning', 'Unbekannt')}\n")
+
         reset_result = reset_file_templates(office_settings)
         if reset_result.get("performed"):
             if reset_result.get("success"):
@@ -320,6 +333,12 @@ def run_office_configuration_flow(
         sync_result = sync_file_templates(office_settings)
         if sync_result.get("success"):
             append_status(f"✅ Datei-Vorlagen synchronisiert: {sync_result.get('message', 'aktuell')}\n")
+            building_blocks_sync = sync_result.get("building_blocks", {})
+            if building_blocks_sync.get("status") == "error":
+                append_status(
+                    f"⚠️ Persönliches Building-Blocks-Backup konnte nicht aktualisiert werden: "
+                    f"{building_blocks_sync.get('error', 'Unbekannter Fehler')}\n"
+                )
         else:
             append_status(f"⚠️ Datei-Vorlagen-Synchronisation fehlgeschlagen: {sync_result.get('error', 'Unbekannter Fehler')}\n")
         root_update()

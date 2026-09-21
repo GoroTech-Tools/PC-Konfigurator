@@ -818,6 +818,7 @@ class PCKonfiguratorGUI:
         self.font_size_outlook = tk.IntVar(value=12)
         self.font_size_excel = tk.IntVar(value=10)
         self.appearance_mode = tk.StringVar(value="Hell")
+        self._execution_lock = threading.Lock()
         self.run_controller: ExecutionRunController | None = None
         self._last_run_started = "-"
         self._last_run_mode = "-"
@@ -1098,6 +1099,7 @@ class PCKonfiguratorGUI:
         
     def execute_all_configurations(self):
         """Alle Konfigurationen ausführen"""
+        lock_acquired = False
         try:
             confirmed = messagebox.askyesno(
                 "Anwendungen geschlossen?",
@@ -1112,6 +1114,15 @@ class PCKonfiguratorGUI:
             if not confirmed:
                 return
 
+            if not self._execution_lock.acquire(blocking=False):
+                messagebox.showinfo(
+                    "Konfiguration läuft bereits",
+                    "Es läuft bereits eine Konfiguration. Bitte warten Sie, bis dieser Lauf abgeschlossen ist.",
+                    parent=self.root,
+                )
+                return
+            lock_acquired = True
+
             self._switch_to_tab(TAB_EXECUTION)
             self._reset_execution_progress(
                 mode="full",
@@ -1124,12 +1135,24 @@ class PCKonfiguratorGUI:
             thread.start()
             
         except Exception as e:
+            if lock_acquired and ('thread' not in locals() or not thread.is_alive()):
+                self._execution_lock.release()
             self._append_execution_status(f"FEHLER: {e}\n")
             self._finish_execution_progress(success=False)
     
     def execute_office_only(self):
         """Nur Office-Konfiguration ausführen"""
+        lock_acquired = False
         try:
+            if not self._execution_lock.acquire(blocking=False):
+                messagebox.showinfo(
+                    "Konfiguration läuft bereits",
+                    "Es läuft bereits eine Konfiguration. Bitte warten Sie, bis dieser Lauf abgeschlossen ist.",
+                    parent=self.root,
+                )
+                return
+            lock_acquired = True
+
             self._switch_to_tab(TAB_EXECUTION)
             self._reset_execution_progress(
                 mode="office",
@@ -1142,47 +1165,55 @@ class PCKonfiguratorGUI:
             thread.start()
             
         except Exception as e:
+            if lock_acquired and ('thread' not in locals() or not thread.is_alive()):
+                self._execution_lock.release()
             self._append_execution_status(f"FEHLER: {e}\n")
             self._finish_execution_progress(success=False)
     
     def _run_full_configuration(self):
         """Vollständige Konfiguration in separatem Thread"""
-        run_full_configuration_flow(
-            root_update=self.root.update,
-            system_checker=self.system_checker,
-            install_all_fonts=self._install_all_fonts,
-            get_office_settings_from_gui=self._get_office_settings_from_gui,
-            office_configurator=self.office_configurator,
-            edge_profile_manager=self.edge_profile_manager,
-            template_manager=self.template_manager,
-            safe_office_config=self.safe_office_config,
-            reset_file_templates=self._reset_file_templates,
-            sync_file_templates=self._sync_file_templates,
-            get_office_font_name=self._get_office_font_name,
-            get_font_size_word=self.font_size_word.get,
-            get_font_size_outlook=self.font_size_outlook.get,
-            get_font_size_excel=self.font_size_excel.get,
-            advance_step=self._advance_execution_step,
-            append_status=self._append_execution_status,
-            add_registry_restart_notice=self._add_registry_restart_notice,
-            finish_progress=self._finish_execution_progress,
-        )
+        try:
+            run_full_configuration_flow(
+                root_update=self.root.update,
+                system_checker=self.system_checker,
+                install_all_fonts=self._install_all_fonts,
+                get_office_settings_from_gui=self._get_office_settings_from_gui,
+                office_configurator=self.office_configurator,
+                edge_profile_manager=self.edge_profile_manager,
+                template_manager=self.template_manager,
+                safe_office_config=self.safe_office_config,
+                reset_file_templates=self._reset_file_templates,
+                sync_file_templates=self._sync_file_templates,
+                get_office_font_name=self._get_office_font_name,
+                get_font_size_word=self.font_size_word.get,
+                get_font_size_outlook=self.font_size_outlook.get,
+                get_font_size_excel=self.font_size_excel.get,
+                advance_step=self._advance_execution_step,
+                append_status=self._append_execution_status,
+                add_registry_restart_notice=self._add_registry_restart_notice,
+                finish_progress=self._finish_execution_progress,
+            )
+        finally:
+            self._execution_lock.release()
     
     def _run_office_configuration(self):
         """Nur Office-Konfiguration in separatem Thread"""
-        run_office_configuration_flow(
-            root_update=self.root.update,
-            install_all_fonts=self._install_all_fonts,
-            get_office_settings_from_gui=self._get_office_settings_from_gui,
-            office_configurator=self.office_configurator,
-            edge_profile_manager=self.edge_profile_manager,
-            reset_file_templates=self._reset_file_templates,
-            sync_file_templates=self._sync_file_templates,
-            advance_step=self._advance_execution_step,
-            append_status=self._append_execution_status,
-            add_registry_restart_notice=self._add_registry_restart_notice,
-            finish_progress=self._finish_execution_progress,
-        )
+        try:
+            run_office_configuration_flow(
+                root_update=self.root.update,
+                install_all_fonts=self._install_all_fonts,
+                get_office_settings_from_gui=self._get_office_settings_from_gui,
+                office_configurator=self.office_configurator,
+                edge_profile_manager=self.edge_profile_manager,
+                reset_file_templates=self._reset_file_templates,
+                sync_file_templates=self._sync_file_templates,
+                advance_step=self._advance_execution_step,
+                append_status=self._append_execution_status,
+                add_registry_restart_notice=self._add_registry_restart_notice,
+                finish_progress=self._finish_execution_progress,
+            )
+        finally:
+            self._execution_lock.release()
 
     def _add_registry_restart_notice(self):
         """Hinweis für Anwender nach Registry-Anpassungen anzeigen."""
@@ -1275,9 +1306,9 @@ class PCKonfiguratorGUI:
                 return result
             building_blocks_result = self._sync_building_blocks_backup(office_settings)
             result["building_blocks"] = building_blocks_result
-            if not building_blocks_result.get("success"):
-                result["success"] = False
-                result["error"] = building_blocks_result.get("error", "Building-Blocks-Synchronisation fehlgeschlagen")
+            # Das persönliche Building-Blocks-Backup ist optional. Ein temporärer
+            # Lesefehler darf die eigentliche Vorlagenbibliothek nicht als
+            # fehlgeschlagen markieren; der Flow zeigt den Teilschritt als Warnung.
             return result
         except Exception as exc:
             self.logger.error("Datei-Vorlagen-Synchronisation fehlgeschlagen: %s", exc, exc_info=True)

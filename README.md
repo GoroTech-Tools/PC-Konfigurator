@@ -1,8 +1,8 @@
-﻿# PC-Konfigurator
+# PC-Konfigurator
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.91 (Build: 20.09.2026, Python 3.13.7)
+**Version:** 3.3.92 (Build: 21.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -105,6 +105,13 @@ oder Titel bleiben unverändert.
   `Datei-Vorlagen\Sonstiges\Building Blocks\Building Blocks.dotx` gesichert.
   Vor dem manuellen Editor-Aufruf gewinnt die jeweils neuere Datei; eine neuere
   Sicherung wird automatisch nach `%APPDATA%` zurückgespielt.
+- Wenn der Office-Preclose aktiviert ist, werden Word, Excel und Outlook bereits
+  vor dieser Synchronisation beendet. Ein persönliches Building-Blocks-Backup
+  bleibt optional; ein vorübergehender Lesefehler verhindert nicht die übrige
+  Vorlagen- und Office-Konfiguration.
+- Während einer laufenden Konfiguration kann kein zweiter Konfigurationslauf
+  gestartet werden, damit persönliche Office-Dateien nicht parallel gelesen
+  oder geändert werden.
 - Im Tab „Konfiguration“ kann optional **„Vorhandene Datei-Vorlagen löschen und
     durch aktuellen Programmstand ersetzen“** aktiviert werden. Diese Option ist
     standardmäßig deaktiviert und erfordert eine ausdrückliche Bestätigung, da

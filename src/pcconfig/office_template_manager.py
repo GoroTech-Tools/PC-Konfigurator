@@ -494,7 +494,7 @@ class OfficeTemplateManager:
                 'backup_path': str(backup_path),
             }
         except Exception as exc:
-            self.logger.error('Building-Blocks-Synchronisation fehlgeschlagen: %s', exc, exc_info=True)
+            self.logger.warning('Building-Blocks-Synchronisation konnte nicht abgeschlossen werden: %s', exc, exc_info=True)
             return {
                 'success': False,
                 'status': 'error',
