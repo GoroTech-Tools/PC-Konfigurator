@@ -228,7 +228,12 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
 
 - Release-Artefakte liegen in `release/`
 - Veröffentlichung über `src/publish_release.ps1`
-- GitHub-Release-Integration ist über Repo-Workflow möglich (je nach Projektstand)
+- GitHub-Releases werden durch `.github/workflows/build-release.yml` bei einem
+   Versions-Tag (`vX.Y.Z`) veröffentlicht.
+- Der Workflow setzt den veröffentlichten Release standardmäßig mit
+   `make_latest: true` als GitHub-„Latest“.
+- Für einen Release muss daher nach dem geprüften Commit zusätzlich der passende
+   Versions-Tag erstellt und nach GitHub gepusht werden.
 
 ```mermaid
 flowchart LR
