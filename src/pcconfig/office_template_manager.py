@@ -688,7 +688,12 @@ class OfficeTemplateManager:
                 ok = (
                     True
                     if prepared_matches
-                    else self.safe_processor.update_word_template_xml(email_source, fn, fso)
+                    else self.safe_processor.update_word_template_xml(
+                        email_source,
+                        fn,
+                        fso,
+                        patch_theme_fonts=True,
+                    )
                 )
                 if prepared_matches:
                     self.logger.info("Outlook-Kopiervorlage bytegenau übernommen: %s", email_source.name)

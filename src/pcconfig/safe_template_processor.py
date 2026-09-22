@@ -22,8 +22,13 @@ class SafeTemplateProcessor:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def update_word_template_xml(self, template_path, font_name, font_size):
-        """Setzt Word-Standardformatierungen und Theme-Schrift direkt im ZIP."""
+    def update_word_template_xml(self, template_path, font_name, font_size, patch_theme_fonts=False):
+        """Setzt Word-Standardformatierungen und optional die Theme-Schrift direkt im ZIP.
+
+        Outlook classic verwendet in ``NormalEmail.dotm`` neben den konkreten
+        Formatvorlagen auch die Theme-Schrift. Für normale Word-Vorlagen bleibt
+        das bisherige, bewusst nicht globale Theme-Verhalten der Standard.
+        """
         path = Path(template_path)
         if not path.exists():
             self.logger.error("Vorlage nicht gefunden: %s", path)
@@ -70,11 +75,22 @@ class SafeTemplateProcessor:
                         )
                     theme_bytes = None
                     if theme_name:
-                        # Die Word-Theme-Schrift bleibt unverändert. Eine
-                        # globale Theme-Anpassung würde auch Überschrift 1/2,
-                        # Titel usw. beeinflussen. Die gewünschte Schrift wird
-                        # ausschließlich in Standard/Kein Leerraum gesetzt.
-                        theme_bytes = source.read(theme_name)
+                        original_theme = etree.fromstring(source.read(theme_name))
+                        if patch_theme_fonts:
+                            self._patch_theme_fonts(original_theme, font_name)
+                        if use_lxml:
+                            theme_bytes = etree.tostring(
+                                original_theme,
+                                encoding="UTF-8",
+                                xml_declaration=True,
+                                standalone=True,
+                            )
+                        else:
+                            theme_bytes = etree.tostring(
+                                original_theme,
+                                encoding="utf-8",
+                                xml_declaration=True,
+                            )
                     out_path = Path(temp_dir) / ("out" + path.suffix)
                     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as target:
                         for item in source.infolist():
@@ -327,7 +343,9 @@ class SafeTemplateProcessor:
     def _sub_element(parent, tag):
         """Erzeugt ein XML-Kind passend zum verwendeten XML-Backend."""
         if hasattr(parent, "makeelement"):
-            return parent.makeelement(tag, {})
+            element = parent.makeelement(tag, {})
+            parent.append(element)
+            return element
         return ET.SubElement(parent, tag)
 
     def _patch_theme_fonts_etree(self, root, font_name, etree):

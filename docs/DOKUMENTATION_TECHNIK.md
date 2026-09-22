@@ -107,6 +107,32 @@ Die Word-Schriftart- und Schriftgrößenanpassung ist auf die Absatzformatvorlag
 Überschrift- und Titel-Formatvorlagen sowie die Word-Theme-Schrift werden nicht
 global überschrieben.
 
+### Outlook classic / Outlook 2024 LTSC
+
+Outlook classic verwendet für die Nachrichten-Defaults mehrere Ebenen. Der
+Konfigurator setzt deshalb für Office `16.0` (einschließlich Outlook 2024 LTSC)
+und ältere unterstützte Office-Versionen:
+
+- `HKCU\Software\Microsoft\Office\<Version>\Common\MailSettings`
+   (`ComposeFontSimple`, `ReplyFontSimple`, `TextFontSimple` sowie die
+   entsprechenden `*FontComplex`-Werte)
+- `HKCU\Software\Microsoft\Office\<Version>\Outlook\Options` für
+   `NewMailFont`, `NewMailFontSize`, `ReplyForwardFont`,
+   `ReplyForwardFontSize` und den Legacy-Kompatibilitätswert
+   `DefaultMailFont`
+- die direkte Formatvorlage und die Theme-Schriften in `NormalEmail.dotm`
+
+Die `FontSimple`-Werte enthalten die Office-kompatible Größenkodierung; die
+`FontComplex`-Werte enthalten die HTML/CSS-Definitionen für Erstellen,
+Antworten/Weiterleiten und Nur-Text. Beim XML-Patch werden neu benötigte
+Word-Elemente backend-unabhängig korrekt angehängt und die ZIP-Datei vor dem
+atomaren Austausch auf Integrität geprüft. Der Word-Standardpfad ändert die
+Theme-Schrift weiterhin nicht global; nur die Outlook-Vorlage erhält diesen
+zusätzlichen Patch, weil Outlook classic die Theme-Definition auswerten kann.
+
+Der Registry-Prüfer `src/tools/check-office-registry.ps1` erwartet für den
+aktuellen GUI-Standard Aptos mit 12 pt bei neuen Nachrichten und Antworten.
+
 Die vier Word-Einfügewerte werden als DWORD gesetzt: `0` für ursprüngliche
 Formatierung innerhalb desselben Dokuments, `1` für Formatierung zusammenführen
 zwischen Dokumenten, `3` für Zielformatvorlagen bei Formatvorlagenkonflikten und

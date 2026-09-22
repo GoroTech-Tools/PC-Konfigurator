@@ -787,7 +787,12 @@ class OfficeConfigurator:
             from pcconfig.safe_template_processor import SafeTemplateProcessor
 
             processor = SafeTemplateProcessor()
-            if processor.update_word_template_xml(template_path, font_name, font_size):
+            if processor.update_word_template_xml(
+                template_path,
+                font_name,
+                font_size,
+                patch_theme_fonts=True,
+            ):
                 self.logger.info(
                     "Outlook-Vorlage synchronisiert: %s → %s %dpt (Office %s)",
                     template_path,

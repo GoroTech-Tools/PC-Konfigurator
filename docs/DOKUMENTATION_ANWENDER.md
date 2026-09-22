@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.94 (21.09.2026)
+**Version:** 3.3.95 (22.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -171,6 +171,9 @@ andere Formatvorlagen werden nicht verändert.
 **Outlook-Hinweis (modernes Outlook):**
 
 - Die klassische Outlook-Engine übernimmt Standardfonts aus Registry/Template i. d. R. zuverlässig.
+- Outlook 2024 LTSC (classic) wird über die Office-16.0-Registry (`Common\MailSettings` und `Outlook\Options`) sowie `NormalEmail.dotm` versorgt. Schriftart und -größe für neue Nachrichten sowie Antworten/Weiterleitungen werden dabei gemeinsam gesetzt.
+- Die Outlook-Vorlage wird zusätzlich an die gewählte Theme-Schrift angepasst. Dadurch greift die Auswahl auch dann, wenn Outlook classic die Theme-Definition statt nur der direkten Formatvorlage verwendet.
+- Der Standardwert der Outlook-Schriftgröße beträgt 12 pt und kann im Tab „Konfiguration“ angepasst werden.
 - In der modernen Outlook-Compose-Oberfläche kann Microsoft diese Vorgaben teilweise durch eigene UI-Standards übersteuern.
 - Die Anwendung blendet dazu einen transparenten Hinweis in der Ausführung ein.
 

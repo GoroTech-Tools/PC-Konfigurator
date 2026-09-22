@@ -157,9 +157,9 @@ foreach ($version in $OfficeVersions) {
 
     # Outlook
     $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'NewMailFont' -Expected 'Aptos' -Group "Outlook"
-    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'NewMailFontSize' -Expected 11 -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'NewMailFontSize' -Expected 12 -Group "Outlook"
     $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'ReplyForwardFont' -Expected 'Aptos' -Group "Outlook"
-    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'ReplyForwardFontSize' -Expected 11 -Group "Outlook"
+    $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'ReplyForwardFontSize' -Expected 12 -Group "Outlook"
     $checks += Get-RegistryValueInfo -Path $outlookOptionsPath -Name 'DefaultMailFont' -Expected 'Aptos' -Group "Outlook"
 
     # Bild-Layout ist jetzt im Konfigurator hinterlegt; die Kandidatensuche bleibt ergänzend.

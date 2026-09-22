@@ -29,6 +29,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   auf mögliche Ursachen (z. B. Kontrollierter Ordnerzugriff von Windows-Sicherheit).
 - Explorer-Neustart in der GUI wurde für verzögerte Shell-Reinitialisierung gehärtet (Taskleisten-Sichtbarkeitsprüfung + Recovery-Fallback).
 - Bekannte Einschränkung dokumentiert: Moderne Outlook-Compose-Oberfläche kann lokale Standardfont-Vorgaben trotz Registry-/Template-Konfiguration teilweise übersteuern.
+- Outlook classic/Outlook 2024 LTSC erhält Schriftart und -größe zusätzlich über `Common\MailSettings`, `Outlook\Options` und einen Theme-synchronisierten `NormalEmail.dotm`-Patch.
 - Office-Konfiguration nutzt standardmäßig den robusten Registry/XML-Pfad; COM-Synchronisierung ist nur noch optional.
 - Edge-Profile und Outlook-Signaturen werden getrennt gesichert und im Laufstatus angezeigt.
 - Der Dokumente-Zielpfad berücksichtigt OneDrive-Umleitungen und verwendet ohne Umleitung den deutschen Ordner `Dokumente`.

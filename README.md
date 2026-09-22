@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.94 (Build: 21.09.2026, Python 3.13.7)
+**Version:** 3.3.95 (Build: 22.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -62,6 +62,7 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 - Word, Excel und Outlook automatisch konfigurieren
 - Template-Management aus `data/Datei-Vorlagen/Sonstiges/Standards`
 - Standard-Schriftarten sicher setzen
+- Outlook classic einschließlich Outlook 2024 LTSC über Registry, MailSettings und synchronisierte `NormalEmail.dotm`-Theme-Schrift setzen
 - Entwicklertools und Benutzeroberfläche optimieren
 - Zentrale Word-Autokorrektur-Optionen per Registry deaktivieren:
   - Zwei Großbuchstaben am Wortanfang korrigieren
