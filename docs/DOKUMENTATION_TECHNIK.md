@@ -252,7 +252,8 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
 
 ## 5. CI/CD und Releases
 
-- Release-Artefakte liegen in `release/`
+- Release-Artefakte werden lokal in `release/` erzeugt; ZIP-Dateien werden nicht
+  in Git versioniert, sondern über das jeweilige GitHub-Release ausgeliefert.
 - Veröffentlichung über `src/publish_release.ps1`
 - GitHub-Releases werden durch `.github/workflows/build-release.yml` bei einem
    Versions-Tag (`vX.Y.Z`) veröffentlicht.

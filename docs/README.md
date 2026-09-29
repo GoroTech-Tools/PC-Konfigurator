@@ -16,7 +16,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 1. Für Benutzer:innen: `DOKUMENTATION_ANWENDER.md`
 2. Für Entwickler:innen/Admins: zusätzlich `DOKUMENTATION_TECHNIK.md`
 
-## Aktueller Betriebsstatus (Stand 2026-09-17)
+## Aktueller Betriebsstatus (Stand 2026-09-29)
 
 - Datei-Vorlagen-Bibliothek wird bei jedem Lauf automatisch mit dem Zielordner
   abgeglichen (Update-Modus, keine Überschreibung eigener Änderungen).
