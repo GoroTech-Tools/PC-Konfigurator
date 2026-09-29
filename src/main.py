@@ -252,13 +252,13 @@ class PCKonfiguratorGUI:
         except Exception:
             pass
 
-    def _run_startmenu_guard(self, auto_restart_explorer: bool = True):
+    def _run_startmenu_guard(self, auto_restart_explorer: bool = False):
         """Setzt den gewünschten Startmenü-Modus.
 
         Args:
-            auto_restart_explorer: False beim App-Start (Explorer läuft bereits;
-                der Autostart-Guard greift beim nächsten Login). True bei
-                manueller Modus-Änderung über die GUI (sofortige Wirkung).
+            auto_restart_explorer: Explorer-Neustart nur bei einem ausdrücklich
+                angeforderten Aufruf; standardmäßig greift der Autostart-Guard
+                beim nächsten Login.
         """
         try:
             prefer_classic_mode = self.startmenu_mode.get() == "classic"
@@ -428,9 +428,9 @@ class PCKonfiguratorGUI:
         self._save_gui_state()
 
     def _on_startmenu_mode_changed(self, *_args):
-        """Persistiert den Modus und setzt ihn direkt im Benutzerkontext."""
+        """Persistiert den Modus ohne den laufenden Explorer zu beenden."""
         self._save_gui_state()
-        self._run_startmenu_guard(auto_restart_explorer=True)
+        self._run_startmenu_guard(auto_restart_explorer=False)
         self._update_startmenu_mode_label()
 
     def _on_firm_mode_changed(self, *_args):
