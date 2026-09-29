@@ -30,3 +30,24 @@ def get_documents_directory() -> Path:
             pass
 
     return Path.home() / "Dokumente"
+
+
+def get_desktop_directory() -> Path:
+    """Liefert den echten Desktop-Ordner des aktuellen Windows-Benutzers."""
+    if os.name == "nt":
+        try:
+            import winreg
+
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders",
+            ) as key:
+                value, _value_type = winreg.QueryValueEx(key, "Desktop")
+            if value:
+                redirected = Path(os.path.expandvars(str(value))).expanduser()
+                if redirected.is_absolute():
+                    return redirected
+        except (OSError, ImportError):
+            pass
+
+    return Path.home() / "Desktop"
