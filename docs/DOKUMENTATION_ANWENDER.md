@@ -55,6 +55,11 @@ Im Bereich „Individuelle Einstellungen“ stehen zur Verfügung:
 - **Suchfeld in Taskleiste ausblenden**
 - **Startmenü-Modus umschalten:** `Windows 11 (empfohlen)` oder `Klassisch (Fallback)`
 
+Beim Anwenden der Windows-Einstellungen wird der Desktop-Ordner des aktuellen
+Benutzers außerdem an den Explorer-Schnellzugriff angeheftet. Der Ordnerpfad wird
+aus den Windows-Benutzereinstellungen ermittelt; eine OneDrive-Umleitung wird
+daher berücksichtigt.
+
 Hinweis: Der gewählte Startmenü-Modus wird dauerhaft gespeichert und beim nächsten
 Start still in die Registry geschrieben (Benutzerkontext, ohne Adminrechte). Der
 Windows-Explorer wird dabei **nicht** neu gestartet — die Wirkung des gesetzten Modus

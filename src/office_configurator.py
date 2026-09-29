@@ -13,6 +13,7 @@ import logging
 import shutil
 import time
 from user_paths import get_documents_directory
+from quick_access import pin_desktop_to_quick_access
 import subprocess
 import re
 from pathlib import Path
@@ -1058,6 +1059,16 @@ class OfficeConfigurator:
         """Windows-Explorer- und Taskleisten-Defaults konfigurieren."""
         try:
             self.logger.info("Windows-Einstellungen werden konfiguriert...")
+            desktop_pinned, desktop_pin_error = pin_desktop_to_quick_access()
+            pin_warning = None
+            if desktop_pinned:
+                self.logger.info("Desktop-Ordner wurde an den Explorer-Schnellzugriff angeheftet.")
+            else:
+                pin_warning = (
+                    "Desktop konnte nicht an den Schnellzugriff angeheftet werden: "
+                    f"{desktop_pin_error}"
+                )
+                self.logger.warning(pin_warning)
 
             hidden_value = 1 if show_hidden_items else 2
             # Geschützte Systemdateien müssen unabhängig von der normalen
@@ -1177,24 +1188,33 @@ class OfficeConfigurator:
                 blocking_failed = [name for name in unique_failed if name not in optional_values]
 
                 if not blocking_failed:
+                    warning = (
+                        "Ein optionaler Windows-Wert konnte nicht gesetzt werden "
+                        f"(nicht gesetzt: {', '.join(unique_failed)})."
+                    )
+                    if pin_warning:
+                        warning = f"{warning} {pin_warning}"
                     return {
                         "success": True,
-                        "warning": (
-                            "Ein optionaler Windows-Wert konnte nicht gesetzt werden "
-                            f"(nicht gesetzt: {', '.join(unique_failed)})."
-                        ),
+                        "warning": warning,
                         "message": "Windows-Kerneinstellungen erfolgreich konfiguriert",
                     }
 
+                error = (
+                    "Windows-Einstellungen teilweise blockiert (mögliche Richtlinie/Berechtigung). "
+                    f"Nicht gesetzt: {', '.join(blocking_failed)}"
+                )
+                if pin_warning:
+                    error = f"{error}. {pin_warning}"
                 return {
                     "success": False,
-                    "error": (
-                        "Windows-Einstellungen teilweise blockiert (mögliche Richtlinie/Berechtigung). "
-                        f"Nicht gesetzt: {', '.join(blocking_failed)}"
-                    ),
+                    "error": error,
                 }
 
-            return {"success": True, "message": "Windows-Einstellungen erfolgreich konfiguriert"}
+            result = {"success": True, "message": "Windows-Einstellungen erfolgreich konfiguriert"}
+            if pin_warning:
+                result["warning"] = pin_warning
+            return result
         except Exception as e:
             self.logger.error(f"Fehler bei Windows-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
