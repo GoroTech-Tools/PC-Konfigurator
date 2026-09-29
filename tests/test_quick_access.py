@@ -44,7 +44,10 @@ class PinDesktopToQuickAccessTests(unittest.TestCase):
             CoUninitialize=MagicMock(),
         )
         folder = types.SimpleNamespace(Self=types.SimpleNamespace(InvokeVerb=MagicMock()))
-        shell = types.SimpleNamespace(Namespace=MagicMock(return_value=folder))
+        qa_folder = types.SimpleNamespace(Items=MagicMock(return_value=[]))
+        shell = types.SimpleNamespace(
+            Namespace=MagicMock(side_effect=[folder, qa_folder]),
+        )
         win32com_client = types.SimpleNamespace(
             Dispatch=MagicMock(return_value=shell),
         )
@@ -64,9 +67,43 @@ class PinDesktopToQuickAccessTests(unittest.TestCase):
 
         self.assertEqual(result, (True, None))
         win32com_client.Dispatch.assert_called_once_with("Shell.Application")
-        shell.Namespace.assert_called_once_with(str(desktop))
+        shell.Namespace.assert_has_calls(
+            [unittest.mock.call(str(desktop)), unittest.mock.call(quick_access._QUICK_ACCESS_NAMESPACE)],
+        )
         folder.Self.InvokeVerb.assert_called_once_with("pintohome")
         pythoncom.CoInitialize.assert_called_once_with()
+        pythoncom.CoUninitialize.assert_called_once_with()
+
+    def test_does_not_unpin_desktop_when_already_in_quick_access(self):
+        desktop = pathlib.Path("/home/user/OneDrive/Desktop")
+        pythoncom = types.SimpleNamespace(
+            CoInitialize=MagicMock(),
+            CoUninitialize=MagicMock(),
+        )
+        folder = types.SimpleNamespace(Self=types.SimpleNamespace(InvokeVerb=MagicMock()))
+        qa_folder = types.SimpleNamespace(
+            Items=MagicMock(return_value=[types.SimpleNamespace(Path=str(desktop))]),
+        )
+        shell = types.SimpleNamespace(
+            Namespace=MagicMock(side_effect=[folder, qa_folder]),
+        )
+        win32com_client = types.SimpleNamespace(Dispatch=MagicMock(return_value=shell))
+        win32com = types.ModuleType("win32com")
+        win32com.client = win32com_client
+
+        with (
+            patch.object(quick_access.sys, "platform", "win32"),
+            patch.object(quick_access, "get_desktop_directory", return_value=desktop),
+            patch.object(pathlib.Path, "is_dir", return_value=True),
+            patch.dict(
+                sys.modules,
+                {"pythoncom": pythoncom, "win32com": win32com, "win32com.client": win32com_client},
+            ),
+        ):
+            result = quick_access.pin_desktop_to_quick_access()
+
+        self.assertEqual(result, (True, None))
+        folder.Self.InvokeVerb.assert_not_called()
         pythoncom.CoUninitialize.assert_called_once_with()
 
 
