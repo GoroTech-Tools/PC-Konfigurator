@@ -1114,7 +1114,8 @@ class OfficeConfigurator:
 
             # Zusatzwerte ohne RegistryExplainer-Mapping
             extra_values = {
-                "ShowSuperHidden": show_super_hidden_value
+                "ShowSuperHidden": show_super_hidden_value,
+                "TaskbarGlomLevel": 0,
             }
             for name, value in extra_values.items():
                 if not self._set_windows_extra_value_with_fallback(key_path, name, value):
