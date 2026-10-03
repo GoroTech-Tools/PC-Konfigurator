@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -83,7 +85,7 @@ jobs:
   publish:
     name: Publish GitHub release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
@@ -113,10 +115,11 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          name: PC-Konfigurator ${{ github.ref_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('main-{0}', github.run_number) }}
+          name: PC-Konfigurator ${{ github.ref_type == 'tag' && github.ref_name || format('Main-Build {0}', github.run_number) }}
           files: release/PC-Konfigurator-v*.zip
           fail_on_unmatched_files: true
           body_path: ${{ steps.release_notes.outputs.path }}
           generate_release_notes: false
           make_latest: true
+          overwrite_files: true
