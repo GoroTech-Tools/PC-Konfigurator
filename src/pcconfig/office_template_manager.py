@@ -5,6 +5,7 @@ Office Template Manager
 Verwaltet Office-Vorlagendateien (Normal.dotm, Mappe.xltx, NormalEmail.dotm)
 """
 
+import errno
 import os
 import shutil
 import time
@@ -477,7 +478,14 @@ class OfficeTemplateManager:
             def copy_with_retry(source_path: Path, destination_path: Path) -> None:
                 def copy_action() -> None:
                     destination_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(source_path, destination_path)
+                    try:
+                        shutil.copy2(source_path, destination_path)
+                    except OSError as exc:
+                        if exc.errno != errno.EBADF:
+                            raise
+                        with source_path.open('rb') as source, destination_path.open('wb') as destination:
+                            shutil.copyfileobj(source, destination)
+                        shutil.copystat(source_path, destination_path)
 
                 retry_on_oserror(copy_action)
 

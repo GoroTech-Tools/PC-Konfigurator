@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import pathlib
@@ -13,6 +14,34 @@ import pcconfig.office_template_manager as office_template_manager
 
 
 class BuildingBlocksBackupTests(unittest.TestCase):
+    def test_falls_back_to_buffered_copy_after_bad_file_descriptor(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = pathlib.Path(temp_dir)
+            user_path = root / "user" / "Building Blocks.dotx"
+            backup_path = root / "templates" / "Sonstiges" / "Building Blocks" / "Building Blocks.dotx"
+            user_path.parent.mkdir(parents=True)
+            user_path.write_bytes(b"user copy")
+
+            manager = office_template_manager.OfficeTemplateManager.__new__(
+                office_template_manager.OfficeTemplateManager,
+            )
+            manager.logger = logging.getLogger(__name__)
+            manager.get_user_building_blocks_path = lambda: user_path
+
+            with (
+                patch.object(
+                    office_template_manager.shutil,
+                    "copy2",
+                    side_effect=OSError(errno.EBADF, "Bad file descriptor"),
+                ),
+                patch.object(fs_retry.time, "sleep"),
+            ):
+                result = manager.sync_user_building_blocks_backup(root / "templates")
+
+            self.assertTrue(result["success"])
+            self.assertEqual(result["status"], "backed_up")
+            self.assertEqual(backup_path.read_bytes(), b"user copy")
+
     def test_retries_transient_metadata_error_before_syncing_newer_user_file(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = pathlib.Path(temp_dir)
