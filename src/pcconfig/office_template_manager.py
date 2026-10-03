@@ -457,8 +457,16 @@ class OfficeTemplateManager:
         user_path = self.get_user_building_blocks_path()
         backup_path = Path(target_datei_vorlagen_dir) / 'Sonstiges' / 'Building Blocks' / 'Building Blocks.dotx'
         try:
-            user_exists = user_path.is_file()
-            backup_exists = backup_path.is_file()
+            def get_file_mtime(path: Path):
+                def inspect_file():
+                    return path.stat().st_mtime if path.is_file() else None
+
+                return retry_on_oserror(inspect_file)
+
+            user_mtime = get_file_mtime(user_path)
+            backup_mtime = get_file_mtime(backup_path)
+            user_exists = user_mtime is not None
+            backup_exists = backup_mtime is not None
             if not user_exists and not backup_exists:
                 return {
                     'success': True,
@@ -473,11 +481,11 @@ class OfficeTemplateManager:
 
                 retry_on_oserror(copy_action)
 
-            if backup_exists and (not user_exists or backup_path.stat().st_mtime > user_path.stat().st_mtime):
+            if backup_exists and (not user_exists or backup_mtime > user_mtime):
                 copy_with_retry(backup_path, user_path)
                 action = 'restored'
                 message = f'Building Blocks aus der Sicherung wiederhergestellt: {user_path}'
-            elif user_exists and (not backup_exists or user_path.stat().st_mtime > backup_path.stat().st_mtime):
+            elif user_exists and (not backup_exists or user_mtime > backup_mtime):
                 copy_with_retry(user_path, backup_path)
                 action = 'backed_up'
                 message = f'Building Blocks in die Vorlagenablage gesichert: {backup_path}'
