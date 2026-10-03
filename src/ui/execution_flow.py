@@ -1,6 +1,15 @@
 from __future__ import annotations
 
 
+def _building_blocks_update_failed(result) -> bool:
+    if not isinstance(result, dict) or "building_blocks" not in result:
+        return False
+    building_blocks = result["building_blocks"]
+    return not isinstance(building_blocks, dict) or not building_blocks or any(
+        not ok for ok in building_blocks.values()
+    )
+
+
 def run_full_configuration_flow(
     *,
     root_update,
@@ -25,6 +34,7 @@ def run_full_configuration_flow(
     """Vollständige Konfiguration inkl. Template-/Registry-Schritten."""
     try:
         overall_success = True
+        uncritical_error = False
 
         advance_step("1. System-Check...\n")
         root_update()
@@ -68,6 +78,7 @@ def run_full_configuration_flow(
                     f"   ⚠️ Persönliches Building-Blocks-Backup konnte nicht aktualisiert werden: "
                     f"{building_blocks_sync.get('error', 'Unbekannter Fehler')}\n"
                 )
+                uncritical_error = True
         else:
             append_status(f"   ⚠️ Datei-Vorlagen-Synchronisation fehlgeschlagen: {sync_result.get('error', 'Unbekannter Fehler')}\n")
             overall_success = False
@@ -177,15 +188,21 @@ def run_full_configuration_flow(
                 corporate_design=office_settings.get("corporate_design", "INN-tegrativ"),
             )
             building_blocks_result = mod_results.get("building_blocks", {}) if isinstance(mod_results, dict) else {}
+            uncritical_error = uncritical_error or _building_blocks_update_failed(mod_results)
             if isinstance(building_blocks_result, dict) and building_blocks_result:
                 found_names = [name for name, ok in building_blocks_result.items() if ok]
+                failed_names = [name for name, ok in building_blocks_result.items() if not ok]
                 if found_names:
                     append_status(f"   ✅ Building Blocks erkannt und angepasst: {', '.join(found_names)}\n")
-                else:
-                    append_status("   ℹ️ Building Blocks nicht gefunden; der normale Word-Flow blieb unverändert\n")
+                if failed_names:
+                    append_status(f"   ⚠️ Building Blocks konnten nicht angepasst werden: {', '.join(failed_names)}\n")
+            elif "building_blocks" in mod_results:
+                append_status("   ⚠️ Building Blocks nicht gefunden oder nicht angepasst; der normale Word-Flow blieb unverändert\n")
             copy_results = template_manager.copy_templates_to_user()
 
-            mod_ok = bool(mod_results) and all(bool(v) for v in mod_results.values())
+            mod_ok = bool(mod_results) and all(
+                bool(value) for key, value in mod_results.items() if key != "building_blocks"
+            )
             copy_ok = bool(copy_results) and all(bool(v) for v in copy_results.values())
             # Registry wurde bereits in Schritt 3 über OfficeConfigurator gesetzt.
             registry_ok = True
@@ -193,7 +210,7 @@ def run_full_configuration_flow(
             failed_mod_templates = [
                 template_names.get(key, key)
                 for key, ok in mod_results.items()
-                if not ok
+                if key != "building_blocks" and not ok
             ]
             failed_copy_templates = [
                 template_names.get(key, key)
@@ -282,7 +299,7 @@ def run_full_configuration_flow(
         advance_step("9. Abschluss...\n")
         append_status("\nKonfiguration abgeschlossen!\n")
         add_registry_restart_notice()
-        finish_progress(success=overall_success)
+        finish_progress(success=overall_success, uncritical_error=uncritical_error)
 
     except Exception as exc:
         append_status(f"\nFEHLER: {exc}\n")
@@ -307,6 +324,7 @@ def run_office_configuration_flow(
 ) -> None:
     """Office-only-Ausführung (ohne Windows-Teilkonfiguration)."""
     try:
+        uncritical_error = False
         office_settings = get_office_settings_from_gui()
 
         advance_step("1. Datei-Vorlagen zurücksetzen (falls aktiviert)...\n")
@@ -339,6 +357,7 @@ def run_office_configuration_flow(
                     f"⚠️ Persönliches Building-Blocks-Backup konnte nicht aktualisiert werden: "
                     f"{building_blocks_sync.get('error', 'Unbekannter Fehler')}\n"
                 )
+                uncritical_error = True
         else:
             append_status(f"⚠️ Datei-Vorlagen-Synchronisation fehlgeschlagen: {sync_result.get('error', 'Unbekannter Fehler')}\n")
         root_update()
@@ -419,10 +438,10 @@ def run_office_configuration_flow(
             advance_step("7. Abschluss...\n")
             append_status("Office-Konfiguration abgeschlossen!\n")
             add_registry_restart_notice()
-            finish_progress(success=True)
+            finish_progress(success=True, uncritical_error=uncritical_error)
         else:
             append_status(f"Fehler: {result.get('error', 'Unbekannter Fehler')}\n")
-            finish_progress(success=False)
+            finish_progress(success=False, uncritical_error=uncritical_error)
 
     except Exception as exc:
         append_status(f"FEHLER: {exc}\n")
