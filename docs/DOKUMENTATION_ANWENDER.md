@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.95 (22.09.2026)
+**Version:** 3.3.99 (29.09.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 

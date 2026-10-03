@@ -2,7 +2,7 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.95 (Build: 22.09.2026, Python 3.13.7)
+**Version:** 3.3.99 (Build: 29.09.2026, Python 3.13.7)
 
 ## Übersicht
 
@@ -140,7 +140,7 @@ des aktuell angemeldeten Windows-Benutzers direkt in Word geöffnet werden.
 ## Projektstruktur
 
 ```text
-PC-Konfigurator-v3.3.1/
+PC-Konfigurator-v3.3.99/
 ├── PC-Konfigurator.exe
 ├── README.md
 ├── BUILD-INFO.txt
