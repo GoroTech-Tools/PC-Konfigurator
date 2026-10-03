@@ -287,6 +287,10 @@ Single Source of Truth zur Build-Version:
 - `docs/DOKUMENTATION_ANWENDER.md`
 - `src/BUILD-INFO.txt`
 
+Main-Branch-Builds erhöhen automatisch die Patch-Version gegenüber der höchsten
+vorhandenen Versionsnummer in `src/build_info.py` oder einem `vX.Y.Z`-Git-Tag.
+Der GitHub-Release-Tag lautet `vX.Y.Z`, der Release-Name `PC-Konfigurator X.Y.Z`.
+
 ## 7. Risiken und Randbedingungen
 
 - OneDrive-Placeholder können Asset-Kopiervorgänge beeinträchtigen
