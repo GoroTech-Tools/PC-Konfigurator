@@ -1049,17 +1049,22 @@ class PCKonfiguratorGUI:
             return
         self.run_controller.advance(detail=detail)
 
-    def _finish_execution_progress(self, success: bool):
+    def _finish_execution_progress(self, success: bool, uncritical_error: bool = False):
         if self.run_controller:
-            self.run_controller.finish(success=success)
+            self.run_controller.finish(success=success, uncritical_error=uncritical_error)
 
         if success:
-            self._last_run_status = "Erfolgreich"
+            self._last_run_status = (
+                "Mit unkritischem Fehler beendet" if uncritical_error else "Erfolgreich"
+            )
         else:
-            self._last_run_status = "Fehler"
+            self._last_run_status = "Mit Fehlern beendet"
 
         content = self.run_controller.get_log_text() if self.run_controller else ""
-        self._last_run_log_path = self._save_execution_run_log(success=success, content=content)
+        self._last_run_log_path = self._save_execution_run_log(
+            success=success and not uncritical_error,
+            content=content,
+        )
         self._update_last_result_view()
         self._save_gui_state()
         

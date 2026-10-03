@@ -131,15 +131,17 @@ class ExecutionRunController:
         if detail:
             self.append_status(detail)
 
-    def finish(self, success: bool) -> None:
+    def finish(self, success: bool, uncritical_error: bool = False) -> None:
         def _update() -> None:
-            if success:
+            if success and uncritical_error:
+                self._set_state("warning", "Mit unkritischem Fehler beendet")
+            elif success:
                 self.step_index = len(self.steps) - 1
                 self.progress_bar.set(1)
                 self._render_steps()
                 self._set_state("success", "Erfolgreich abgeschlossen")
             else:
-                self._set_state("error", "Mit Fehler beendet")
+                self._set_state("error", "Mit Fehlern beendet")
 
         self.run_on_ui(_update)
 
