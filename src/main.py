@@ -26,6 +26,7 @@ from datetime import datetime
 # Lokale Module importieren
 from system_checker import SystemChecker
 from office_configurator import OfficeConfigurator
+from font_options import FONT_OPTIONS
 from pcconfig.office_template_manager import OfficeTemplateManager
 from safe_office_configurator import SafeOfficeConfigurator
 from file_sync import FileSync
@@ -92,21 +93,6 @@ from runtime.runtime_bundle import (
     prepare_runtime_bundle,
 )
 from security_hints import describe_filesystem_error
-
-# Feste Auswahlliste der unterstützten Schriftarten.
-# Schlüssel  = Anzeigename im Dropdown
-# Wert       = Schriftname, den Windows/Office intern kennt
-FONT_OPTIONS: dict[str, str] = {
-    "Aptos":              "Aptos",
-    "Aptos Narrow":       "Aptos Narrow",
-    "Arial":              "Arial",
-    "Calibri":            "Calibri",
-    "Futura":             "Futura",
-    "Montserrat":         "Montserrat",
-    "PT Sans":            "PT Sans",
-    "PT Sans Narrow":     "PT Sans Narrow",
-    "Raleway":            "Raleway",
-}
 
 APP_NAME = "PC-Konfigurator"
 RUNTIME_FOLDERS = [
