@@ -186,7 +186,8 @@ def build_configuration_tab(
     ).pack(anchor="w", padx=6, pady=(2, 6))
 
     reset_templates_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    reset_templates_card.pack(fill="x", padx=4, pady=(0, 6))
+    if advanced_mode:
+        reset_templates_card.pack(fill="x", padx=4, pady=(0, 6))
     ctk.CTkLabel(
         reset_templates_card,
         text="Datei-Vorlagen zurücksetzen",
@@ -212,7 +213,8 @@ def build_configuration_tab(
     ).pack(anchor="w", padx=14, pady=(0, 10))
 
     edge_sync_card = ctk.CTkFrame(page, corner_radius=10, **CARD_STYLE)
-    edge_sync_card.pack(fill="x", padx=4, pady=(0, 6))
+    if advanced_mode:
+        edge_sync_card.pack(fill="x", padx=4, pady=(0, 6))
     ctk.CTkLabel(
         edge_sync_card,
         text="Edge-Profile synchronisieren",
