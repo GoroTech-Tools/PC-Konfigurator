@@ -69,7 +69,9 @@ def run_full_configuration_flow(
         if sync_result.get("success"):
             append_status(f"   ✅ Datei-Vorlagen synchronisiert: {sync_result.get('message', 'aktuell')}\n")
             building_blocks_sync = sync_result.get("building_blocks", {})
-            if building_blocks_sync.get("status") == "restored":
+            if building_blocks_sync.get("status") == "initialized":
+                append_status("   ✅ Standard-Building-Blocks ins Benutzerprofil kopiert\n")
+            elif building_blocks_sync.get("status") == "restored":
                 append_status("   ✅ Neuere Building-Blocks-Sicherung ins Benutzerprofil übernommen\n")
             elif building_blocks_sync.get("status") == "backed_up":
                 append_status("   ✅ Persönliche Building Blocks in Datei-Vorlagen\\Sonstiges\\Building Blocks gesichert\n")
