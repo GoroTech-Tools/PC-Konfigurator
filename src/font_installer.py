@@ -28,11 +28,41 @@ class FontInstaller:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self._preview_font_paths = set()
         
         # Windows Font API Funktionen
         self.gdi32 = ctypes.windll.gdi32
         self.user32 = ctypes.windll.user32
         self.kernel32 = ctypes.windll.kernel32
+
+    def register_fonts_for_preview(self, fonts_directory):
+        """Registriert gebündelte Fonts nur für den aktuellen Prozess."""
+        fonts_dir = Path(fonts_directory)
+        if not fonts_dir.is_dir():
+            return {"success": False, "registered_fonts": [], "failed_fonts": []}
+
+        registered_fonts = []
+        failed_fonts = []
+        font_files = sorted(
+            path for path in fonts_dir.rglob("*")
+            if path.is_file() and path.suffix.lower() in self.FONT_EXTENSIONS
+        )
+
+        for font_file in font_files:
+            font_path = str(font_file.resolve())
+            if font_path in self._preview_font_paths:
+                continue
+            if self._register_font_with_api(font_path):
+                self._preview_font_paths.add(font_path)
+                registered_fonts.append(font_path)
+            else:
+                failed_fonts.append(font_file.name)
+
+        return {
+            "success": not failed_fonts,
+            "registered_fonts": registered_fonts,
+            "failed_fonts": failed_fonts,
+        }
 
     def get_user_fonts_dir(self):
         """Liefert das benutzerspezifische Fonts-Verzeichnis."""
