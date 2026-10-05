@@ -14,17 +14,75 @@ import pcconfig.office_template_manager as office_template_manager
 
 
 class BuildingBlocksBackupTests(unittest.TestCase):
+    def test_initializes_missing_user_file_from_bundled_standard(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = pathlib.Path(temp_dir)
+            standard_path = (
+                root / "app" / "data" / "Datei-Vorlagen" / "Sonstiges"
+                / "Standards_BuildingBlocks" / "Building Blocks.dotx"
+            )
+            standard_path.parent.mkdir(parents=True)
+            standard_path.write_bytes(b"standard copy")
+            user_path = root / "user" / "1031" / "16" / "Building Blocks.dotx"
+
+            manager = office_template_manager.OfficeTemplateManager.__new__(
+                office_template_manager.OfficeTemplateManager,
+            )
+            manager.app_dir = root / "app"
+            manager.logger = logging.getLogger(__name__)
+            manager.get_user_building_blocks_path = lambda: user_path
+
+            result = manager.sync_user_building_blocks_backup(root / "templates")
+
+            self.assertTrue(result["success"])
+            self.assertEqual(result["status"], "initialized")
+            self.assertEqual(user_path.read_bytes(), b"standard copy")
+
+    def test_restores_existing_backup_before_using_bundled_standard(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = pathlib.Path(temp_dir)
+            standard_path = (
+                root / "app" / "data" / "Datei-Vorlagen" / "Sonstiges"
+                / "Standards_BuildingBlocks" / "Building Blocks.dotx"
+            )
+            standard_path.parent.mkdir(parents=True)
+            standard_path.write_bytes(b"standard copy")
+            backup_path = root / "templates" / "Sonstiges" / "Building Blocks" / "Building Blocks.dotx"
+            backup_path.parent.mkdir(parents=True)
+            backup_path.write_bytes(b"personal backup")
+            user_path = root / "user" / "Building Blocks.dotx"
+
+            manager = office_template_manager.OfficeTemplateManager.__new__(
+                office_template_manager.OfficeTemplateManager,
+            )
+            manager.app_dir = root / "app"
+            manager.logger = logging.getLogger(__name__)
+            manager.get_user_building_blocks_path = lambda: user_path
+
+            result = manager.sync_user_building_blocks_backup(root / "templates")
+
+            self.assertTrue(result["success"])
+            self.assertEqual(result["status"], "restored")
+            self.assertEqual(user_path.read_bytes(), b"personal backup")
+
     def test_falls_back_to_buffered_copy_after_bad_file_descriptor(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = pathlib.Path(temp_dir)
             user_path = root / "user" / "Building Blocks.dotx"
             backup_path = root / "templates" / "Sonstiges" / "Building Blocks" / "Building Blocks.dotx"
+            standard_path = (
+                root / "app" / "data" / "Datei-Vorlagen" / "Sonstiges"
+                / "Standards_BuildingBlocks" / "Building Blocks.dotx"
+            )
             user_path.parent.mkdir(parents=True)
+            standard_path.parent.mkdir(parents=True)
             user_path.write_bytes(b"user copy")
+            standard_path.write_bytes(b"standard copy")
 
             manager = office_template_manager.OfficeTemplateManager.__new__(
                 office_template_manager.OfficeTemplateManager,
             )
+            manager.app_dir = root / "app"
             manager.logger = logging.getLogger(__name__)
             manager.get_user_building_blocks_path = lambda: user_path
 

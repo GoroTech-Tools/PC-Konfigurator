@@ -468,12 +468,6 @@ class OfficeTemplateManager:
             backup_mtime = get_file_mtime(backup_path)
             user_exists = user_mtime is not None
             backup_exists = backup_mtime is not None
-            if not user_exists and not backup_exists:
-                return {
-                    'success': True,
-                    'status': 'skipped',
-                    'message': 'Keine persönliche Building-Blocks-Datei vorhanden.',
-                }
 
             def copy_with_retry(source_path: Path, destination_path: Path) -> None:
                 def copy_action() -> None:
@@ -489,7 +483,21 @@ class OfficeTemplateManager:
 
                 retry_on_oserror(copy_action)
 
-            if backup_exists and (not user_exists or backup_mtime > user_mtime):
+            if not user_exists and not backup_exists:
+                standard_path = (
+                    self.app_dir / 'data' / 'Datei-Vorlagen' / 'Sonstiges'
+                    / 'Standards_BuildingBlocks' / 'Building Blocks.dotx'
+                )
+                if get_file_mtime(standard_path) is None:
+                    return {
+                        'success': True,
+                        'status': 'skipped',
+                        'message': 'Keine Building-Blocks-Datei zum Initialisieren vorhanden.',
+                    }
+                copy_with_retry(standard_path, user_path)
+                action = 'initialized'
+                message = f'Standard-Building-Blocks ins Benutzerprofil kopiert: {user_path}'
+            elif backup_exists and (not user_exists or backup_mtime > user_mtime):
                 copy_with_retry(backup_path, user_path)
                 action = 'restored'
                 message = f'Building Blocks aus der Sicherung wiederhergestellt: {user_path}'

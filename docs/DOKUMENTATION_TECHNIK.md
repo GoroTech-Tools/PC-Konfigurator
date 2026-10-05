@@ -91,7 +91,9 @@ die Sicherung unter
 arbeitet nach dem „newest wins“-Prinzip: Eine neuere Benutzerdatei wird in die
 Ablage kopiert; eine neuere Ablage-Datei wird vor dem manuellen Editor-Aufruf
 ins persönliche `%APPDATA%`-Verzeichnis zurückgespielt. Fehlen beide Dateien,
-wird der Schritt übersprungen. Das persönliche Backup ist optional: Kann die
+wird einmalig die mitgelieferte Datei aus
+`Sonstiges\Standards_BuildingBlocks\Building Blocks.dotx` ins Benutzerprofil
+kopiert. Das persönliche Backup ist optional: Kann die
 Datei wegen eines vorübergehenden Dateisystemfehlers nicht gelesen werden, wird
 dies als Warnung protokolliert und die übrige Vorlagen-/Office-Konfiguration
 läuft weiter.
