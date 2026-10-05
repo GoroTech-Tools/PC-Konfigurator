@@ -174,6 +174,30 @@ class FileSync:
             if result.returncode < 8:
                 self.logger.info(f"Robocopy abgeschlossen mit Exit-Code: {result.returncode}")
                 self._clean_old_robocopy_logs(log_dir)
+
+                missing_files = [
+                    str(source_file.relative_to(source_path))
+                    for source_file in source_path.rglob("*")
+                    if source_file.is_file()
+                    and not self._should_exclude_file(
+                        source_file, source_file.relative_to(source_path)
+                    )
+                    and not (target_path / source_file.relative_to(source_path)).is_file()
+                ]
+                if missing_files:
+                    preview = ", ".join(missing_files[:10])
+                    if len(missing_files) > 10:
+                        preview += f", ... ({len(missing_files) - 10} weitere)"
+                    return {
+                        "success": False,
+                        "error": (
+                            f"Robocopy war erfolgreich, aber {len(missing_files)} "
+                            f"Quelldatei(en) fehlen im Ziel: {preview}"
+                        ),
+                        "log_file": str(log_file),
+                        "exit_code": result.returncode,
+                        "output": result.stdout
+                    }
                 
                 return {
                     "success": True,
