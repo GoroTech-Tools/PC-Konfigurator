@@ -219,6 +219,12 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
     kopiert nur fehlende oder neuere Quelldateien, löscht nichts im Ziel.
     Läuft bei **jedem** Lauf (`_sync_file_templates` in `main.py`), damit die
     mitgelieferte Vorlagenbibliothek im Ziel `Datei-Vorlagen` immer vollständig ist.
+    `sync_directories()` prüft über `_is_robocopy_available()`, ob robocopy
+    verfügbar ist, und delegiert dann an `_sync_with_robocopy()`; andernfalls
+    verwendet es `_sync_with_python()`. `_sync_with_robocopy()` führt robocopy
+    mit `/E` und `/XO` aus und schließt definierte temporäre bzw. Systemdateien
+    und -ordner aus. Erfolgreiche Läufe werden geprüft und protokolliert;
+    `_clean_old_robocopy_logs()` behält die neuesten drei Logs.
   - `reset_directory_from_source()` – löscht das Ziel vollständig (`shutil.rmtree`)
     und ersetzt es 1:1 durch die Quelle (`shutil.copytree`). Wird nur ausgeführt,
     wenn der Anwender die Option „Datei-Vorlagen zurücksetzen“ im Konfiguration-Tab
