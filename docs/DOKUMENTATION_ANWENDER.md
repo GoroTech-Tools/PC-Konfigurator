@@ -187,7 +187,7 @@ andere Formatvorlagen werden nicht verändert.
 **Verfügbare Schriftarten:**
 
 - Aptos (Standard), Aptos Narrow, Arial, Calibri, Futura, Montserrat,
-  PT Sans, Raleway u. v. m.
+  PT Sans, Raleway, Roboto und Segoe UI u. v. m.
 
 **Sicheres Template-Management:**
 

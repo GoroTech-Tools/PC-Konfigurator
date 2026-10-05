@@ -106,6 +106,8 @@ FONT_OPTIONS: dict[str, str] = {
     "PT Sans":            "PT Sans",
     "PT Sans Narrow":     "PT Sans Narrow",
     "Raleway":            "Raleway",
+    "Roboto":             "Roboto",
+    "Segoe UI":           "Segoe UI",
 }
 
 APP_NAME = "PC-Konfigurator"
@@ -175,6 +177,8 @@ class PCKonfiguratorGUI:
 
     def open_font_preview_window(self):
         """Öffnet eine schwebende Font-Vorschau unten rechts über der Haupt-GUI."""
+        self.font_installer.register_fonts_for_preview(self._get_fonts_dir())
+
         existing = getattr(self, "font_preview_window", None)
         if existing is not None:
             try:

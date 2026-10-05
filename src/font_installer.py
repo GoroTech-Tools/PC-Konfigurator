@@ -28,6 +28,7 @@ class FontInstaller:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self._preview_font_paths = set()
         
         # Windows Font API Funktionen
         self.gdi32 = ctypes.windll.gdi32
@@ -96,6 +97,27 @@ class FontInstaller:
     def get_available_font_families(self, fonts_directory):
         """Liefert die erkannten Font-Familien sortiert zurück."""
         return list(self.discover_font_families(fonts_directory).keys())
+
+    def register_fonts_for_preview(self, fonts_directory):
+        """Registriert gebündelte Fonts nur für die aktuelle Anwendungssitzung."""
+        fonts_dir = Path(fonts_directory)
+        if not fonts_dir.exists():
+            self.logger.warning(f"Fonts-Verzeichnis nicht gefunden: {fonts_dir}")
+            return []
+
+        registered_fonts = []
+        for ext in self.FONT_EXTENSIONS:
+            for font_file in sorted(fonts_dir.rglob(f'*{ext}')):
+                font_path = font_file.resolve()
+                if font_path in self._preview_font_paths:
+                    continue
+                if self._register_font_with_api(str(font_path)):
+                    self._preview_font_paths.add(font_path)
+                    registered_fonts.append(font_path)
+
+        if registered_fonts:
+            self._refresh_font_cache()
+        return registered_fonts
 
     def install_font_family(self, fonts_directory, family_name):
         """Installiert alle Font-Dateien einer ausgewählten Familie."""
