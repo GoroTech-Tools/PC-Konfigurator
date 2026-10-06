@@ -507,6 +507,16 @@ class RegistryExplainer:
                 category="Excel - Datei-Vorlagen",
                 office_versions=["15.0", "16.0"],
             ),
+            "excel_default_path": RegistrySettingInfo(
+                key_path="SOFTWARE\\Microsoft\\Office\\{version}\\Excel\\Options",
+                value_name="DefaultPath",
+                value_type="REG_SZ",
+                default_value="",
+                description="Standardpfad zum Speichern und Öffnen von Excel-Dateien.",
+                impact="Neue Excel-Dateien verwenden diesen Pfad als Standardspeicherort.",
+                category="Excel - Datei-Vorlagen",
+                office_versions=["15.0", "16.0"],
+            ),
         }
 
     def _get_general_office_settings(self) -> Dict[str, RegistrySettingInfo]:

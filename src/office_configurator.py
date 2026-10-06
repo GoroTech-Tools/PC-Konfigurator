@@ -417,6 +417,7 @@ class OfficeConfigurator:
                 "Font": (f"{font_name},{font_size}", "excel_font_override"),
                 # Persönliche Vorlagen:
                 "PersonalTemplates": (self._get_datei_vorlagen_path(target_path), "excel_personal_templates"),
+                "DefaultPath": (self._get_datei_vorlagen_path(target_path), "excel_default_path"),
                 # Alternative Startup-Verzeichnis für Templates:
                 "AltStartupPath": (self._get_datei_vorlagen_path(target_path), "excel_xlstart_info"),
                 # Autokorrektur / AutoWiederherstellen:

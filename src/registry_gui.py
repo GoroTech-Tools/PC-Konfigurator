@@ -237,7 +237,7 @@ class RegistryExplanationWindow:
 
         datei_vorlagen_path_keys = {
             "word_dot_path", "word_personal_templates",
-            "excel_xlstart_info", "excel_personal_templates",
+            "excel_xlstart_info", "excel_personal_templates", "excel_default_path",
         }
         path_keys = {
             "word_startup_path", "word_doc_path", "excel_path",

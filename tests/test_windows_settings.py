@@ -31,6 +31,7 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
         expected_path = str((pathlib.Path("/selected") / "Datei-Vorlagen").resolve())
         self.assertTrue(result["success"])
         self.assertEqual(applied_settings["PersonalTemplates"][0], expected_path)
+        self.assertEqual(applied_settings["DefaultPath"][0], expected_path)
         self.assertEqual(applied_settings["AltStartupPath"][0], expected_path)
 
     def test_applies_requested_start_and_taskbar_registry_values(self):
