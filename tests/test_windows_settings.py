@@ -14,6 +14,25 @@ with patch.dict(sys.modules, {"winreg": winreg_stub}):
 
 
 class ConfigureWindowsSettingsTests(unittest.TestCase):
+    def test_excel_template_registry_values_use_selected_template_directory(self):
+        configurator = office_configurator_module.OfficeConfigurator()
+        applied_settings = {}
+
+        with patch.object(
+            configurator,
+            "_apply_excel_registry_settings",
+            side_effect=lambda settings, _font_settings: applied_settings.update(settings),
+        ):
+            result = configurator.configure_excel(
+                target_path="/selected",
+                com_bootstrap={"skip_com": True},
+            )
+
+        expected_path = str((pathlib.Path("/selected") / "Datei-Vorlagen").resolve())
+        self.assertTrue(result["success"])
+        self.assertEqual(applied_settings["PersonalTemplates"][0], expected_path)
+        self.assertEqual(applied_settings["AltStartupPath"][0], expected_path)
+
     def test_applies_requested_start_and_taskbar_registry_values(self):
         configurator = office_configurator_module.OfficeConfigurator()
         documented_values = []
