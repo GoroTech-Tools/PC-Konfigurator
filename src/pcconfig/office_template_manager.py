@@ -5,7 +5,6 @@ Office Template Manager
 Verwaltet Office-Vorlagendateien (Normal.dotm, Mappe.xltx, NormalEmail.dotm)
 """
 
-import errno
 import os
 import shutil
 import time
@@ -15,7 +14,7 @@ import zipfile
 import tempfile
 from xml.etree import ElementTree as ET
 from pcconfig.safe_template_processor import SafeTemplateProcessor
-from fs_retry import retry_on_oserror
+from fs_retry import copy_file_with_retry, retry_on_oserror
 
 
 class OfficeTemplateManager:
@@ -469,20 +468,6 @@ class OfficeTemplateManager:
             user_exists = user_mtime is not None
             backup_exists = backup_mtime is not None
 
-            def copy_with_retry(source_path: Path, destination_path: Path) -> None:
-                def copy_action() -> None:
-                    destination_path.parent.mkdir(parents=True, exist_ok=True)
-                    try:
-                        shutil.copy2(source_path, destination_path)
-                    except OSError as exc:
-                        if exc.errno != errno.EBADF:
-                            raise
-                        with source_path.open('rb') as source, destination_path.open('wb') as destination:
-                            shutil.copyfileobj(source, destination)
-                        shutil.copystat(source_path, destination_path)
-
-                retry_on_oserror(copy_action)
-
             if not user_exists and not backup_exists:
                 standard_path = (
                     self.app_dir / 'data' / 'Datei-Vorlagen' / 'Sonstiges'
@@ -494,15 +479,15 @@ class OfficeTemplateManager:
                         'status': 'skipped',
                         'message': 'Keine Building-Blocks-Datei zum Initialisieren vorhanden.',
                     }
-                copy_with_retry(standard_path, user_path)
+                copy_file_with_retry(standard_path, user_path)
                 action = 'initialized'
                 message = f'Standard-Building-Blocks ins Benutzerprofil kopiert: {user_path}'
             elif backup_exists and (not user_exists or backup_mtime > user_mtime):
-                copy_with_retry(backup_path, user_path)
+                copy_file_with_retry(backup_path, user_path)
                 action = 'restored'
                 message = f'Building Blocks aus der Sicherung wiederhergestellt: {user_path}'
             elif user_exists and (not backup_exists or user_mtime > backup_mtime):
-                copy_with_retry(user_path, backup_path)
+                copy_file_with_retry(user_path, backup_path)
                 action = 'backed_up'
                 message = f'Building Blocks in die Vorlagenablage gesichert: {backup_path}'
             else:

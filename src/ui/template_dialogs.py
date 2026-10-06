@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox
 
 import customtkinter as ctk
+
+from fs_retry import copy_file_with_retry
 
 
 def _open_word_template_for_edit(template_path: Path) -> None:
@@ -95,10 +96,9 @@ def run_manual_building_blocks_editor(root, *, before_open=None) -> None:
             return
 
         backup_dir = template_path.parent / "_PC-Konfigurator-Backups"
-        backup_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup_path = backup_dir / f"{template_path.stem}-{timestamp}{template_path.suffix}"
-        shutil.copy2(template_path, backup_path)
+        copy_file_with_retry(template_path, backup_path)
         _open_word_template_for_edit(template_path)
 
         messagebox.showinfo(
