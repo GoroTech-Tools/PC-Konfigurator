@@ -561,13 +561,13 @@ class RegistryExplainer:
                 category="Windows - Taskleiste",
                 office_versions=["15.0", "16.0"],
             ),
-            "windows_hide_searchbox": RegistrySettingInfo(
+            "windows_show_search_icon": RegistrySettingInfo(
                 key_path="SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
                 value_name="SearchboxTaskbarMode",
                 value_type="REG_DWORD",
-                default_value=0,
-                description="Suchfeld in der Taskleiste ausblenden.",
-                impact="0 = ausgeblendet, 1 = Symbol, 2 = Feld.",
+                default_value=1,
+                description="Suchsymbol in der Taskleiste anzeigen.",
+                impact="1 = Symbol, 2 = Suchfeld.",
                 category="Windows - Taskleiste",
                 office_versions=["15.0", "16.0"],
             ),
