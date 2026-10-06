@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +15,28 @@ import pcconfig.office_template_manager as office_template_manager
 
 
 class BuildingBlocksBackupTests(unittest.TestCase):
+    def test_uses_robocopy_after_bad_file_descriptor_on_windows(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = pathlib.Path(temp_dir)
+            source = root / "user" / "Building Blocks.dotx"
+            destination = root / "backup" / "Building Blocks.dotx"
+            source.parent.mkdir()
+            source.write_bytes(b"user copy")
+
+            def robocopy(args, **kwargs):
+                pathlib.Path(args[2], args[3]).write_bytes(source.read_bytes())
+                return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+
+            with (
+                patch.object(fs_retry.shutil, "copy2", side_effect=OSError(errno.EBADF, "Bad file descriptor")),
+                patch.object(fs_retry.sys, "platform", "win32"),
+                patch.object(fs_retry.subprocess, "run", side_effect=robocopy) as run_robocopy,
+            ):
+                fs_retry.copy_file_with_retry(source, destination)
+
+            self.assertEqual(destination.read_bytes(), b"user copy")
+            self.assertIn("/COPY:DAT", run_robocopy.call_args.args[0])
+
     def test_initializes_missing_user_file_from_bundled_standard(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = pathlib.Path(temp_dir)
