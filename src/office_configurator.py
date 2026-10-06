@@ -1084,7 +1084,7 @@ class OfficeConfigurator:
             windows_settings = [
                 ("TaskbarAl", taskbar_value, "windows_taskbar_alignment"),
                 ("TaskbarDa", 0, "windows_hide_widgets"),
-                ("SearchboxTaskbarMode", 0, "windows_hide_searchbox"),
+                ("SearchboxTaskbarMode", 1, "windows_show_search_icon"),
                 ("HideFileExt", 0, "windows_explorer_show_extensions"),
                 ("Hidden", hidden_value, "windows_explorer_show_hidden_items"),
                 ("SearchFileNameAlways", 1, "windows_explorer_search_file_contents"),
@@ -1116,6 +1116,9 @@ class OfficeConfigurator:
             # den Binary-Wert "VisiblePlaces" im Start-Zweig. Dieser Wert ist
             # systemspezifisch kodiert und wird hier bewusst nicht blind überschrieben.
             start_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Start"
+            if not self._set_windows_extra_value_with_fallback(start_key_path, "AllAppsViewMode", 1):
+                failed_values.append("AllAppsViewMode")
+
             visible_places_exists = self._read_registry_value(winreg.HKEY_CURRENT_USER, start_key_path, "VisiblePlaces") is not None
             if visible_places_exists:
                 self.logger.info(
@@ -1127,6 +1130,7 @@ class OfficeConfigurator:
             extra_values = {
                 "ShowSuperHidden": show_super_hidden_value,
                 "TaskbarGlomLevel": 0,
+                "ShowTaskViewButton": 0,
             }
             for name, value in extra_values.items():
                 if not self._set_windows_extra_value_with_fallback(key_path, name, value):
@@ -1135,11 +1139,11 @@ class OfficeConfigurator:
             # Suchfeld/Suchsymbol zusätzlich im Search-Zweig setzen
             # (einige Windows-Builds werten diesen Pfad bevorzugt aus)
             search_key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Search"
-            if not self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarMode", 0):
+            if not self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarMode", 1):
                 failed_values.append("SearchboxTaskbarMode")
 
             # Optionaler Cache-Wert für konsistentere UI-Übernahme nach Explorer-Neustart
-            self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarModeCache", 0)
+            self._set_windows_extra_value_with_fallback(search_key_path, "SearchboxTaskbarModeCache", 1)
 
             # Taskleisten-Ausrichtung hart verifizieren (einige Systeme überschreiben den Wert sofort)
             taskbar_al = self._read_dword_registry_value(winreg.HKEY_CURRENT_USER, key_path, "TaskbarAl")
