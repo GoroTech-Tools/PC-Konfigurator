@@ -12,6 +12,7 @@ class FakeWidget:
     def __init__(self, parent=None, **kwargs):
         self.parent = parent
         self.text = kwargs.get("text")
+        self.kwargs = kwargs
         self.children = []
         self.pack_calls = 0
         if parent is not None and hasattr(parent, "children"):
@@ -51,6 +52,7 @@ with patch.dict(sys.modules, {"customtkinter": fake_ctk, "ui.theme": fake_theme}
 class ConfigurationTabModeTests(unittest.TestCase):
     def _build_tab(self, advanced_mode):
         root = FakeWidget()
+        taskbar_labels_var = object()
         configuration_tab.build_configuration_tab(
             types.SimpleNamespace(tab=lambda _name: root),
             advanced_mode=advanced_mode,
@@ -60,6 +62,7 @@ class ConfigurationTabModeTests(unittest.TestCase):
             corporate_design_var=object(),
             hidden_items_mode_var=object(),
             taskbar_alignment_var=object(),
+            show_taskbar_labels_var=taskbar_labels_var,
             reset_templates_var=object(),
             enable_edge_profile_sync_var=object(),
             enable_firm_mode_var=object(),
@@ -80,10 +83,16 @@ class ConfigurationTabModeTests(unittest.TestCase):
             for child in widget.children:
                 if child.text in ("Datei-Vorlagen zurücksetzen", "Edge-Profile synchronisieren"):
                     cards[child.text] = child.parent
-        return cards
+        checkbox = next(
+            child
+            for widget in page.children
+            for child in widget.children
+            if child.text == "Beschriftungen für Symbole anzeigen"
+        )
+        return cards, checkbox, taskbar_labels_var
 
     def test_reset_and_edge_sync_cards_are_hidden_in_simple_mode(self):
-        cards = self._build_tab(advanced_mode=False)
+        cards, _checkbox, _taskbar_labels_var = self._build_tab(advanced_mode=False)
 
         self.assertEqual(
             {title: card.pack_calls for title, card in cards.items()},
@@ -91,12 +100,20 @@ class ConfigurationTabModeTests(unittest.TestCase):
         )
 
     def test_reset_and_edge_sync_cards_are_visible_in_advanced_mode(self):
-        cards = self._build_tab(advanced_mode=True)
+        cards, _checkbox, _taskbar_labels_var = self._build_tab(advanced_mode=True)
 
         self.assertEqual(
             {title: card.pack_calls for title, card in cards.items()},
             {"Datei-Vorlagen zurücksetzen": 1, "Edge-Profile synchronisieren": 1},
         )
+
+    def test_taskbar_labels_checkbox_uses_setting_variable_and_defaults_off(self):
+        _cards, checkbox, taskbar_labels_var = self._build_tab(advanced_mode=False)
+
+        self.assertEqual(checkbox.text, "Beschriftungen für Symbole anzeigen")
+        self.assertIs(checkbox.kwargs["variable"], taskbar_labels_var)
+        self.assertIs(checkbox.kwargs["onvalue"], True)
+        self.assertIs(checkbox.kwargs["offvalue"], False)
 
 
 if __name__ == "__main__":

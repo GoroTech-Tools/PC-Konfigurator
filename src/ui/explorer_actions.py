@@ -88,7 +88,10 @@ def _restart_explorer_and_wait(timeout_seconds: float = 20.0) -> tuple[bool, str
 
 
 def restart_windows_explorer_with_prompt(
-    office_configurator, status_textbox, taskbar_alignment: str = "Center"
+    office_configurator,
+    status_textbox,
+    taskbar_alignment: str = "Center",
+    show_taskbar_labels: bool = False,
 ) -> None:
     """Startet den Windows-Explorer mit Rückfrage neu."""
     confirm = messagebox.askyesno(
@@ -104,7 +107,8 @@ def restart_windows_explorer_with_prompt(
 
     try:
         windows_result = office_configurator.configure_windows_settings(
-            taskbar_alignment=taskbar_alignment
+            taskbar_alignment=taskbar_alignment,
+            show_taskbar_labels=show_taskbar_labels,
         )
         if not windows_result.get("success", False):
             status_textbox.insert(
