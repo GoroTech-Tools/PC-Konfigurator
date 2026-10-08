@@ -365,9 +365,9 @@ class PCKonfiguratorGUI:
         if hidden_items_mode in ("hide", "show"):
             self.hidden_items_mode.set(hidden_items_mode)
 
-            self.show_taskbar_labels.set(bool(settings.get("show_taskbar_labels", False)))
+        self.show_taskbar_labels.set(bool(settings.get("show_taskbar_labels", False)))
 
-            self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
+        self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
         self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
         self.enable_office_preclose.set(bool(settings.get("enable_office_preclose", True)))
         self.enable_office_warmup.set(bool(settings.get("enable_office_warmup", False)))
