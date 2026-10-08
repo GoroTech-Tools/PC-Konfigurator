@@ -38,6 +38,7 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
         configurator = office_configurator_module.OfficeConfigurator()
         documented_values = []
         extra_values = []
+        taskbar_refresh = []
 
         with (
             patch.object(office_configurator_module, "pin_desktop_to_quick_access", return_value=(True, None)),
@@ -55,6 +56,11 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
             ),
             patch.object(configurator, "_read_registry_value", return_value=None),
             patch.object(configurator, "_read_dword_registry_value", return_value=1),
+            patch.object(
+                configurator,
+                "_notify_taskbar_settings_changed",
+                side_effect=lambda: taskbar_refresh.append(True) or True,
+            ),
         ):
             result = configurator.configure_windows_settings()
 
@@ -67,6 +73,7 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
             documented_values,
         )
         self.assertIn((advanced_path, "TaskbarGlomLevel", 0), extra_values)
+        self.assertEqual(taskbar_refresh, [True])
         self.assertIn((advanced_path, "ShowTaskViewButton", 0), extra_values)
         self.assertIn((start_path, "AllAppsViewMode", 1), extra_values)
         self.assertIn((search_path, "SearchboxTaskbarMode", 1), extra_values)
@@ -74,6 +81,7 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
     def test_enables_taskbar_labels_when_requested(self):
         configurator = office_configurator_module.OfficeConfigurator()
         extra_values = []
+        taskbar_refresh = []
 
         with (
             patch.object(office_configurator_module, "pin_desktop_to_quick_access", return_value=(True, None)),
@@ -85,6 +93,11 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
             ),
             patch.object(configurator, "_read_registry_value", return_value=None),
             patch.object(configurator, "_read_dword_registry_value", return_value=1),
+            patch.object(
+                configurator,
+                "_notify_taskbar_settings_changed",
+                side_effect=lambda: taskbar_refresh.append(True) or True,
+            ),
         ):
             result = configurator.configure_windows_settings(show_taskbar_labels=True)
 
@@ -97,6 +110,7 @@ class ConfigureWindowsSettingsTests(unittest.TestCase):
             ),
             extra_values,
         )
+        self.assertEqual(taskbar_refresh, [True])
 
 
 if __name__ == "__main__":

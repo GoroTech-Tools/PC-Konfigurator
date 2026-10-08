@@ -8,6 +8,7 @@ Jetzt mit detaillierten Registry-Erläuterungen.
 """
 
 import winreg
+import ctypes
 import os
 import logging
 import shutil
@@ -1144,6 +1145,11 @@ class OfficeConfigurator:
             for name, value in extra_values.items():
                 if not self._set_windows_extra_value_with_fallback(key_path, name, value):
                     failed_values.append(name)
+                elif name == "TaskbarGlomLevel" and not self._notify_taskbar_settings_changed():
+                    self.logger.info(
+                        "Taskleisten-Einstellungen wurden gesetzt; Explorer hat die "
+                        "Änderungsbenachrichtigung nicht bestätigt."
+                    )
 
             # Suchfeld/Suchsymbol zusätzlich im Search-Zweig setzen
             # (einige Windows-Builds werten diesen Pfad bevorzugt aus)
@@ -1231,6 +1237,38 @@ class OfficeConfigurator:
         except Exception as e:
             self.logger.error(f"Fehler bei Windows-Konfiguration: {e}")
             return {"success": False, "error": str(e)}
+
+    @staticmethod
+    def _notify_taskbar_settings_changed() -> bool:
+        """Benachrichtigt Explorer über Taskleisten-Änderungen, ohne ihn neu zu starten."""
+        try:
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            send_message_timeout = user32.SendMessageTimeoutW
+            send_message_timeout.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_uint,
+                ctypes.c_size_t,
+                ctypes.c_void_p,
+                ctypes.c_uint,
+                ctypes.c_uint,
+                ctypes.POINTER(ctypes.c_size_t),
+            ]
+            send_message_timeout.restype = ctypes.c_size_t
+            result = ctypes.c_size_t()
+            tray_settings = ctypes.cast(ctypes.c_wchar_p("TraySettings"), ctypes.c_void_p)
+            return bool(
+                send_message_timeout(
+                    ctypes.c_void_p(0xFFFF),
+                    0x001A,
+                    0,
+                    tray_settings,
+                    0x0002,
+                    1000,
+                    ctypes.byref(result),
+                )
+            )
+        except Exception:
+            return False
 
     def _set_windows_value_with_fallback(self, key_path, name, value, explanation_key):
         """Setzt einen dokumentierten Windows-Wert mit WinReg und reg.exe-Fallback."""

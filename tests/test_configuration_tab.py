@@ -87,10 +87,7 @@ class ConfigurationTabModeTests(unittest.TestCase):
             child
             for widget in page.children
             for child in widget.children
-            if child.text in (
-                "Beschriftungen für Symbole anzeigen",
-                "Beschriftungen für Symbole ausblenden",
-            )
+            if child.text == "Beschriftungen für Symbole anzeigen"
         ]
         return cards, label_options, taskbar_labels_var
 
@@ -110,17 +107,14 @@ class ConfigurationTabModeTests(unittest.TestCase):
             {"Datei-Vorlagen zurücksetzen": 1, "Edge-Profile synchronisieren": 1},
         )
 
-    def test_taskbar_label_radio_options_use_setting_variable_and_map_values(self):
+    def test_taskbar_label_checkbox_uses_setting_variable_and_defaults_off(self):
         _cards, label_options, taskbar_labels_var = self._build_tab(advanced_mode=False)
 
-        self.assertEqual(
-            [(option.text, option.kwargs["value"]) for option in label_options],
-            [
-                ("Beschriftungen für Symbole anzeigen", True),
-                ("Beschriftungen für Symbole ausblenden", False),
-            ],
-        )
-        self.assertTrue(all(option.kwargs["variable"] is taskbar_labels_var for option in label_options))
+        self.assertEqual(len(label_options), 1)
+        self.assertEqual(label_options[0].text, "Beschriftungen für Symbole anzeigen")
+        self.assertIs(label_options[0].kwargs["variable"], taskbar_labels_var)
+        self.assertIs(label_options[0].kwargs["onvalue"], True)
+        self.assertIs(label_options[0].kwargs["offvalue"], False)
 
 
 if __name__ == "__main__":
