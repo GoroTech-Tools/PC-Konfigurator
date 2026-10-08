@@ -17,6 +17,7 @@ def build_configuration_tab(
     corporate_design_var,
     hidden_items_mode_var,
     taskbar_alignment_var,
+    show_taskbar_labels_var,
     reset_templates_var,
     enable_edge_profile_sync_var,
     enable_firm_mode_var,
@@ -260,6 +261,13 @@ def build_configuration_tab(
         variable=taskbar_alignment_var,
         value="Left",
     ).pack(anchor="w", padx=20, pady=(2, 10))
+    ctk.CTkCheckBox(
+        taskbar_card,
+        text="Beschriftungen für Symbole anzeigen",
+        variable=show_taskbar_labels_var,
+        onvalue=True,
+        offvalue=False,
+    ).pack(anchor="w", padx=14, pady=(0, 10))
 
     _font_card, font_body = create_section_card(
         page,

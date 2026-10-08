@@ -280,9 +280,11 @@ class OfficeConfigurator:
             if include_windows:
                 show_hidden_items = self._is_truthy(config.get("show_hidden_items", False))
                 taskbar_alignment = config.get("taskbar_alignment", "Center")
+                show_taskbar_labels = self._is_truthy(config.get("show_taskbar_labels", False))
                 windows_result = self.configure_windows_settings(
                     show_hidden_items=show_hidden_items,
                     taskbar_alignment=taskbar_alignment,
+                    show_taskbar_labels=show_taskbar_labels,
                 )
                 hidden_items_mode_label = "standardmäßig anzeigen" if show_hidden_items else "standardmäßig ausblenden"
                 windows_warning = windows_result.get("warning")
@@ -1056,7 +1058,12 @@ class OfficeConfigurator:
             self.logger.error(f"Fehler bei Excel Registry-Einstellungen: {e}")
             raise
 
-    def configure_windows_settings(self, show_hidden_items: bool = True, taskbar_alignment: str = "Center"):
+    def configure_windows_settings(
+        self,
+        show_hidden_items: bool = True,
+        taskbar_alignment: str = "Center",
+        show_taskbar_labels: bool = False,
+    ):
         """Windows-Explorer- und Taskleisten-Defaults konfigurieren."""
         try:
             self.logger.info("Windows-Einstellungen werden konfiguriert...")
@@ -1082,6 +1089,7 @@ class OfficeConfigurator:
 
             key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
             taskbar_value = 0 if taskbar_alignment == "Left" else 1
+            taskbar_labels_value = 2 if show_taskbar_labels else 0
             windows_settings = [
                 ("TaskbarAl", taskbar_value, "windows_taskbar_alignment"),
                 ("TaskbarDa", 0, "windows_hide_widgets"),
@@ -1130,7 +1138,7 @@ class OfficeConfigurator:
             # Zusatzwerte ohne RegistryExplainer-Mapping
             extra_values = {
                 "ShowSuperHidden": show_super_hidden_value,
-                "TaskbarGlomLevel": 0,
+                "TaskbarGlomLevel": taskbar_labels_value,
                 "ShowTaskViewButton": 0,
             }
             for name, value in extra_values.items():

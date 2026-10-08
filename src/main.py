@@ -319,6 +319,7 @@ class PCKonfiguratorGUI:
                 "use_documents": bool(self.use_documents.get()),
                 "startmenu_mode": self.startmenu_mode.get(),
                 "hidden_items_mode": self.hidden_items_mode.get(),
+                "show_taskbar_labels": bool(self.show_taskbar_labels.get()),
                 "enable_firm_mode": bool(self.enable_firm_mode.get()),
                 "enable_com_sync": bool(self.enable_com_sync.get()),
                 "enable_office_preclose": bool(self.enable_office_preclose.get()),
@@ -364,7 +365,9 @@ class PCKonfiguratorGUI:
         if hidden_items_mode in ("hide", "show"):
             self.hidden_items_mode.set(hidden_items_mode)
 
-        self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
+            self.show_taskbar_labels.set(bool(settings.get("show_taskbar_labels", False)))
+
+            self.enable_firm_mode.set(bool(settings.get("enable_firm_mode", False)))
         self.enable_com_sync.set(bool(settings.get("enable_com_sync", False)))
         self.enable_office_preclose.set(bool(settings.get("enable_office_preclose", True)))
         self.enable_office_warmup.set(bool(settings.get("enable_office_warmup", False)))
@@ -795,6 +798,7 @@ class PCKonfiguratorGUI:
         self.hidden_items_mode = tk.StringVar(value="show")
         self.corporate_design = tk.StringVar(value="INN-tegrativ")
         self.taskbar_alignment = tk.StringVar(value="Center")
+        self.show_taskbar_labels = tk.BooleanVar(value=False)
         self.reset_file_templates = tk.BooleanVar(value=False)
         self.enable_edge_profile_sync = tk.BooleanVar(value=False)
         self.enable_firm_mode = tk.BooleanVar(value=False)
@@ -838,6 +842,7 @@ class PCKonfiguratorGUI:
         self.use_documents.trace_add("write", self._on_setting_changed)
         self.startmenu_mode.trace_add("write", self._on_startmenu_mode_changed)
         self.hidden_items_mode.trace_add("write", self._on_setting_changed)
+        self.show_taskbar_labels.trace_add("write", self._on_setting_changed)
         self.reset_file_templates.trace_add("write", self._on_reset_templates_changed)
         self.enable_edge_profile_sync.trace_add("write", self._on_setting_changed)
         self.enable_firm_mode.trace_add("write", self._on_firm_mode_changed)
@@ -986,6 +991,7 @@ class PCKonfiguratorGUI:
             corporate_design_var=self.corporate_design,
             hidden_items_mode_var=self.hidden_items_mode,
             taskbar_alignment_var=self.taskbar_alignment,
+            show_taskbar_labels_var=self.show_taskbar_labels,
             reset_templates_var=self.reset_file_templates,
             enable_edge_profile_sync_var=self.enable_edge_profile_sync,
             enable_firm_mode_var=self.enable_firm_mode,
@@ -1218,6 +1224,7 @@ class PCKonfiguratorGUI:
             self.office_configurator,
             self.execution_status,
             taskbar_alignment=self.taskbar_alignment.get(),
+            show_taskbar_labels=bool(self.show_taskbar_labels.get()),
         )
     
     def _get_office_settings_from_gui(self):
@@ -1234,6 +1241,7 @@ class PCKonfiguratorGUI:
                         'show_hidden_items': self.hidden_items_mode.get() == 'show',
                         'corporate_design': self.corporate_design.get(),
                         'taskbar_alignment': self.taskbar_alignment.get(),
+                        'show_taskbar_labels': bool(self.show_taskbar_labels.get()),
             'target_drive': self.target_drive.get(),
             'use_documents_folder': self.use_documents.get()
         }
