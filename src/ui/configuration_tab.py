@@ -261,13 +261,18 @@ def build_configuration_tab(
         variable=taskbar_alignment_var,
         value="Left",
     ).pack(anchor="w", padx=20, pady=(2, 10))
-    ctk.CTkCheckBox(
+    ctk.CTkRadioButton(
         taskbar_card,
         text="Beschriftungen für Symbole anzeigen",
         variable=show_taskbar_labels_var,
-        onvalue=True,
-        offvalue=False,
-    ).pack(anchor="w", padx=14, pady=(0, 10))
+        value=True,
+    ).pack(anchor="w", padx=20, pady=2)
+    ctk.CTkRadioButton(
+        taskbar_card,
+        text="Beschriftungen für Symbole ausblenden",
+        variable=show_taskbar_labels_var,
+        value=False,
+    ).pack(anchor="w", padx=20, pady=(2, 10))
 
     _font_card, font_body = create_section_card(
         page,
