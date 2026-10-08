@@ -83,13 +83,16 @@ class ConfigurationTabModeTests(unittest.TestCase):
             for child in widget.children:
                 if child.text in ("Datei-Vorlagen zurücksetzen", "Edge-Profile synchronisieren"):
                     cards[child.text] = child.parent
-        checkbox = next(
+        label_options = [
             child
             for widget in page.children
             for child in widget.children
-            if child.text == "Beschriftungen für Symbole anzeigen"
-        )
-        return cards, checkbox, taskbar_labels_var
+            if child.text in (
+                "Beschriftungen für Symbole anzeigen",
+                "Beschriftungen für Symbole ausblenden",
+            )
+        ]
+        return cards, label_options, taskbar_labels_var
 
     def test_reset_and_edge_sync_cards_are_hidden_in_simple_mode(self):
         cards, _checkbox, _taskbar_labels_var = self._build_tab(advanced_mode=False)
@@ -107,13 +110,17 @@ class ConfigurationTabModeTests(unittest.TestCase):
             {"Datei-Vorlagen zurücksetzen": 1, "Edge-Profile synchronisieren": 1},
         )
 
-    def test_taskbar_labels_checkbox_uses_setting_variable_and_defaults_off(self):
-        _cards, checkbox, taskbar_labels_var = self._build_tab(advanced_mode=False)
+    def test_taskbar_label_radio_options_use_setting_variable_and_map_values(self):
+        _cards, label_options, taskbar_labels_var = self._build_tab(advanced_mode=False)
 
-        self.assertEqual(checkbox.text, "Beschriftungen für Symbole anzeigen")
-        self.assertIs(checkbox.kwargs["variable"], taskbar_labels_var)
-        self.assertIs(checkbox.kwargs["onvalue"], True)
-        self.assertIs(checkbox.kwargs["offvalue"], False)
+        self.assertEqual(
+            [(option.text, option.kwargs["value"]) for option in label_options],
+            [
+                ("Beschriftungen für Symbole anzeigen", True),
+                ("Beschriftungen für Symbole ausblenden", False),
+            ],
+        )
+        self.assertTrue(all(option.kwargs["variable"] is taskbar_labels_var for option in label_options))
 
 
 if __name__ == "__main__":
