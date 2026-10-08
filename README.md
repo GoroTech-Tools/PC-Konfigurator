@@ -4,6 +4,10 @@ Komplette portable Anwendung für Windows-PC-Konfiguration.
 
 **Version:** 3.3.99 (Build: 29.09.2026, Python 3.13.7)
 
+Die [Release Notes v3.3.99](release/RELEASE_NOTES_v3.3.99.md) dokumentieren
+den aktuellen Funktionsstand. Frühere verfügbare Release Notes:
+[v3.3.95](release/RELEASE_NOTES_v3.3.95.md).
+
 ## Übersicht
 
 Dies ist der PC-Konfigurator als portable Windows-Anwendung mit erweiterter
@@ -84,15 +88,16 @@ oder Titel bleiben unverändert.
 
 ### Edge-Profile und E-Mail-Signaturen
 
-- Microsoft-Edge-Profile werden bei jedem vollständigen Lauf erkannt und
-    ZIP-komprimiert im gewählten `Datei-Vorlagen\Sonstiges\Edge-Profile.zip`
-    gesichert (spart deutlich Speicherplatz gegenüber einem unkomprimierten
-    Ordner). Eine zuvor vorhandene unkomprimierte Sicherung wird nach dem
-    ersten ZIP-Backup automatisch entfernt.
+- Die Sicherung und Wiederherstellung von Microsoft-Edge-Profilen und
+  Outlook-Signaturen ist optional und standardmäßig deaktiviert. Im erweiterten
+  Modus kann **„Edge-Profile synchronisieren“** aktiviert werden.
+- Bei aktivierter Option werden Edge-Profile ZIP-komprimiert im gewählten
+  `Datei-Vorlagen\Sonstiges\Edge-Profile.zip` gesichert. Eine zuvor vorhandene
+  unkomprimierte Sicherung wird nach dem ersten ZIP-Backup automatisch entfernt.
 - Outlook-Signaturen werden getrennt im Ordner
-    `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen` gesichert.
-- Vorhandene Backups werden beim nächsten Lauf wiederhergestellt; vorhandene
-    lokale Signaturen werden dabei nicht überschrieben.
+  `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen` gesichert.
+- Vorhandene Backups werden bei aktivierter Option beim nächsten Lauf
+  wiederhergestellt; vorhandene lokale Signaturen werden dabei nicht überschrieben.
 - Dateisystem-Operationen auf dem Zielordner werden bei transienten Fehlern
     (z. B. während OneDrive aktiv synchronisiert) automatisch mit steigender
     Wartezeit bis zu ca. 15–20 Sekunden wiederholt, bevor ein Fehler gemeldet wird.
@@ -238,9 +243,8 @@ Der Build-Prozess ergänzt automatisch:
 ### Aktuelle Statistiken
 
 - 3 Template-Typen vollständig unterstützt
-- 15 dynamisch erkannte Font-Familien im aktuellen Bestand `data/Fonts`
-- 55 Schriftart-Dateien im Build
-- 173 Vorlagen-Dateien im Build
+- 11 Schriftfamilien-Ordner mit 140 Schriftdateien im aktuellen Bestand `data/Fonts`
+- 365 Vorlagen-Dateien im aktuellen Bestand `data/Datei-Vorlagen`
 
 ### Template-Verarbeitungszeiten
 
@@ -251,21 +255,26 @@ Der Build-Prozess ergänzt automatisch:
 
 ## Changelog
 
+### v3.3.99 (29. September 2026)
+
+- Der Desktop-Ordner des aktuellen Benutzers bleibt bei der Konfiguration im
+  Explorer-Schnellzugriff angeheftet; Desktop-Umleitungen werden berücksichtigt.
+- [Vollständige Release Notes](release/RELEASE_NOTES_v3.3.99.md) ·
+  [GitHub-Release](https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v3.3.99)
+
+### v3.3.95 (22. September 2026)
+
+- [Release Notes](release/RELEASE_NOTES_v3.3.95.md) ·
+  [GitHub-Release](https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v3.3.95)
+
 ### v3.3.19 (20. Juni 2026)
+
+Ältere Details: [Release Notes v3.3.19](release/_Archiv/RELEASE_NOTES_v3.3.19.md).
 
 - **Explorer-Neustart robustifiziert:** Neustart wartet jetzt auf sichtbare Taskleiste (`Shell_TrayWnd`) statt nur auf einen laufenden `explorer.exe`-Prozess.
 - **Shell-Recovery-Fallback ergänzt:** Bei verzögertem Shell-Rebind werden zusätzliche Recovery-Schritte ausgeführt (u. a. Re-Init von Shell-Komponenten und `userinit.exe`-Fallback).
 - **Outlook-Template-Auflösung gehärtet:** Quellpfad für `NormalEmail.dotm` funktioniert jetzt auch in Direkt-/Script-Läufen ohne Bundle-Kontext.
 - **Office-UI-Transparenz verbessert:** GUI zeigt konsistente Hinweise zu `Word/Outlook` und zur bekannten Einschränkung der modernen Outlook-Compose-Oberfläche.
-
-### v3.3.7 (17. Juni 2026)
-
-### v3.3.8 (17. Juni 2026)
-
-- Externer Startmenü-Autostart im Benutzerprofil hinterlegt:
-  `%APPDATA%\PC-Konfigurator\startmenu-guard` + Eintrag im Startup-Ordner.
-- Damit wird der gewählte Startmenü-Modus auch ohne manuellen App-Start
-  bei jeder Windows-Anmeldung automatisch angewendet.
 
 ### v3.3.9 (18. Juni 2026)
 
@@ -277,10 +286,20 @@ Der Build-Prozess ergänzt automatisch:
   (`auto_restart_explorer=False`); der Explorer wird nur noch bei manuellem
   Modus-Wechsel über die GUI neu gestartet.
 
+### v3.3.8 (18. Juni 2026)
+
+- Externer Startmenü-Autostart im Benutzerprofil hinterlegt:
+  `%APPDATA%\PC-Konfigurator\startmenu-guard` + Eintrag im Startup-Ordner.
+- Damit wird der gewählte Startmenü-Modus auch ohne manuellen App-Start
+  bei jeder Windows-Anmeldung automatisch angewendet.
+
+### v3.3.7 (17. Juni 2026)
+
 - Startmenü-Guard erweitert: Modus ist nun in der GUI dauerhaft zwischen `🟦 Windows 11 (empfohlen)` und `🟧 Klassisch (Fallback)` umschaltbar.
 - Start-Tab zeigt den aktiven Startmenü-Modus inklusive Live-Aktualisierung und Farbcodierung.
 - Tab-Darstellung stabilisiert: problematische manuelle Tab-Skalierung entfernt (Hauptfenster + Registry-Detailfenster), Beschriftungen bleiben lesbar.
 - Fensterhöhe dezent erhöht, damit Einstellungen im Bereich `Konfiguration` (u. a. Schriftgrößen) zuverlässig sichtbar sind.
+- [Release Notes v3.3.7](release/_Archiv/RELEASE_NOTES_v3.3.7.md).
 
 ### v3.3.6 (08. Juni 2026)
 
@@ -387,5 +406,5 @@ Die unterstützenden Projektroutinen liegen unter `src/tools/`:
 
 ---
 
-Entwickelt: 28. April 2026 | Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
+Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 Für Bildungseinrichtungen und professionelle Anwender optimiert.
