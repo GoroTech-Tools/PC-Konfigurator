@@ -192,7 +192,7 @@ andere Formatvorlagen werden nicht verändert.
 **Sicheres Template-Management:**
 
 - Templates werden vor jeder Änderung automatisch gesichert (Backup/Restore)
-- Schriftarten werden systemweit und Office-sicher gesetzt
+- Die ausgewählte Schriftart wird im Benutzerprofil installiert und Office-sicher gesetzt
 - Keine Korruption der Originaldateien durch `SafeTemplateProcessor`
 - Building Blocks werden im normalen Konfigurationslauf optional synchronisiert;
   Office wird dafür bei aktiviertem Preclose bereits vor der Synchronisation
@@ -291,4 +291,4 @@ und führt sie erfolgreich aus. Ein Eingreifen ist normalerweise nicht nötig.
 
 ---
 
-**Stand:** 20.06.2026
+**Stand:** 29.09.2026

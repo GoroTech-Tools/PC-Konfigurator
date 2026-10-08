@@ -54,10 +54,10 @@ PC-Konfigurator/
    - Explorer-Option „Immer Dateinamen und -inhalte suchen" aktivieren (`SearchFileNameAlways=1`)
    - Anwendungen im Startmenü standardmäßig als Liste darstellen
    - Office-Optimierungen
-   - Edge- und Signatur-Backup wiederherstellen
+   - Edge- und Signatur-Backup wiederherstellen (falls aktiviert)
    - Template-Anpassungen über SafeTemplateProcessor
    - Font-Installation und Zuweisung
-   - Edge-Profile und E-Mail-Signaturen sichern/aktualisieren
+   - Edge-Profile und E-Mail-Signaturen sichern/aktualisieren (falls aktiviert)
    - Word-Einfügeoptionen per Registry und optional per COM synchronisieren
 5. Ausführungsmodus:
    - `Einfach`: Vollständige Konfiguration
@@ -205,6 +205,8 @@ unabhängige Arbeitsänderungen bleiben weiterhin ausgeschlossen.
    `%LOCALAPPDATA%\Microsoft\Edge\User Data`.
 - Outlook-Signaturen werden unter `%APPDATA%\Microsoft\Signatures` gelesen
    und separat in `Datei-Vorlagen\Sonstiges\E-Mail-Signaturen` abgelegt.
+- Edge-/Signatur-Sicherung und -Wiederherstellung sind standardmäßig deaktiviert
+   und können im erweiterten Modus aktiviert werden.
 - Lokale Signaturen werden bei der Wiederherstellung nur ergänzt, wenn noch
    keine Signaturdateien vorhanden sind.
 - Cache- und temporäre Edge-Daten werden nicht gesichert.
