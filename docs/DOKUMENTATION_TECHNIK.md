@@ -98,7 +98,7 @@ Datei wegen eines vorübergehenden Dateisystemfehlers nicht gelesen werden, wird
 dies als Warnung protokolliert und die übrige Vorlagen-/Office-Konfiguration
 läuft weiter.
 
-### Aktueller Status: offene Word-Detailpunkte
+### Aktueller Word-Standard
 
 Die Word-Optionen „Jede Tabellenzeile mit einem Großbuchstaben beginnen" und
 „Bilder einfügen" = „Mit Text in Zeile" sind inzwischen als Standardwerte in
@@ -297,9 +297,12 @@ Single Source of Truth zur Build-Version:
 - `docs/DOKUMENTATION_ANWENDER.md`
 - `src/BUILD-INFO.txt`
 
-Main-Branch-Builds erhöhen automatisch die Patch-Version gegenüber der höchsten
-vorhandenen Versionsnummer in `src/build_info.py` oder einem `vX.Y.Z`-Git-Tag.
-Der GitHub-Release-Tag lautet `vX.Y.Z`, der Release-Name `PC-Konfigurator X.Y.Z`.
+Beim GitHub-Main-Branch-Build wird die Patch-Version gegenüber der höchsten
+vorhandenen Versionsnummer in `src/build_info.py` oder einem `vX.Y.Z`-Git-Tag
+erhöht. Der Workflow verwendet diese Version für den Build; daher kann die
+Versionsnummer in `src/build_info.py` im Quellstand niedriger als die zuletzt
+veröffentlichte Version sein. Der GitHub-Release-Tag lautet `vX.Y.Z`, der
+Release-Name `PC-Konfigurator X.Y.Z`.
 
 ## 7. Risiken und Randbedingungen
 
@@ -372,7 +375,7 @@ Durchgeführter Verifikationstest der neu ergänzten Windows-Registry-Werte
 (`Hidden`, `Start_Layout`, `Start_TrackProgs`, `Start_TrackDocs`,
 `Start_Show*`) auf dem Zielsystem:
 
-- Systemstand: `Windows 10 Pro`, Build `26100.8524`
+- Systemstand: `Windows 11 Pro`, Build `26100.8524`
 - Ergebnis Konfigurationslauf: `success = true`
 - Vorher/Nachher-Vergleich der relevanten Explorer-Keys: stabil auf Zielwerten (`1`)
 - Start-Zweig erkannt: `VisiblePlaces` ist vorhanden (build-spezifische Start-Ordnermatrix)
