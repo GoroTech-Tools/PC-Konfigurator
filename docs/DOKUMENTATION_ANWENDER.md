@@ -1,6 +1,6 @@
 # DOKUMENTATION_ANWENDER
 
-**Version:** 3.3.99 (29.09.2026)
+**Version:** 3.3.123 (11.10.2026)
 
 > Diese Datei enthält den vollständigen Inhalt der früheren `ANLEITUNG.md` aus dem Projektroot.
 
@@ -266,7 +266,8 @@ Die Anwendung nutzt standardmäßig folgende Laufzeitstruktur:
 ### Kompatibilität
 
 - Windows 10 und Windows 11
-- Office 2013, 2016, 2019, 2021, 365
+- Office 2013, 2016, 2019, 2021 und Microsoft 365
+- Outlook classic einschließlich Outlook 2024 LTSC
 - Funktioniert auch ohne Office-Installation (Windows-/Font-Teile)
 
 ## FAQ
@@ -291,4 +292,4 @@ und führt sie erfolgreich aus. Ein Eingreifen ist normalerweise nicht nötig.
 
 ---
 
-**Stand:** 29.09.2026
+**Stand:** 11.10.2026

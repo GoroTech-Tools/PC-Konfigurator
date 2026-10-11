@@ -2,10 +2,12 @@
 
 Komplette portable Anwendung für Windows-PC-Konfiguration.
 
-**Version:** 3.3.99 (Build: 29.09.2026, Python 3.13.7)
+**Version:** 3.3.123 (Build: 11.10.2026, Python 3.13.15)
 
-Die [Release Notes v3.3.99](release/RELEASE_NOTES_v3.3.99.md) dokumentieren
-den aktuellen Funktionsstand. Frühere verfügbare Release Notes:
+Die [Release Notes v3.3.123](release/RELEASE_NOTES_v3.3.123.md) dokumentieren
+den aktuellen Release- und Dokumentationsstand. Die aktuelle Funktionalität ist
+seit v3.3.99 unverändert. Frühere Release Notes:
+[v3.3.99](release/RELEASE_NOTES_v3.3.99.md) und
 [v3.3.95](release/RELEASE_NOTES_v3.3.95.md).
 
 ## Übersicht
@@ -60,6 +62,7 @@ _Mermaid-Quelle: `docs/diagramme/anwender_ablauf.mmd`_
 - Anwendungen im Startmenü standardmäßig in Listenansicht darstellen
 - Beim App-Start wird der gewünschte Startmenü-Modus automatisch gesetzt (Windows 11 oder optional klassisch als dauerhafter Fallback; Benutzerkontext, ohne Adminrechte)
 - Zusätzlich wird eine externe Benutzer-Autostart-Variante hinterlegt (`%APPDATA%\\PC-Konfigurator\\startmenu-guard` + Eintrag im Startup-Ordner), damit der gewählte Modus auch ohne manuellen App-Start bei Anmeldung angewendet wird
+- Der Desktop-Ordner des aktuellen Benutzers bleibt bei der Konfiguration im Explorer-Schnellzugriff angeheftet; Desktop-Umleitungen werden berücksichtigt
 
 ### Office-Konfiguration
 
@@ -145,7 +148,7 @@ des aktuell angemeldeten Windows-Benutzers direkt in Word geöffnet werden.
 ## Projektstruktur
 
 ```text
-PC-Konfigurator-v3.3.99/
+PC-Konfigurator-v3.3.123/
 ├── PC-Konfigurator.exe
 ├── README.md
 ├── BUILD-INFO.txt
@@ -244,7 +247,7 @@ Der Build-Prozess ergänzt automatisch:
 
 - 3 Template-Typen vollständig unterstützt
 - 11 Schriftfamilien-Ordner mit 140 Schriftdateien im aktuellen Bestand `data/Fonts`
-- 365 Vorlagen-Dateien im aktuellen Bestand `data/Datei-Vorlagen`
+- 366 Vorlagen-Dateien im aktuellen Bestand `data/Datei-Vorlagen`
 
 ### Template-Verarbeitungszeiten
 
@@ -254,6 +257,13 @@ Der Build-Prozess ergänzt automatisch:
 - Verarbeitungszeit typischerweise ca. 2 bis 5 Sekunden pro Template
 
 ## Changelog
+
+### v3.3.123 (11. Oktober 2026)
+
+- Release- und Dokumentationsangaben auf den aktuellen Stand v3.3.123 gebracht.
+- Keine Änderungen am Funktionsumfang gegenüber v3.3.99.
+- [Release Notes](release/RELEASE_NOTES_v3.3.123.md) ·
+  [GitHub-Release](https://github.com/GoroTech-Tools/PC-Konfigurator/releases/tag/v3.3.123)
 
 ### v3.3.99 (29. September 2026)
 
@@ -406,5 +416,5 @@ Die unterstützenden Projektroutinen liegen unter `src/tools/`:
 
 ---
 
-Python 3.13.7 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
+Python 3.13.15 | CustomTkinter 5.2.2 | PyInstaller 6.17.0
 Für Bildungseinrichtungen und professionelle Anwender optimiert.

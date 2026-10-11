@@ -1,5 +1,10 @@
 # Dokumentation – PC-Konfigurator
 
+Aktueller Release: **v3.3.123** (11.10.2026). Die
+[Release Notes](../release/RELEASE_NOTES_v3.3.123.md) beschreiben den aktuellen
+Release- und Dokumentationsstand. Der Funktionsumfang entspricht weiterhin
+v3.3.99.
+
 Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 
 - **[DOKUMENTATION_ANWENDER.md](./DOKUMENTATION_ANWENDER.md)**  
@@ -16,7 +21,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
 1. Für Benutzer:innen: `DOKUMENTATION_ANWENDER.md`
 2. Für Entwickler:innen/Admins: zusätzlich `DOKUMENTATION_TECHNIK.md`
 
-## Aktueller Betriebsstatus (Stand 2026-09-29)
+## Aktueller Betriebsstatus (Stand 2026-10-11)
 
 - Datei-Vorlagen-Bibliothek wird bei jedem Lauf automatisch mit dem Zielordner
   abgeglichen (Update-Modus, keine Überschreibung eigener Änderungen).
@@ -35,6 +40,7 @@ Diese Dokumentation ist zielgruppenspezifisch aufgebaut:
   standardmäßig deaktiviert und wird im erweiterten Modus aktiviert.
 - Der Dokumente-Zielpfad berücksichtigt OneDrive-Umleitungen und verwendet ohne Umleitung den deutschen Ordner `Dokumente`.
 - Der vollständige Lauf verlangt vor dem Start eine Bestätigung, dass Edge und die Office-Anwendungen beendet wurden.
+- Der Desktop-Ordner bleibt beim Anwenden der Windows-Einstellungen im Explorer-Schnellzugriff angeheftet; OneDrive-Umleitungen werden berücksichtigt.
 
 ## Projektkontext
 
